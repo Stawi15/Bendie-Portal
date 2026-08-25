@@ -121,6 +121,7 @@ type AgendaCsvRow = {
   block_type: string;
   audience: string;
   facilitator_id: string | null;
+  facilitator_ids: string[];
   accent_color: string | null;
 };
 
@@ -131,7 +132,7 @@ const AGENDA_CSV_COLUMNS: ColumnSpec[] = [
   { key: 'location', label: 'Location' },
   { key: 'block_type', label: 'Block Type' },
   { key: 'audience', label: 'Audience' },
-  { key: 'facilitator', label: 'Facilitator (name or email)' },
+  { key: 'facilitator', label: 'Facilitator(s) (name or email; semicolon-separated for multiple)' },
   { key: 'accent_color', label: 'Accent Color' },
   { key: 'description', label: 'Description' },
 ];
@@ -144,7 +145,7 @@ const AGENDA_CSV_SAMPLES: Record<string, string>[] = [
     location: 'Main Hall',
     block_type: 'session',
     audience: 'everyone',
-    facilitator: 'Jane Smith',
+    facilitator: 'Jane Smith; John Doe',
     accent_color: '#3B82F6',
     description: 'Welcome address and event overview.',
   },
@@ -398,16 +399,19 @@ export default function AgendaPage() {
       errors.push('accent_color must be a hex color like #3B82F6');
     }
 
-    let facilitatorId: string | null = null;
+    const facilitatorIds: string[] = [];
     const facilitatorRaw = getField(raw, 'facilitator');
     if (facilitatorRaw) {
-      const match = facilitators.find(
-        (f) =>
-          (f.full_name ?? '').toLowerCase() === facilitatorRaw.toLowerCase() ||
-          (f.email ?? '').toLowerCase() === facilitatorRaw.toLowerCase()
-      );
-      if (!match) errors.push(`Facilitator "${facilitatorRaw}" not found — add them first`);
-      else facilitatorId = match.id;
+      const names = facilitatorRaw.split(';').map((n) => n.trim()).filter(Boolean);
+      for (const name of names) {
+        const match = facilitators.find(
+          (f) =>
+            (f.full_name ?? '').toLowerCase() === name.toLowerCase() ||
+            (f.email ?? '').toLowerCase() === name.toLowerCase()
+        );
+        if (!match) errors.push(`Facilitator "${name}" not found — add them first`);
+        else if (!facilitatorIds.includes(match.id)) facilitatorIds.push(match.id);
+      }
     }
 
     const data: AgendaCsvRow = {
@@ -419,7 +423,8 @@ export default function AgendaPage() {
       location: getField(raw, 'location') || null,
       block_type: blockType,
       audience: getField(raw, 'audience') || 'everyone',
-      facilitator_id: facilitatorId,
+      facilitator_id: facilitatorIds[0] ?? null,
+      facilitator_ids: facilitatorIds,
       accent_color: accentColor || null,
     };
 
@@ -427,13 +432,24 @@ export default function AgendaPage() {
   };
 
   const importAgendaRow = async (row: AgendaCsvRow) => {
-    const { rowIndex, ...rest } = row;
-    const { error } = await supabase.from('agenda_sessions').insert({
+    const { rowIndex, facilitator_ids, ...rest } = row;
+    const { data, error } = await supabase.from('agenda_sessions').insert({
       event_id: eventId,
       ...rest,
       display_order: sessions.length + rowIndex,
-    });
-    return { error: error?.message };
+    }).select('id').single();
+    if (error) return { error: error.message };
+
+    if (facilitator_ids.length > 0) {
+      const { error: speakerError } = await supabase.from('agenda_session_speakers').insert(
+        facilitator_ids.map((facilitatorId, i) => ({
+          session_id: data.id, facilitator_id: facilitatorId, speaker_type: 'speaker', display_order: i,
+        }))
+      );
+      if (speakerError) return { error: `Session imported but speaker link failed: ${speakerError.message}` };
+    }
+
+    return { error: undefined };
   };
 
   const searched = sessions.filter(s => {

@@ -31,8 +31,10 @@ export const EVENT_SECTIONS: EventSectionMeta[] = [
   { key: 'emergency', label: 'Emergency', desc: 'Emergency contacts and procedures', icon: 'emergency', badgeBg: 'bg-red-100', badgeFg: 'text-red-600' },
   { key: 'gallery', label: 'Gallery', desc: 'Attendee photo gallery', icon: 'photo_library', badgeBg: 'bg-violet-100', badgeFg: 'text-violet-600' },
   { key: 'event-photos', label: 'Event Photos', desc: 'Organizer-curated event photos', icon: 'add_photo_alternate', badgeBg: 'bg-lime-100', badgeFg: 'text-lime-700' },
+  { key: 'files', label: 'Files', desc: 'Documents for attendees to download', icon: 'attach_file', badgeBg: 'bg-neutral-100', badgeFg: 'text-neutral-700' },
   { key: 'games', label: 'Games', desc: 'Quiz games and trivia', icon: 'sports_esports', badgeBg: 'bg-fuchsia-100', badgeFg: 'text-fuchsia-600' },
   { key: 'members', label: 'Members', desc: 'Event members and access codes', icon: 'groups', badgeBg: 'bg-sky-100', badgeFg: 'text-sky-600' },
+  { key: 'notifications', label: 'Notifications', desc: 'Send or schedule push notifications', icon: 'notifications', badgeBg: 'bg-red-50', badgeFg: 'text-red-500' },
   { key: 'activity-log', label: 'Activity Log', desc: 'Audit trail of all changes', icon: 'history', badgeBg: 'bg-slate-100', badgeFg: 'text-slate-600' },
 ];
 
