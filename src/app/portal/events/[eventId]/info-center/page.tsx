@@ -7,7 +7,118 @@ import { Avatar } from '@/components/portal/Avatar';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
 import { useConfirm } from '@/contexts/ConfirmContext';
+import { moveItem } from '@/lib/reorder';
 import toast from 'react-hot-toast';
+
+// ─── Welcome bullets (info_content) ────────────────────────────────────────
+
+type InfoContentRow = { id: string; event_id: string | null; bullets: string[] };
+
+function WelcomeBulletsCard({ eventId }: { eventId: string }) {
+  const confirm = useConfirm();
+  const [eventRow, setEventRow] = useState<InfoContentRow | null>(null);
+  const [globalRow, setGlobalRow] = useState<InfoContentRow | null>(null);
+  const [bullets, setBullets] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = async () => {
+    const { data, error } = await supabase
+      .from('info_content')
+      .select('id,event_id,bullets')
+      .or(`event_id.eq.${eventId},event_id.is.null`);
+    if (error) { toast.error('Failed to load welcome message'); setLoading(false); return; }
+
+    const ev = (data ?? []).find(r => r.event_id === eventId) ?? null;
+    const glob = (data ?? []).find(r => r.event_id === null) ?? null;
+    setEventRow(ev);
+    setGlobalRow(glob);
+    setBullets((ev ?? glob)?.bullets ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { if (eventId) fetchData(); }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isOverride = Boolean(eventRow);
+  const isInherited = !eventRow && Boolean(globalRow);
+
+  const handleChangeBullet = (i: number, value: string) =>
+    setBullets(prev => prev.map((b, idx) => (idx === i ? value : b)));
+  const handleAddBullet = () => setBullets(prev => [...prev, '']);
+  const handleRemoveBullet = (i: number) => setBullets(prev => prev.filter((_, idx) => idx !== i));
+  const handleMoveBullet = (i: number, direction: 'up' | 'down') =>
+    setBullets(prev => moveItem(prev, i, direction));
+
+  const handleSave = async () => {
+    const cleaned = bullets.map(b => b.trim()).filter(Boolean);
+    if (cleaned.length === 0) { toast.error('Add at least one bullet'); return; }
+
+    setSaving(true);
+    if (eventRow) {
+      const { error } = await supabase.from('info_content').update({ bullets: cleaned }).eq('id', eventRow.id);
+      if (error) toast.error(error.message); else { toast.success('Welcome message updated'); fetchData(); }
+    } else {
+      const { error } = await supabase.from('info_content').insert({ event_id: eventId, bullets: cleaned });
+      if (error) toast.error(error.message); else { toast.success('Event-specific welcome message saved'); fetchData(); }
+    }
+    setSaving(false);
+  };
+
+  const handleRevert = async () => {
+    if (!eventRow) return;
+    if (!(await confirm({ message: 'Revert to the global default welcome message? This event\'s custom version will be deleted.', confirmLabel: 'Revert', destructive: true }))) return;
+    const { error } = await supabase.from('info_content').delete().eq('id', eventRow.id);
+    if (error) toast.error(error.message); else { toast.success('Reverted to global default'); fetchData(); }
+  };
+
+  if (loading) return <div className="h-40 bg-surface-container-low rounded-[20px] animate-pulse mb-6" />;
+
+  return (
+    <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 mb-6">
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <h3 className="font-semibold text-on-surface">Welcome Message</h3>
+        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${isOverride ? 'bg-primary/10 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
+          {isOverride ? 'Event-specific' : 'Global default'}
+        </span>
+      </div>
+      <p className="hint mb-4">
+        {isInherited
+          ? 'Shown to attendees on the Info Center screen. This event has no override yet — editing and saving will create one just for this event, without affecting other events.'
+          : isOverride
+            ? "This event has its own version, overriding the global default."
+            : 'Shown to attendees on the Info Center screen for every event that has no override of its own — editing this affects all of them.'}
+      </p>
+
+      <div className="space-y-2 mb-3">
+        {bullets.map((b, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="text-on-surface-variant flex-shrink-0">•</span>
+            <input className="input flex-1" value={b} onChange={e => handleChangeBullet(i, e.target.value)} placeholder="Bullet text" />
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <button type="button" onClick={() => handleMoveBullet(i, 'up')} disabled={i === 0} className="p-1 rounded text-on-surface-variant hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed">
+                <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
+              </button>
+              <button type="button" onClick={() => handleMoveBullet(i, 'down')} disabled={i === bullets.length - 1} className="p-1 rounded text-on-surface-variant hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed">
+                <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
+              </button>
+              <button type="button" onClick={() => handleRemoveBullet(i)} className="p-1 rounded text-on-surface-variant hover:text-error">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          </div>
+        ))}
+        <button type="button" onClick={handleAddBullet} className="text-xs text-primary hover:opacity-80 font-medium">+ Add bullet</button>
+      </div>
+
+      <div className="flex gap-3 pt-3 border-t border-outline-variant">
+        <button onClick={handleSave} disabled={saving} className="btn-primary text-sm">{saving ? 'Saving...' : isOverride ? 'Update' : 'Save for this event'}</button>
+        {isOverride && (
+          <button onClick={handleRevert} className="btn-secondary text-sm">Revert to global default</button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type Contact = {
   id: string;
@@ -105,6 +216,8 @@ export default function InfoCenterPage() {
           <span className="material-symbols-outlined text-[18px]">add</span> Add Contact
         </button>
       </div>
+
+      {eventId && <WelcomeBulletsCard eventId={eventId} />}
 
       <FormModal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Contact' : 'New Contact'}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
