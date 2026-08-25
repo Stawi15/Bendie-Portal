@@ -37,6 +37,8 @@ const SECTION_CHECKS: Record<string, SectionCheck> = {
   'event-photos': { kind: 'count', table: 'event_photos', noun: 'photos', scored: false },
   games: { kind: 'count', table: 'games', noun: 'games', scored: true },
   members: { kind: 'count', table: 'event_members', noun: 'members', scored: false },
+  files: { kind: 'none' },
+  notifications: { kind: 'count', table: 'event_push_notifications', noun: 'notifications', scored: false },
   'activity-log': { kind: 'none' },
 };
 
