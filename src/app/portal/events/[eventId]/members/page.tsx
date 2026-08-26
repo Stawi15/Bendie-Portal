@@ -1,15 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { EditProfileModal } from '@/components/portal/EditProfileModal';
+import { FormModal } from '@/components/portal/FormModal';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { useEvent } from '@/contexts/EventContext';
-import { runWithConcurrency } from '@/lib/csvImport';
+import { runWithConcurrency, getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import toast from 'react-hot-toast';
+
+const MEMBER_ROLES = ['host', 'organizer', 'admin', 'facilitator', 'staff', 'attendee', 'speaker'];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type NewMemberCsvRow = { rowIndex: number; email: string; full_name: string | null; role: string };
+
+const MEMBER_CSV_COLUMNS: ColumnSpec[] = [
+  { key: 'email', label: 'Email', required: true },
+  { key: 'full_name', label: 'Full Name' },
+  { key: 'role', label: `Role (${MEMBER_ROLES.join(', ')})` },
+];
+
+const MEMBER_CSV_SAMPLES: Record<string, string>[] = [
+  { email: 'jane@example.com', full_name: 'Jane Smith', role: 'attendee' },
+  { email: 'david@example.com', full_name: 'David Otieno', role: 'facilitator' },
+];
 
 type Member = {
   event_id: string;
@@ -66,6 +84,14 @@ export default function MembersPage() {
   const [teams, setTeams] = useState<{ id: string; name: string }[]>([]);
   const [assigningTeam, setAssigningTeam] = useState(false);
   const [resendingCode, setResendingCode] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [newMember, setNewMember] = useState({ email: '', fullName: '', role: 'attendee' });
+  const [addingMember, setAddingMember] = useState(false);
+
+  // Populated once per CSV import by beforeImportMembers, read per-row by importMemberRow.
+  const emailToIdRef = useRef<Map<string, string>>(new Map());
+  const createErrorsRef = useRef<Map<string, string>>(new Map());
 
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -265,6 +291,139 @@ export default function MembersPage() {
     fetchData();
   };
 
+  /**
+   * Points this person's "which event am I in" state at this event. Without
+   * this, someone newly provisioned here has an event_members row but the
+   * mobile app still can't resolve them into the event until they separately
+   * join by slug/access code — see the memory note on this recurring gap.
+   * Only backfills current_organization_id if it was unset, so an existing
+   * user's other active org context isn't silently clobbered.
+   */
+  const pointCurrentEventAt = async (userId: string, organizationId: string) => {
+    const { data: profile } = await supabase.from('profiles').select('current_organization_id').eq('id', userId).maybeSingle();
+    await supabase.from('profiles').update({
+      current_event_id: eventId,
+      current_organization_id: profile?.current_organization_id ?? organizationId,
+    }).eq('id', userId);
+  };
+
+  const handleAddMember = async () => {
+    const organizationId = currentEvent?.organization_id;
+    const email = newMember.email.trim().toLowerCase();
+    if (!organizationId) { toast.error('Could not determine this event\'s organisation'); return; }
+    if (!email || !EMAIL_RE.test(email)) { toast.error('A valid email is required'); return; }
+
+    setAddingMember(true);
+
+    const { data: existing } = await supabase.from('profiles').select('id').ilike('email', email).maybeSingle();
+    let userId = existing?.id ?? null;
+
+    if (!userId) {
+      try {
+        const res = await fetch('/api/admin/create-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, fullName: newMember.fullName.trim(), organizationId, orgRole: 'member' }),
+        });
+        const body = await res.json();
+        if (!res.ok) { toast.error(body.error ?? 'Failed to create account'); setAddingMember(false); return; }
+        userId = body.id;
+      } catch (err) {
+        toast.error('Failed to create account');
+        console.error(err);
+        setAddingMember(false);
+        return;
+      }
+    } else {
+      const { error: orgError } = await supabase.from('organization_members').insert({ organization_id: organizationId, user_id: userId, role: 'member' });
+      if (orgError && orgError.code !== '23505') { toast.error(orgError.message); setAddingMember(false); return; }
+    }
+
+    const { error: eventError } = await supabase.from('event_members').insert({
+      event_id: eventId, user_id: userId, organization_id: organizationId, role: newMember.role,
+    });
+    if (eventError && eventError.code !== '23505') { toast.error(eventError.message); setAddingMember(false); return; }
+
+    await pointCurrentEventAt(userId as string, organizationId);
+
+    toast.success(`${newMember.fullName.trim() || email} added to this event`);
+    setNewMember({ email: '', fullName: '', role: 'attendee' });
+    setAddOpen(false);
+    setAddingMember(false);
+    fetchData();
+  };
+
+  const parseMemberCsvRow = (raw: Record<string, string>, rowIndex: number): RowResult<NewMemberCsvRow> => {
+    const errors: string[] = [];
+
+    const email = getField(raw, 'email').toLowerCase();
+    if (!email) errors.push('email is required');
+    else if (!EMAIL_RE.test(email)) errors.push('email is not a valid email address');
+
+    const roleRaw = getField(raw, 'role').toLowerCase();
+    const role = roleRaw || 'attendee';
+    if (roleRaw && !MEMBER_ROLES.includes(roleRaw)) errors.push(`role must be one of: ${MEMBER_ROLES.join(', ')}`);
+
+    const data: NewMemberCsvRow = { rowIndex, email, full_name: getField(raw, 'full_name') || null, role };
+    return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
+  };
+
+  const beforeImportMembers = async (rows: NewMemberCsvRow[]) => {
+    emailToIdRef.current = new Map();
+    createErrorsRef.current = new Map();
+
+    const emails = rows.map(r => r.email);
+    const { data: existingProfiles, error } = await supabase.from('profiles').select('id,email').in('email', emails);
+    if (error) { toast.error('Failed to check existing accounts'); console.error(error); return; }
+    for (const p of existingProfiles ?? []) {
+      if (p.email) emailToIdRef.current.set(p.email.toLowerCase(), p.id);
+    }
+
+    const newRows = rows.filter(r => !emailToIdRef.current.has(r.email));
+    if (newRows.length === 0) return;
+
+    try {
+      const res = await fetch('/api/admin/bulk-create-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: newRows.map(r => ({ email: r.email, fullName: r.full_name ?? '' })) }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        const message = body.error ?? 'Failed to create new accounts';
+        for (const r of newRows) createErrorsRef.current.set(r.email, message);
+        return;
+      }
+      for (const result of body.results as { email: string; id?: string; error?: string }[]) {
+        const key = result.email.toLowerCase();
+        if (result.id) emailToIdRef.current.set(key, result.id);
+        else createErrorsRef.current.set(key, result.error ?? 'Failed to create account');
+      }
+    } catch (err) {
+      console.error(err);
+      for (const r of newRows) createErrorsRef.current.set(r.email, 'Failed to create account');
+    }
+  };
+
+  const importMemberRow = async (row: NewMemberCsvRow) => {
+    const userId = emailToIdRef.current.get(row.email);
+    if (!userId) return { error: createErrorsRef.current.get(row.email) ?? 'Could not resolve or create this account' };
+
+    const organizationId = currentEvent?.organization_id;
+    if (!organizationId) return { error: 'No organisation for this event' };
+
+    const { error: orgError } = await supabase.from('organization_members').insert({ organization_id: organizationId, user_id: userId, role: 'member' });
+    if (orgError && orgError.code !== '23505') return { error: `Account ready, but failed to join organisation: ${orgError.message}` };
+
+    const { error: eventError } = await supabase.from('event_members').insert({
+      event_id: eventId, user_id: userId, organization_id: organizationId, role: row.role,
+    });
+    if (eventError && eventError.code !== '23505') return { error: `Joined organisation, but failed to join event: ${eventError.message}` };
+
+    await pointCurrentEventAt(userId, organizationId);
+    return {};
+  };
+
   const roles = ['all', ...Array.from(new Set(members.map(m => m.role)))];
 
   const filtered = members.filter(m => {
@@ -295,8 +454,54 @@ export default function MembersPage() {
           <button onClick={handleAddAllOrgMembers} disabled={addingAll} className="btn-secondary flex-shrink-0 disabled:opacity-50">
             <span className="material-symbols-outlined text-[18px]">group_add</span> {addingAll ? 'Adding…' : 'Add All Organisation Members'}
           </button>
+          <button onClick={() => setCsvOpen(true)} className="btn-secondary flex-shrink-0">
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+          </button>
+          <button onClick={() => setAddOpen(true)} className="btn-primary flex-shrink-0">
+            <span className="material-symbols-outlined text-[18px]">person_add</span> Add Member
+          </button>
         </div>
       </div>
+
+      <FormModal open={addOpen} onClose={() => setAddOpen(false)} title="Add Member" maxWidthClassName="max-w-md">
+        <p className="hint mb-3">
+          If this email doesn&apos;t have an account yet, one is created automatically — no password, no email sent.
+          Either way, they&apos;re registered to this event&apos;s organisation and to this event itself.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <label className="label">Email *</label>
+            <input className="input" type="email" value={newMember.email} onChange={e => setNewMember(p => ({ ...p, email: e.target.value }))} placeholder="jane@example.com" />
+          </div>
+          <div>
+            <label className="label">Full Name</label>
+            <input className="input" value={newMember.fullName} onChange={e => setNewMember(p => ({ ...p, fullName: e.target.value }))} placeholder="Jane Smith" />
+          </div>
+          <div>
+            <label className="label">Event Role</label>
+            <select className="input" value={newMember.role} onChange={e => setNewMember(p => ({ ...p, role: e.target.value }))}>
+              {MEMBER_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
+          <button onClick={handleAddMember} disabled={addingMember} className="btn-primary">{addingMember ? 'Adding…' : 'Add to Event'}</button>
+          <button onClick={() => setAddOpen(false)} className="btn-secondary">Cancel</button>
+        </div>
+      </FormModal>
+
+      <CsvImportModal<NewMemberCsvRow>
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={fetchData}
+        title="Import Members"
+        templateFilename="event-members-template.csv"
+        columns={MEMBER_CSV_COLUMNS}
+        sampleRows={MEMBER_CSV_SAMPLES}
+        parseRow={parseMemberCsvRow}
+        beforeImport={beforeImportMembers}
+        importRow={importMemberRow}
+      />
 
       {/* Role breakdown */}
       <div className="flex flex-wrap gap-2 mb-5">
