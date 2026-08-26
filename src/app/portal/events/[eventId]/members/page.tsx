@@ -92,6 +92,7 @@ export default function MembersPage() {
   // Populated once per CSV import by beforeImportMembers, read per-row by importMemberRow.
   const emailToIdRef = useRef<Map<string, string>>(new Map());
   const createErrorsRef = useRef<Map<string, string>>(new Map());
+  const organizationIdRef = useRef<string | null>(null);
 
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -307,8 +308,21 @@ export default function MembersPage() {
     }).eq('id', userId);
   };
 
+  /**
+   * The `currentEvent` context value can still be mid-fetch (or briefly hold
+   * the previous event) right after navigating here, so a provisioning
+   * action fired quickly after landing on the page can silently register
+   * people against the WRONG organization. Always resolve it fresh from the
+   * URL's eventId instead of trusting context state for anything that writes
+   * event_members/organization_members.
+   */
+  const resolveOrganizationId = async (): Promise<string | null> => {
+    const { data } = await supabase.from('events').select('organization_id').eq('id', eventId).single();
+    return data?.organization_id ?? null;
+  };
+
   const handleAddMember = async () => {
-    const organizationId = currentEvent?.organization_id;
+    const organizationId = await resolveOrganizationId();
     const email = newMember.email.trim().toLowerCase();
     if (!organizationId) { toast.error('Could not determine this event\'s organisation'); return; }
     if (!email || !EMAIL_RE.test(email)) { toast.error('A valid email is required'); return; }
@@ -371,6 +385,8 @@ export default function MembersPage() {
   const beforeImportMembers = async (rows: NewMemberCsvRow[]) => {
     emailToIdRef.current = new Map();
     createErrorsRef.current = new Map();
+    organizationIdRef.current = await resolveOrganizationId();
+    if (!organizationIdRef.current) { toast.error('Could not determine this event\'s organisation'); return; }
 
     const emails = rows.map(r => r.email);
     const { data: existingProfiles, error } = await supabase.from('profiles').select('id,email').in('email', emails);
@@ -409,7 +425,7 @@ export default function MembersPage() {
     const userId = emailToIdRef.current.get(row.email);
     if (!userId) return { error: createErrorsRef.current.get(row.email) ?? 'Could not resolve or create this account' };
 
-    const organizationId = currentEvent?.organization_id;
+    const organizationId = organizationIdRef.current;
     if (!organizationId) return { error: 'No organisation for this event' };
 
     const { error: orgError } = await supabase.from('organization_members').insert({ organization_id: organizationId, user_id: userId, role: 'member' });
