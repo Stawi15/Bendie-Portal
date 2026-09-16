@@ -7,9 +7,10 @@ import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { EVENT_SECTIONS } from '@/lib/eventSectionMeta';
 import { SectionIconBadge } from '@/components/portal/SectionIconBadge';
-import type { Database } from '@/types/database';
+import { PlannerProvisioningBanner } from '@/components/portal/PlannerProvisioningBanner';
+import type { EventRow } from '@/lib/eventColumns';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = EventRow;
 
 type SectionCheck =
   | { kind: 'field'; test: (event: Event) => boolean }
@@ -37,6 +38,8 @@ const SECTION_CHECKS: Record<string, SectionCheck> = {
   'event-photos': { kind: 'count', table: 'event_photos', noun: 'photos', scored: false },
   games: { kind: 'count', table: 'games', noun: 'games', scored: true },
   members: { kind: 'count', table: 'event_members', noun: 'members', scored: false },
+  'bendie-planner': { kind: 'none' },
+  'planner-overview': { kind: 'none' },
   files: { kind: 'none' },
   notifications: { kind: 'count', table: 'event_push_notifications', noun: 'notifications', scored: false },
   'activity-log': { kind: 'none' },
@@ -108,6 +111,8 @@ export default function DashboardPage() {
         </h1>
         <p className="text-gray-500 mt-1">Select a section to edit event content</p>
       </div>
+
+      {currentEvent && <PlannerProvisioningBanner event={currentEvent} />}
 
       <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
         <div className="flex items-center justify-between gap-4 mb-3">

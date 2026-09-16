@@ -26,6 +26,7 @@ type TravelDetail = {
   pickup_vehicle: string | null;
   pickup_location: string | null;
   date: string | null;
+  source_planner_key: string | null;
 };
 
 type TravelForm = {
@@ -80,7 +81,7 @@ export default function AttendeeTravelPage() {
   const fetchDetails = async (userId: string) => {
     const { data, error } = await supabase
       .from('attendee_travel_details')
-      .select('id,type,title,boarding_time,route,origin,destination,travel_time,pickup_vehicle,pickup_location,date')
+      .select('id,type,title,boarding_time,route,origin,destination,travel_time,pickup_vehicle,pickup_location,date,source_planner_key')
       .eq('user_id', userId)
       .eq('event_id', eventId)
       .order('created_at');
@@ -216,6 +217,14 @@ export default function AttendeeTravelPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-low text-on-surface-variant">{TRAVEL_TYPE_LABELS[d.type] ?? d.type}</span>
+                          {d.source_planner_key && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-secondary-container text-on-secondary-container"
+                              title="Synced from Bendie Planner — read-only here"
+                            >
+                              <span className="material-symbols-outlined text-[12px]">sync_alt</span> From Planner
+                            </span>
+                          )}
                           {d.title && <p className="font-medium text-sm text-on-surface">{d.title}</p>}
                         </div>
                         <div className="text-xs text-on-surface-variant mt-1 space-y-0.5">
@@ -226,7 +235,9 @@ export default function AttendeeTravelPage() {
                         </div>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={() => openEdit(d)} className="text-xs text-primary hover:opacity-80 font-medium px-2 py-1 rounded-lg hover:bg-primary/5">Edit</button>
+                        {!d.source_planner_key && (
+                          <button onClick={() => openEdit(d)} className="text-xs text-primary hover:opacity-80 font-medium px-2 py-1 rounded-lg hover:bg-primary/5">Edit</button>
+                        )}
                         <button onClick={() => handleDelete(d.id)} className="text-xs text-error hover:opacity-80 font-medium px-2 py-1 rounded-lg hover:bg-error/5">Delete</button>
                       </div>
                     </div>

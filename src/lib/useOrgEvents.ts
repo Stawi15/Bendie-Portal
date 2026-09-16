@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getEventStatsMap, type EventStats } from '@/lib/eventStats';
-import type { Database } from '@/types/database';
+import { EVENTS_SELECT_COLUMNS, type EventRow } from '@/lib/eventColumns';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = EventRow;
 
 /**
  * Fetches every event for an organisation plus the batched per-event
@@ -23,7 +23,7 @@ export function useOrgEvents(organizationId: string | null, orgLoading: boolean)
     setLoading(true);
     const { data, error } = await supabase
       .from('events')
-      .select('*')
+      .select(EVENTS_SELECT_COLUMNS)
       .eq('organization_id', organizationId)
       .order('starts_at', { ascending: false });
 

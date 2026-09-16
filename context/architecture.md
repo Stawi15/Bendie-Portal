@@ -157,6 +157,34 @@ The mobile app additionally uses `avatars`, `post-images`, `chat-media`, and `ev
 
 ---
 
+## Cross-Project Integration (Bendie Planner)
+
+The portal also integrates with **Bendie Planner** — a separate Expo/React Native app for event
+organizers/production staff, running against its own, entirely separate Supabase project
+(different `auth.users` realm, bigint/serial IDs instead of UUIDs). This is a second, deliberately
+narrow exception to the "one Supabase project" pattern described above, not a general precedent —
+see `specs/001-bendie-planner-integration/` for the full spec/plan/tasks.
+
+- **Per-event, opt-in link** (`event_planner_links`), not automatic for every event. One Portal
+  event ↔ one Planner event, enforced by a partial unique index on the active row only.
+- **Three one-directional flows, never bidirectional for the same data type:**
+  - Members: Portal → Planner, automatic at provisioning time, staff-tier roles only.
+  - Agenda: Portal → Planner, manual ("Push to Planner" button).
+  - Travel (flight/hotel): Planner → Portal, manual ("Pull from Planner" button), read-only once
+    in Portal.
+- **Identity bridging is email-based** — the two projects share no auth realm, so a person's
+  Planner-side `profiles.id` is resolved (or created, since Planner has no auto-seed trigger on
+  signup) by matching email and cached on `profiles.planner_profile_id`.
+- **Server-only, service-role-to-service-role**: `src/lib/plannerAdmin.ts` is the one shared
+  (`server-only`-guarded) exception to this codebase's usual per-route-inlined service-role client
+  pattern — justified because 5 routes under `src/app/api/admin/planner-*` each need an identical
+  cross-project client, not because this project has adopted shared service clients generally.
+  Every one of those routes still independently re-verifies the caller is a Portal global admin
+  before touching Planner, exactly like `create-user`/`bulk-create-users`.
+- **A Planner-side failure never fails a successful Portal operation** — member sync is
+  fire-and-forget from the caller's perspective; its outcome is recorded and surfaced to admins,
+  not treated as blocking.
+
 ## Invariants
 
 - `/portal/*` is unreachable without `profiles.global_role = 'admin'` — enforced in `middleware.ts`, backstopped by RLS (never rely on middleware alone).

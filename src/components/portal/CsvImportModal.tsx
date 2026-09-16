@@ -110,12 +110,25 @@ export function CsvImportModal<T>({
     setImportProgress(0);
     let done = 0;
 
-    const importOutcomes = await runWithConcurrency(validRows, 5, async (row) => {
-      const { error } = await importRow(row.data as T);
-      done += 1;
-      setImportProgress(done);
-      return { rowIndex: row.rowIndex, success: !error, error } as ImportOutcome;
-    });
+    const importOutcomes = await runWithConcurrency(
+      validRows,
+      5,
+      async (row) => {
+        const { error } = await importRow(row.data as T);
+        done += 1;
+        setImportProgress(done);
+        return { rowIndex: row.rowIndex, success: !error, error } as ImportOutcome;
+      },
+      (row, _index, error) => {
+        done += 1;
+        setImportProgress(done);
+        return {
+          rowIndex: row.rowIndex,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unexpected error during import',
+        } as ImportOutcome;
+      }
+    );
 
     setOutcomes(importOutcomes);
     setImporting(false);

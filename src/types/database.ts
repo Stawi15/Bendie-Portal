@@ -39,6 +39,7 @@ export interface Database {
           current_organization_id: string | null;
           current_event_id: string | null;
           global_role: AppRole;
+          planner_profile_id: string | null;
         };
       };
       organizations: {
@@ -137,6 +138,20 @@ export interface Database {
           in_house: boolean;
           gallery_background: string | null;
           disabled_menu_items: string[];
+          planner_provisioning_status: 'not_required' | 'pending' | 'provisioning' | 'succeeded' | 'failed';
+          planner_provisioning_error: string | null;
+          planner_provisioning_attempts: number;
+          planner_provisioning_last_attempted_at: string | null;
+          planner_provisioning_succeeded_at: string | null;
+        };
+      };
+      event_creation_requests: {
+        Row: {
+          idempotency_key: string;
+          event_id: string;
+          organization_id: string;
+          products: string[];
+          created_at: string;
         };
       };
       event_members: {
@@ -149,6 +164,10 @@ export interface Database {
           onboarding_completed_at: string | null;
           invited_by: string | null;
           created_at: string;
+          planner_assignment_id: number | null;
+          planner_synced_at: string | null;
+          planner_sync_status: 'succeeded' | 'failed' | 'skipped' | null;
+          planner_sync_error: string | null;
         };
       };
       facilitators: {
@@ -191,6 +210,8 @@ export interface Database {
           updated_at: string;
           block_type: 'session' | 'activity' | 'meal' | 'transfer' | 'freetime' | 'ceremony' | 'break' | null;
           breakout_rooms: unknown | null;
+          planner_agenda_item_id: number | null;
+          planner_synced_at: string | null;
         };
       };
       agenda_session_speakers: {
@@ -373,6 +394,67 @@ export interface Database {
           date: string | null;
           created_at: string;
           updated_at: string;
+          source_planner_key: string | null;
+          synced_from_planner_at: string | null;
+        };
+      };
+      event_planner_links: {
+        Row: {
+          event_id: string;
+          planner_event_id: number;
+          planner_event_title: string | null;
+          is_active: boolean;
+          linked_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      organization_products: {
+        Row: {
+          organization_id: string;
+          product_key: 'bendie' | 'planner';
+          is_active: boolean;
+          enabled_at: string;
+          enabled_by: string | null;
+        };
+        Insert: {
+          organization_id: string;
+          product_key: 'bendie' | 'planner';
+          is_active?: boolean;
+          enabled_at?: string;
+          enabled_by?: string | null;
+        };
+      };
+      event_products: {
+        Row: {
+          event_id: string;
+          product_key: 'bendie' | 'planner';
+          organization_id: string;
+          enabled_at: string;
+          enabled_by: string | null;
+        };
+        Insert: {
+          event_id: string;
+          product_key: 'bendie' | 'planner';
+          organization_id: string;
+          enabled_at?: string;
+          enabled_by?: string | null;
+        };
+      };
+      organization_planner_links: {
+        Row: {
+          organization_id: string;
+          planner_organization_id: number;
+          planner_organization_name: string | null;
+          linked_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          organization_id: string;
+          planner_organization_id: number;
+          planner_organization_name?: string | null;
+          linked_by?: string | null;
         };
       };
       emergency_contacts: {

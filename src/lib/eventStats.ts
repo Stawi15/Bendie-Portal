@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
-import type { Database } from '@/types/database';
+import type { EventRow } from '@/lib/eventColumns';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = EventRow;
 
 export type EventStats = {
   peopleCount: number;

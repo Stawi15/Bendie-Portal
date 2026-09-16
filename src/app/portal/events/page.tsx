@@ -1,18 +1,43 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useOrgEvents } from '@/lib/useOrgEvents';
+import { isOrgAdmin } from '@/lib/portalAuth';
 import { EventsOverviewPanel } from '@/components/portal/EventsOverviewPanel';
 import { CreateEventModal } from '@/components/portal/CreateEventModal';
-import type { Database } from '@/types/database';
+import type { EventRow } from '@/lib/eventColumns';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = EventRow;
 
 export default function EventsPage() {
+  const { isGlobalAdmin } = useAuth();
   const { organizationId, loading: orgLoading } = useOrganization();
   const { events, loading, statsMap, addEvent } = useOrgEvents(organizationId, orgLoading);
   const [createOpen, setCreateOpen] = useState(false);
+  // Event creation is restricted to platform admins and organization owner/admin
+  // (Feature 003 / /speckit.analyze finding F3) -- events_insert_creator RLS
+  // enforces this authoritatively; this only controls whether the trigger is shown.
+  const [canCreateEvent, setCanCreateEvent] = useState(false);
+
+  useEffect(() => {
+    if (isGlobalAdmin) {
+      setCanCreateEvent(true);
+      return;
+    }
+    if (!organizationId) {
+      setCanCreateEvent(false);
+      return;
+    }
+    let cancelled = false;
+    isOrgAdmin(organizationId).then((allowed) => {
+      if (!cancelled) setCanCreateEvent(allowed);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isGlobalAdmin, organizationId]);
 
   const handleCreated = (event: Event) => {
     addEvent(event);
@@ -28,23 +53,25 @@ export default function EventsPage() {
             All events across your organisation.
           </p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="bg-primary text-white font-label-md text-label-md px-6 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span> New Event
-        </button>
+        {canCreateEvent && (
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="bg-primary text-white font-label-md text-label-md px-6 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span> New Event
+          </button>
+        )}
       </div>
 
       <EventsOverviewPanel
         events={events}
         statsMap={statsMap}
         loading={loading}
-        onCreateEvent={() => setCreateOpen(true)}
+        onCreateEvent={canCreateEvent ? () => setCreateOpen(true) : undefined}
         showFooterLink={false}
       />
 
-      {organizationId && (
+      {organizationId && canCreateEvent && (
         <CreateEventModal
           open={createOpen}
           organizationId={organizationId}

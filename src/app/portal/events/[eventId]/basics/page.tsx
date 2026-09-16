@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { EVENTS_SELECT_COLUMNS } from '@/lib/eventColumns';
 import toast from 'react-hot-toast';
 
 type BasicsForm = {
@@ -54,7 +55,7 @@ export default function BasicsPage() {
 
   useEffect(() => {
     if (!eventId) return;
-    supabase.from('events').select('*').eq('id', eventId).single().then(({ data, error }) => {
+    supabase.from('events').select(EVENTS_SELECT_COLUMNS).eq('id', eventId).single().then(({ data, error }) => {
       if (error) { toast.error('Failed to load event'); }
       else if (data) {
         setForm({

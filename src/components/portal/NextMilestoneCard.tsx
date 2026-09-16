@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import type { Database } from '@/types/database';
+import type { EventRow } from '@/lib/eventColumns';
 import type { EventStats } from '@/lib/eventStats';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = EventRow;
 
 type NextMilestoneCardProps = {
   event: Event | null;

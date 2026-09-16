@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
@@ -8,6 +9,7 @@ import { EditProfileModal } from '@/components/portal/EditProfileModal';
 import { FormModal } from '@/components/portal/FormModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { useEvent } from '@/contexts/EventContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { runWithConcurrency, getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
@@ -72,7 +74,18 @@ type IssueAccessCodeResult = {
 export default function MembersPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const { currentEvent } = useEvent();
+  const { isGlobalAdmin } = useAuth();
   const confirm = useConfirm();
+  // Members management is an event-manager surface (host/organizer/admin),
+  // not something every event member gets by virtue of being on this page's
+  // route -- Feature 003 corrective pass (F-R2). This page previously relied
+  // entirely on the old admin-only /portal middleware gate; now that ordinary
+  // event members can reach it, it needs its own management-role guard,
+  // reusing the same is_event_host_or_organizer() predicate event_members'
+  // own RLS already uses for exactly this distinction. Fails closed: nothing
+  // in this page (including fetchData's own roster read) runs until the
+  // check resolves.
+  const [canManage, setCanManage] = useState<boolean | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -105,7 +118,24 @@ export default function MembersPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (eventId) fetchData(); }, [eventId]);
+  useEffect(() => {
+    if (!eventId) return;
+    if (isGlobalAdmin) {
+      setCanManage(true);
+      return;
+    }
+    let cancelled = false;
+    setCanManage(null);
+    supabase.rpc('is_event_host_or_organizer', { ev_id: eventId }).then(({ data, error }) => {
+      if (cancelled) return;
+      setCanManage(!error && data === true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, isGlobalAdmin]);
+
+  useEffect(() => { if (eventId && canManage) fetchData(); }, [eventId, canManage]);
 
   useEffect(() => {
     const organizationId = currentEvent?.organization_id;
@@ -206,7 +236,7 @@ export default function MembersPage() {
   };
 
   const handleAddAllOrgMembers = async () => {
-    const organizationId = currentEvent?.organization_id;
+    const organizationId = await resolveOrganizationId();
     if (!organizationId) { toast.error('Could not determine this event\'s organisation'); return; }
 
     setAddingAll(true);
@@ -236,12 +266,23 @@ export default function MembersPage() {
       return;
     }
 
-    const outcomes = await runWithConcurrency(toAdd, 5, async (om) => {
-      const { error: insertError } = await supabase
-        .from('event_members')
-        .insert({ event_id: eventId, user_id: om.user_id, organization_id: organizationId, role: 'attendee' });
-      return !insertError || insertError.code === '23505';
-    });
+    const outcomes = await runWithConcurrency(
+      toAdd,
+      5,
+      async (om) => {
+        const { error: insertError } = await supabase
+          .from('event_members')
+          .insert({ event_id: eventId, user_id: om.user_id, organization_id: organizationId, role: 'attendee' });
+        if (insertError && insertError.code !== '23505') return false;
+        const pointed = await pointCurrentEventAt(om.user_id, organizationId);
+        // role is hardcoded 'attendee' here, which never syncs to Bendie
+        // Planner (see STAFF_ROLES in planner-sync-member/route.ts) — skip
+        // the guaranteed-no-op HTTP round trip rather than firing and
+        // letting the server discover the same thing every time.
+        return pointed.ok;
+      },
+      () => false
+    );
 
     const succeeded = outcomes.filter(Boolean).length;
     if (succeeded === toAdd.length) toast.success(`Added ${succeeded} member${succeeded !== 1 ? 's' : ''} to this event`);
@@ -252,7 +293,7 @@ export default function MembersPage() {
   };
 
   const handleAssignTeam = async (teamId: string) => {
-    const organizationId = currentEvent?.organization_id;
+    const organizationId = await resolveOrganizationId();
     const team = teams.find(t => t.id === teamId);
     if (!organizationId || !team) return;
 
@@ -277,12 +318,21 @@ export default function MembersPage() {
     });
     if (!proceed) { setAssigningTeam(false); return; }
 
-    const outcomes = await runWithConcurrency(toAdd, 5, async (tm) => {
-      const { error: insertError } = await supabase
-        .from('event_members')
-        .insert({ event_id: eventId, user_id: tm.user_id, organization_id: organizationId, role: 'attendee' });
-      return !insertError || insertError.code === '23505';
-    });
+    const outcomes = await runWithConcurrency(
+      toAdd,
+      5,
+      async (tm) => {
+        const { error: insertError } = await supabase
+          .from('event_members')
+          .insert({ event_id: eventId, user_id: tm.user_id, organization_id: organizationId, role: 'attendee' });
+        if (insertError && insertError.code !== '23505') return false;
+        const pointed = await pointCurrentEventAt(tm.user_id, organizationId);
+        // role is hardcoded 'attendee' here — never eligible for Bendie
+        // Planner sync, so skip the guaranteed-no-op HTTP round trip.
+        return pointed.ok;
+      },
+      () => false
+    );
 
     const succeeded = outcomes.filter(Boolean).length;
     if (succeeded === toAdd.length) toast.success(`Added ${succeeded} member${succeeded !== 1 ? 's' : ''} from "${team.name}"`);
@@ -300,12 +350,34 @@ export default function MembersPage() {
    * Only backfills current_organization_id if it was unset, so an existing
    * user's other active org context isn't silently clobbered.
    */
-  const pointCurrentEventAt = async (userId: string, organizationId: string) => {
-    const { data: profile } = await supabase.from('profiles').select('current_organization_id').eq('id', userId).maybeSingle();
-    await supabase.from('profiles').update({
+  const pointCurrentEventAt = async (userId: string, organizationId: string): Promise<{ ok: true } | { ok: false; error: string }> => {
+    const { data: profile, error: selectError } = await supabase.from('profiles').select('current_organization_id').eq('id', userId).maybeSingle();
+    if (selectError) return { ok: false, error: selectError.message };
+
+    const { error: updateError } = await supabase.from('profiles').update({
       current_event_id: eventId,
       current_organization_id: profile?.current_organization_id ?? organizationId,
     }).eq('id', userId);
+    if (updateError) return { ok: false, error: updateError.message };
+
+    return { ok: true };
+  };
+
+  /**
+   * Best-effort, fire-and-forget: attempts to make this person available in
+   * Bendie Planner if this event is linked and their role is staff-tier.
+   * Both checks happen server-side (the route no-ops otherwise) so every
+   * provisioning path can call this uniformly rather than duplicating the
+   * "is this event linked / is this role eligible" logic here. Never
+   * awaited by callers and never lets a Planner-side failure affect the
+   * Portal provisioning result it's attached to.
+   */
+  const syncToPlanner = (userId: string) => {
+    fetch('/api/admin/planner-sync-member', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId, userId }),
+    }).catch((err) => console.error('Planner member sync failed', err));
   };
 
   /**
@@ -358,9 +430,15 @@ export default function MembersPage() {
     });
     if (eventError && eventError.code !== '23505') { toast.error(eventError.message); setAddingMember(false); return; }
 
-    await pointCurrentEventAt(userId as string, organizationId);
+    const pointed = await pointCurrentEventAt(userId as string, organizationId);
+    syncToPlanner(userId as string);
 
-    toast.success(`${newMember.fullName.trim() || email} added to this event`);
+    const label = newMember.fullName.trim() || email;
+    if (pointed.ok) {
+      toast.success(`${label} added to this event`);
+    } else {
+      toast.error(`${label} added to this event, but their current event couldn't be set — they may not see it in the mobile app yet`);
+    }
     setNewMember({ email: '', fullName: '', role: 'attendee' });
     setAddOpen(false);
     setAddingMember(false);
@@ -436,7 +514,9 @@ export default function MembersPage() {
     });
     if (eventError && eventError.code !== '23505') return { error: `Joined organisation, but failed to join event: ${eventError.message}` };
 
-    await pointCurrentEventAt(userId, organizationId);
+    const pointed = await pointCurrentEventAt(userId, organizationId);
+    syncToPlanner(userId);
+    if (!pointed.ok) return { error: `Joined event, but failed to set their current event: ${pointed.error}` };
     return {};
   };
 
@@ -451,8 +531,37 @@ export default function MembersPage() {
 
   const roleCounts = members.reduce<Record<string, number>>((acc, m) => { acc[m.role] = (acc[m.role] ?? 0) + 1; return acc; }, {});
 
+  if (canManage === null) {
+    return (
+      <div className="animate-pulse space-y-2" aria-busy="true">
+        {[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}
+      </div>
+    );
+  }
+
+  if (canManage === false) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center px-4">
+        <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">lock</span>
+        <h1 className="font-headline-sm text-headline-sm text-on-surface mb-1">You don&apos;t have access to this page</h1>
+        <p className="text-body-md font-body-md text-on-surface-variant max-w-sm">
+          Managing event members requires the host, organizer, or admin role for this event.
+        </p>
+        <Link href={`/portal/events/${eventId}/dashboard`} className="btn-secondary mt-4">
+          Back to Event
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div>
+      {!isGlobalAdmin && (
+        <p className="hint mb-3">
+          Creating brand-new accounts (Import CSV / Add Member) is currently a platform-administration function.
+          You can still add existing organisation or team members and manage roles below.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <SectionHeader sectionKey="members" desc={`${members.length} member${members.length !== 1 ? 's' : ''} in this event`} />
         <div className="flex flex-wrap gap-2">
@@ -470,12 +579,25 @@ export default function MembersPage() {
           <button onClick={handleAddAllOrgMembers} disabled={addingAll} className="btn-secondary flex-shrink-0 disabled:opacity-50">
             <span className="material-symbols-outlined text-[18px]">group_add</span> {addingAll ? 'Adding…' : 'Add All Organisation Members'}
           </button>
-          <button onClick={() => setCsvOpen(true)} className="btn-secondary flex-shrink-0">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
-          </button>
-          <button onClick={() => setAddOpen(true)} className="btn-primary flex-shrink-0">
-            <span className="material-symbols-outlined text-[18px]">person_add</span> Add Member
-          </button>
+          {/* Import CSV / Add Member can create brand-new Portal accounts via
+              /api/admin/create-user and /api/admin/bulk-create-users, both of
+              which are (correctly, deliberately) platform-admin-only server
+              routes -- see F-R4 in the Feature 003 corrective pass. Event
+              managers who aren't also platform admins get a real, working
+              page (role changes, adding existing org/team members) rather
+              than controls that promise an operation the server will 403.
+              Customer-side new-account provisioning remains an explicit,
+              deferred product decision, not silently granted here. */}
+          {isGlobalAdmin && (
+            <>
+              <button onClick={() => setCsvOpen(true)} className="btn-secondary flex-shrink-0">
+                <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+              </button>
+              <button onClick={() => setAddOpen(true)} className="btn-primary flex-shrink-0">
+                <span className="material-symbols-outlined text-[18px]">person_add</span> Add Member
+              </button>
+            </>
+          )}
         </div>
       </div>
 

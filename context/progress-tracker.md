@@ -2,7 +2,34 @@
 
 Update this file after every completed feature. Any AI agent reading this should immediately know what is done, what is in progress, and what is next.
 
-**Last synced against the actual codebase:** 2026-08-19 (by reading `src/` directly — file listings, line counts, and code content — not by trusting the older planning docs, which were dated 2026-07-20 and materially stale by comparison).
+**Last synced against the actual codebase:** 2026-09-16, for the "Planner Event Workspace Foundation" (Feature 005) entry below; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
+
+---
+
+## Carry-forward requirement for the next feature: PRODUCT-LEVEL NAVIGATION + PRODUCT-AWARE EVENT DISCOVERY
+
+**Discovered:** 2026-09-16, during Feature 005's own manual browser verification (not a Feature 005 defect —
+Feature 005 was deliberately scoped as workspace-foundation only, per its own spec's Out of Scope section).
+
+**Problem:** The Portal still has only the original, single, Bendie-oriented organization/event discovery
+experience (`Organisations → Events → All`). A Planner-only event therefore appears in the same general
+event list as Bendie-only and Both events. Clicking it correctly opens Planner Overview (Feature 005 works
+exactly as specified), but its mere presence in what still reads as "the Bendie event list" can lead a user
+to assume it is a Bendie event before they click it.
+
+**Intended future product experience** (for whichever feature addresses this):
+- Bendie product context → shows events whose `event_products` contains `'bendie'`.
+- Planner product context → shows events whose `event_products` contains `'planner'`.
+- A Both event may appropriately appear in both contexts.
+- A Planner-only event should not appear as though it were a Bendie event, and vice versa.
+
+**Open questions for that feature to resolve** (not answered here — this is a carry-forward prompt, not a
+spec): how does a user enter Bendie vs. Bendie Planner as a top-level choice; where does a product
+switcher/navigation surface live; what determines the default product after login; how is the selected
+product context preserved across navigation; how does it interact with the existing organization selector
+(`OrganizationContext`/`TopHeader`'s switcher); how do direct URLs behave when an event doesn't contain the
+currently selected product context; how does organization-level entitlement (`organization_products`)
+bound which product contexts are even offered.
 
 ---
 
@@ -11,6 +38,37 @@ Update this file after every completed feature. Any AI agent reading this should
 **Phase:** Mobile-parity gap analysis (Phases 5–13) is fully closed. Only Phase 14 (nice-to-have) and Phase 15 (unrelated hardening) remain.
 **Foundation, org layer, event switcher, and all 21 content sections are built** (the original 16 plus Event Photos, Excursions, Expo Directory, News Feed, and Attendee Travel Details). Every gap found in the 2026-08-19 field-by-field comparison against `schema-reference.md` — cross-checked live against the database via the `supabase` MCP throughout — has been closed: 3 quick correctness fixes, Agenda multi-speaker/breakout-rooms, 4 brand-new content sections, a Resend Access Code action, and a cross-cutting edit-form-modal fix that turned out to affect 8 pages.
 **Next:** Nothing blocking. Optional remaining work: Phase 14 (Games Leaderboard admin view, nice-to-have, explicitly low priority in `schema-reference.md`) or Phase 15 (MFA/TOTP enforcement, Networking drag-to-reorder, `ComingSoonPanel.tsx` decision, test coverage, `event-files` bucket UI, `types/database.ts` drift check — all pre-existing open items unrelated to mobile parity). Also worth a real browser click-through pass at some point — every phase this session was verified via `type-check`/`lint` only, never in a running app.
+
+**2026-09-16 — Event-discovery outage found and fixed (brownfield, pre-dates Feature 005):** manual browser
+testing surfaced that ordinary users saw zero events anywhere in the Portal — every org's dashboard/Events
+list, and the event workspace itself, silently came up empty. Root cause: a Feature 004 migration correctly
+narrowed `events`' client-facing SELECT grant to a specific column list (excluding the diagnostic-only
+`planner_provisioning_error`), but 4 call sites (`useOrgEvents.ts`, `EventContext.tsx` ×3,
+`CreateEventModal.tsx`, `basics/page.tsx`) still did `.select('*')` — which Postgres denies in full the
+instant the requesting role lacks SELECT on even one column, and each call site's own error handling
+silently swallowed that failure into an empty state. Fixed by replacing every `.select('*')` on `events`
+with an explicit column list matching the actual grant (`src/lib/eventColumns.ts`); no RLS or migration
+change — the grant itself was correct. Live-verified with a real authenticated (non-service-role) session:
+`403 permission denied` before, correct per-org event counts after, cross-tenant/draft isolation unaffected.
+Full details in `schema-reference.md`'s changelog entry of the same date.
+
+**2026-09-16 — Feature 004 post-convergence corrective fix: Planner-inclusive event creation was
+RLS-blind to its own mapping table (brownfield, discovered while preparing a Feature 005 manual-test
+fixture — not a Feature 005 defect):** an ordinary org owner/admin (not a platform admin) could never
+create a Planner-inclusive event, even with a genuinely valid `organization_planner_links` mapping —
+three places in the creation/provisioning flow read that admin-only-RLS table through the caller's own
+session instead of a privileged client, so each silently saw "no mapping" for exactly the population this
+flow exists to serve. Fixed: removed the redundant, non-authoritative preflight in
+`src/app/api/events/create/route.ts` (the RPC's own `SECURITY DEFINER` check already guarantees the
+FR-019 zero-write contract on its own); switched the genuine TOCTOU re-check in
+`src/lib/plannerEventProvisioning.ts` and the staff-auto-sync read in `src/lib/plannerStaffSync.ts` to the
+already-available `portalAdmin` service-role client; removed the equivalently-blind advisory UI check in
+`CreateEventModal.tsx`. No RLS/policy or migration change — the restrictive policy was correct and
+intentional. Live-verified end-to-end with a real non-platform-admin org-admin session against the real
+route: creation, Planner provisioning, canonical link, and creator staff-sync all now succeed; the
+zero-write missing-mapping guarantee, platform-admin creation, cross-tenant denial, and ordinary-member
+denial were all re-confirmed live and unaffected. Full details in `schema-reference.md`'s changelog entry
+of the same date. Feature 005 manual browser verification remains paused pending review of this fix.
 
 ---
 
@@ -207,6 +265,577 @@ Not part of the mobile-parity work — a UI bug reported directly: every list-ba
 - **Lesson for future phases:** `EVENT_SECTIONS` (`eventSectionMeta.ts`) is the tab source of truth, but `SECTION_CHECKS` in `dashboard/page.tsx` is a second, easy-to-forget place that must stay in sync with it — any future new section needs an entry here too, or the Dashboard crashes outright rather than degrading gracefully. Worth flagging in `build-plan.md`/`ui-registry.md` as a required step whenever a new tab ships.
 - **Not done:** no browser verification (no browser tool available this session) — the user's own console dump is what surfaced this, so it should be re-checked in the running app to confirm the Dashboard now renders cleanly for an event with all section types.
 
+### Bendie Planner Integration ✅ Built (2026-09-11)
+
+Cross-project integration with Bendie Planner (a separate Expo/React Native app for event
+organizers, its own Supabase project). Full Spec Kit workflow followed: constitution → spec →
+plan → tasks → analyze → Phase A live verification → implementation, at `specs/001-bendie-planner-integration/`.
+
+- [x] New per-event, opt-in link (`event_planner_links`) — one Portal event ↔ one Planner event,
+  enforced by a **partial unique index** on `planner_event_id` (`WHERE is_active = true`) so an
+  unlinked Planner event can be reused by a different Portal event later, matching the "actively
+  linked" wording in the approved spec. New "Bendie Planner" tab (`bendie-planner/page.tsx`) is
+  the control surface — link/unlink, member sync status, agenda push, travel pull.
+- [x] **Members (Portal → Planner, automatic)**: staff-tier roles only (host/organizer/admin/
+  facilitator/staff/speaker) — ordinary attendees are never synced. Identity bridged by email;
+  Planner has no `auth.users` → `profiles` auto-seed trigger (confirmed live), so a missing
+  Planner account is created explicitly, with partial-failure handling so an auth user is never
+  silently treated as fully provisioned if the profile insert fails. Fire-and-forget from all four
+  existing provisioning paths in `members/page.tsx` — a Planner-side failure never fails the
+  Portal provisioning action it's attached to. Bundled fix: `handleAddAllOrgMembers`/
+  `handleAssignTeam` were missing the `pointCurrentEventAt` call that `handleAddMember`/
+  `importMemberRow` already had — same "missing event" bug flagged previously, fixed here since
+  it's the same hook point this feature needed anyway.
+- [x] **Agenda (Portal → Planner, manual)**: "Push to Planner" button, idempotent (upserts on
+  `agenda_sessions.planner_agenda_item_id`, never duplicates), never deletes Planner-side content.
+  Speaker names are flattened via the same two-flat-queries-joined-in-code pattern `agenda/page.tsx`
+  already uses — not a PostgREST embedded select, which was never actually used/verified anywhere
+  in this codebase.
+- [x] **Travel (Planner → Portal, manual)**: "Pull from Planner" button, flight + hotel only
+  (ground transfer deferred). Matching is scoped to the linked event's own members by email;
+  unmatched Planner passengers are skipped and reported, never attached to the wrong person.
+  Planner-sourced rows are marked with `source_planner_key` and enforced read-only via two new
+  **restrictive** RLS policies on `attendee_travel_details` (blocking client `INSERT`/`UPDATE`
+  when `source_planner_key IS NOT NULL`) — `SELECT`/`DELETE` stay governed by the table's existing
+  policies, since the approved spec's "read-only" language is consistently edit-scoped, not
+  delete-scoped. The pull route's writes go through the Portal service-role client specifically —
+  the authenticated client would be blocked by the same restrictive policies.
+- [x] Migration `supabase/migrations/bendie_planner_integration.sql` — no numeric prefix; live
+  verification found this repo's actual migration-naming convention dropped the old `NNN_` scheme
+  after `018`, so the file matches every migration since.
+- [x] `src/lib/plannerAdmin.ts` — shared, `server-only`-guarded service-role client for Planner's
+  project (the one exception to this codebase's per-route-inlined service-role client pattern,
+  justified by 5 new routes needing an identical cross-project client).
+- **Not done / deferred (explicitly out of scope, not an oversight):** ordinary-attendee sync,
+  ground-transfer sync, agenda breakout/sub-item sync, automatic/continuous agenda sync, agenda
+  delete-sync, organization-level Planner linking, role-change/removal sync, an automatic retry
+  system for failed syncs.
+- **Live-verified in a follow-up session (2026-09-13)**, once the real `PLANNER_SUPABASE_SERVICE_ROLE_KEY`
+  was supplied: a full real browser + real dev server pass exercised every `quickstart.md` scenario
+  end-to-end (linking, duplicate-link rejection, unlink, cross-event reuse-after-unlink, staff-tier
+  sync with real Planner identity/assignment creation, attendee exclusion, agenda push idempotency
+  and update-in-place, no-delete-on-push, travel pull matching/idempotency/value-refresh, the
+  restrictive-RLS negative tests via a genuine non-service-role client, and the non-admin
+  authorization checks). All temporary test accounts/data were created and fully deleted afterward.
+  **Two real bugs were found and fixed in the process:**
+  1. `attendee_travel_details`'s dedupe key was originally a *partial* unique index
+     (`WHERE source_planner_key IS NOT NULL`) — correct in intent, but PostgREST's
+     `.upsert(..., { onConflict: 'event_id,source_planner_key' })` cannot target a partial index
+     without repeating its predicate, so every real travel pull failed with `"there is no unique or
+     exclusion constraint matching the ON CONFLICT specification"`. Fixed by replacing it with a
+     plain `UNIQUE (event_id, source_planner_key)` constraint — Postgres never treats two `NULL`s as
+     conflicting, so manual rows were never actually at risk either way; the partial predicate was
+     protecting against something that couldn't happen, at the cost of breaking the real upsert.
+  2. The travel-pull route only added a Planner passenger to the `unmatchedEmails` report when they
+     *had* an email that failed to match — a passenger with no email on file at all was silently
+     dropped from the count entirely, under-reporting exactly the case FR-022 most needs surfaced.
+     Fixed to report every unmatched traveler regardless of reason, using a name-based fallback
+     label when no email exists.
+  Both fixes were retested live and confirmed; `lint`/`type-check`/`build` were rerun clean after
+  each.
+- **JSM `/code-review` hardening pass (2026-09-13)**, verdict APPROVED WITH MINOR FINDINGS: fixed 4
+  of 7 findings — unchecked query errors in `planner-pull-travel` (was silently reporting a failed
+  Planner query as "nothing to pull"), unwrapped `getPlannerAdminClient()` calls in two routes (now
+  matches `planner-sync-member`'s existing try/catch), a profile-lookup failure in
+  `planner-sync-member` misreported as "no email on file", and a documented-but-unenforced
+  `planner_sync_status` CHECK constraint (closed via a corrective migration,
+  `add_planner_sync_status_check.sql`; live rows were all `NULL`, safe to add). 2 findings — a
+  Planner-side `event_user_assignments` concurrency race, and a lost-response duplicate-insert edge
+  case in agenda push — were investigated in depth but left as accepted residual risk: both genuine
+  fixes require a Planner-side schema change, and this feature does not own or modify Planner's
+  schema (confirmed again by checking that every plausible existing free-text column on
+  `event_agenda_items` is already in real use by Planner's own data — there was no safe way to reuse
+  existing schema for the second one). 1 finding (`STAFF_ROLES` duplicated across two files) was
+  left as-is — no existing shared constant of that shape exists in this codebase to centralize it
+  into. See `plan.md`'s Remaining Technical Risks for the full write-up of both accepted risks.
+- **Planner schema hardening (2026-09-14)**: the user explicitly approved closing the two
+  previously-accepted residual risks with real Planner-side schema changes. Live introspection
+  before applying anything found `event_user_assignments` **already** carries a live
+  `UNIQUE (event_id, profile_id)` constraint (contradicting the earlier "no unique constraint"
+  finding from the original T033 pass — that finding is now known to be stale) with zero existing
+  duplicates, so no Planner DDL was needed for the concurrency fix — only
+  `planner-sync-member/route.ts` was changed to a database-backed `.upsert(..., { onConflict:
+  'event_id,profile_id' })` against that existing constraint, closing the race atomically. For the
+  agenda lost-response case, one new Planner-side column was applied via `apply_migration` on the
+  `supabase-planner` MCP (Planner's own tracked migration history):
+  `event_agenda_items.source_portal_session_id uuid NULL`, guarded by a plain
+  `UNIQUE (event_id, source_portal_session_id)` — deliberately plain, not partial, learning directly
+  from the earlier `attendee_travel_details` upsert bug. `planner-push-agenda/route.ts` now always
+  upserts on that key. Both fixes were live-verified, including a genuine concurrency test for the
+  assignment race and a simulated lost-response state for the agenda case. See `data-model.md` and
+  `plan.md` for full detail.
+- **Second JSM `/review` pass (2026-09-14)**, 10 further findings triaged with the user: 6 fixed now
+  (identity-creation race, ILIKE wildcard identity mismatch, silently-swallowed `pointCurrentEventAt`
+  errors, an unhandled worker rejection in `runWithConcurrency` that could strand the CSV/bulk-import
+  UI mid-import, a stale `organizationId` source in the two bulk member-add paths, and an incorrect
+  travel date/time fallback chain), 2 fixed as small/mechanical (a guaranteed no-op Planner-sync HTTP
+  call from attendee-only bulk adds; two raw Tailwind color classes swapped for real design tokens
+  where one existed), 1 deferred by explicit instruction (sequential per-session writes in the agenda
+  push loop — a throughput concern, not correctness), 1 no-action (role-change re-sync — confirmed
+  already out of MVP scope per `spec.md`'s Assumptions).
+  - `planner-sync-member/route.ts`: email lookups now escape `%`/`_` before `ilike()` (previously a
+    real identity-misrouting risk — live-verified against a same-shaped decoy Planner profile that
+    an unescaped `_` would have wrongly matched); `createUser()` failures of any shape (not just the
+    clean `email_exists` code — live-verified that real concurrent load can surface a noisier error
+    for the same underlying race) now trigger a bounded re-fetch recovery instead of a permanent
+    failure. Live-verified with 6 simultaneous first-time syncs for one person converging on exactly
+    one Planner identity.
+  - `members/page.tsx`: `pointCurrentEventAt` now surfaces select/update errors to every caller
+    instead of discarding them; the two bulk-add paths now resolve `organizationId` via the same
+    `resolveOrganizationId()` fetch `handleAddMember`/CSV import already used (closing the
+    possibly-stale-context risk for real, not just partially), and skip the guaranteed-no-op
+    Planner-sync call entirely for their hardcoded-attendee inserts.
+  - `csvImport.ts`'s `runWithConcurrency` now takes a required `onWorkerError` mapper so a thrown
+    (not just returned-as-failed) worker item settles the batch instead of rejecting it outright —
+    all three real callers (`CsvImportModal`, `bulk-create-users/route.ts`, `members/page.tsx`'s bulk
+    paths) updated; live-verified the pure function directly (a genuinely throwing item is isolated,
+    the batch still settles, other items are unaffected).
+  - `planner-pull-travel/route.ts`: flight `boarding_time`/`date` are now derived by one explicit
+    rule (date from `date_time` only, time from `depart_time` falling back to `departuretime`) —
+    live-verified against 4 representative flight rows covering the real production shape, a missing
+    time, and a missing date; the old code could produce a raw time string where a date was expected.
+  - `bendie-planner/page.tsx` (`failed` status badge → `bg-error-container`/`text-on-error-container`)
+    and `attendee-travel/page.tsx` ("From Planner" badge → `bg-secondary-container`/
+    `text-on-secondary-container`) now use real tokens where one existed; the `succeeded` (green)
+    badge was left as a raw class — no success/green token exists anywhere in this project's design
+    system (`tailwind.config.js` only defines primary/secondary/tertiary/error).
+  All temporary test accounts/data (Portal and Planner) were created and fully deleted afterward.
+
+### Organization Product Entitlements & Event Product Foundation ✅ Built (2026-09-16)
+
+Feature 002 of the "Planner Portal Experience" initiative — the first foundational feature toward
+turning the Portal into a multi-product platform (Bendie / Bendie Planner / both). Followed the
+full Spec Kit workflow (specify → plan → tasks → analyze → implement) at
+`specs/002-event-product-model-organization-mapping/`. **Schema/types/docs only — zero UI, zero
+API routes, zero change to the current Bendie experience or to feature 001.**
+
+- [x] **`organization_members` was NOT created — it already existed live** (composite PK, role
+  `CHECK` constraint, `is_organization_member()`/`is_organization_admin()` RLS helpers, already
+  used across 9 existing files). This was the single most important finding of this feature's
+  planning phase — an earlier draft assumed it needed to be built before live inspection found it
+  already fully wired up.
+- [x] **`organization_products`** (new) — organization-level product entitlement
+  (`organization_id`, `product_key` `'bendie'|'planner'`, `is_active`, `enabled_at`/`enabled_by`).
+  Platform-admin-only write; organization members can read their own organization's entitlements
+  only.
+- [x] **`event_products`** (new) — which product(s) an event uses. A real, unbypassable database
+  constraint (a composite FK to `organization_products`, plus a consistency trigger modeled
+  directly on `event_members`'s own existing `enforce_event_member_integrity()`) makes it
+  impossible for an event to use a product its organization isn't entitled to.
+- [x] **`organization_planner_links`** (new) — durable Portal-organization ↔ Bendie-Planner-organization
+  mapping, tenant-isolated via `UNIQUE (planner_organization_id)` (the same Planner organization
+  can never be mapped from two different Portal organizations). Platform-admin-only, no
+  Planner-organization creation of any kind.
+- [x] Backfill derived entitlement/product rows only from real existing data (never a blanket
+  grant) — every organization with ≥1 event got `bendie`; every organization with ≥1
+  *actively-linked* event additionally got `planner`; matching `event_products` rows for every
+  event. Two-phase, order-dependent within one migration (organization entitlements before event
+  products, since the FK requires the former first). Live result: 6 `organization_products` rows,
+  16 `event_products` rows — idempotency re-confirmed by re-running the backfill.
+- [x] **`event_planner_links` (feature 001) is completely untouched** — same schema, same
+  semantics. An event using both products never auto-creates a link; that stays feature 001's
+  separate, manual mechanism, confirmed via a full live regression pass (linking, staff sync,
+  agenda push, travel pull all re-verified working after the migration).
+- [x] Full live verification: all 20 `tasks.md` verification tasks (T009–T028, T001–T008 being
+  setup/schema/type work) passed against the real database — backfill correctness, idempotency,
+  the entitlement invariant, the org-consistency trigger, duplicate rejection on both new tables,
+  cascade-on-delete at both the event and organization level, RLS (member reads own org only,
+  every write path platform-admin-only, no self-service membership/promotion/entitlement-granting),
+  platform-admin cross-tenant access with zero fake memberships, and multi-organization membership
+  (confirmed via existing real data — a user with 6 organization memberships mixing `member`/`owner`
+  roles). All temporary test accounts/data (Portal and Planner) were created and fully deleted
+  afterward.
+- [x] `lint`/`type-check`/`build` all clean.
+- **Not done / deferred, explicitly out of scope for this feature:** any UI (organization/product
+  selector, dashboard switcher, entitlement management), automatic Planner organization/event
+  creation, billing/subscriptions/payments, invitations, non-global-admin Portal access. All belong
+  to later features in this same initiative.
+
+### Organization & Event Access Foundation ✅ Built (2026-09-15)
+
+Feature 003 (`specs/003-organization-event-access-foundation/`). Opens `/portal` to authenticated
+customer organization members (not just `profiles.global_role = 'admin'`), while establishing a
+strict, live-verified separation between organization membership and event content access —
+without building product-aware event creation or any Planner workspace module (deferred to a
+future Feature 004).
+
+- [x] **Portal admission widened** (`middleware.ts`) — platform admins unchanged; a customer is
+  admitted only if they hold ≥1 live `organization_members` row (checked via a new, similarly
+  60s-cached `portal_org_membership_cache` cookie, reusing the existing role-cache pattern). A
+  customer with zero memberships lands on a new safe empty state, `/portal/no-access`
+  (`src/app/portal/no-access/page.tsx`), never `/unauthorized`. The cache is admission-UX-only —
+  every resource-level check re-derives its answer live from RLS/`organization_members`, never
+  trusts the cookie.
+- [x] **New RLS policy** — `events_select_org_admin` (migration
+  `organization_admin_event_metadata_visibility.sql`) lets an organization `owner`/`admin` see
+  event *metadata* (id, name, status, dates, `event_products`) for every event in their own
+  organization without an `event_members` row, reusing the existing `is_organization_admin()`
+  helper verbatim. Additive only — `event_members` and all content-table RLS are untouched.
+- [x] **New server-side authorization module**, `src/lib/eventAuth.ts` —
+  `canViewEventMetadata` / `requireEventWorkspaceAccess` (event *workspace/content* access,
+  requiring both an explicit `event_members` row **and** that the event belongs to the caller's
+  currently *selected* organization — a real gap found during `/speckit.analyze`: a multi-org user
+  can legitimately hold `event_members` in more than one organization) / `isProductActiveForOrg` /
+  `isProductAvailableForEvent` (`organization_products.is_active = true` **and** a matching
+  `event_products` row — mere row existence is never sufficient).
+- [x] **`EventContext`/event layout workspace guard** — a successful `events` row fetch no longer
+  implies workspace access (the new metadata policy above would otherwise let an org admin's tab
+  shell render for events they hold no `event_members` on). `EventContext` now independently calls
+  `requireEventWorkspaceAccess`; the event layout renders a forbidden state instead of the tab
+  shell when it's denied, live-verified against the exact "org admin can see metadata but not
+  content" attack scenario.
+- [x] **Product-aware navigation, enforced as access control, not just UX** — `EVENT_SECTIONS`
+  gained a `product: 'bendie' | 'planner' | 'shared'` field (all 24 existing tabs classified
+  `'bendie'`; no tab is `'planner'` yet — no Planner workspace module exists to classify). The
+  event layout both hides an unavailable product's tab link *and* blocks direct URL navigation to
+  it (a second `/speckit.analyze` finding: navigation filtering alone would not have stopped a
+  bookmarked/direct URL from reaching real content once an entitlement went inactive).
+- [x] **`getAccessibleEvents()`** (`src/lib/portalAuth.ts`) gained a real non-admin branch — one
+  organization-scoped query, letting RLS (not client-side role branching) determine which rows come
+  back per caller. It previously hard-returned `[]` for every non-admin.
+- [x] **Security-compatibility fix found during `/speckit.analyze`, not originally in scope**:
+  live inspection found `events_insert_creator` RLS permitted *any* organization member (not just
+  owner/admin) to create events, and `organizations_insert_creator` permitted *any* authenticated
+  user (no membership at all) to create a new organization — both harmless only because middleware
+  previously blocked all non-admins from `/portal`. A second migration,
+  `event_and_organization_creation_admin_restriction.sql`, tightens both back to their effective
+  pre-feature scope (event creation: org owner/admin; organization creation: platform-admin-only),
+  with the "New Event"/"New Organisation" UI triggers gated to match
+  (`events/page.tsx`, `portal/page.tsx`, `QuickActionsCard.tsx`, `TopHeader.tsx`).
+- [x] Full live verification against the real database and running app (real temporary test
+  users/organizations/events, fully cleaned up afterward): the org-admin-metadata-vs-workspace
+  attack scenario, cross-tenant denial, multi-org role isolation (admin in Org A / member in Org B
+  never gets Org-A-level visibility in Org B), the selected-organization-scoping gap, active/inactive
+  product-entitlement gating (including a temporary, restored `is_active` flip on a real
+  organization), the two creation-restriction RLS changes (both denial and continued-capability
+  paths), platform-admin bypass with zero `organization_members`/`event_members` rows, Feature 001's
+  `bendie-planner` tab and all 5 `planner-*` API routes (still independently admin-gated,
+  unaffected), and Feature 002's `organization_products`/`event_products`/`organization_planner_links`
+  row counts and RLS all confirmed unchanged.
+- [x] `lint`/`type-check`/`build` all clean (only pre-existing, unrelated warnings).
+- **Not done / deferred, explicitly out of scope for this feature:** product-aware event creation
+  (Bendie/Planner/Both picker), automatic `event_products` creation at event-creation time, Planner
+  organization creation/linking UI, Planner event provisioning, any Planner workspace module,
+  event-organization reassignment (explicitly prohibited). All belong to a future Feature 004.
+
+#### Corrective pass (independent post-implementation review) ✅ Built (2026-09-15)
+
+An independent `/code-review` after the initial 51/51-task pass found 2 BLOCKING gaps and 4 lower-
+severity findings. All are now addressed (2 fixed as designed, 1 fixed with a bug found and
+corrected mid-verification, 1 fixed conservatively, 2 investigated and explicitly documented rather
+than silently changed):
+
+- [x] **F-R1 (BLOCKING, fixed)** — `EventLayout` (`src/app/portal/events/[eventId]/layout.tsx`)
+  previously fell through to render `children`/the tab shell while the workspace/product
+  authorization checks were still pending, not just while denied. Rewritten as an explicit
+  CHECKING → AUTHORIZED/DENIED state machine — a loading skeleton renders for both the workspace
+  check and the per-tab product-availability check; nothing protected mounts until both resolve.
+- [x] **F-R2 (BLOCKING, fixed)** — the Members page (`members/page.tsx`) had no management-role
+  guard (any `event_members` row, including `attendee`, got the full role-management UI), and
+  `event_members_update_self_or_host`'s RLS separately permitted a user to change their **own**
+  `role` unconditionally — a live self-role-escalation path once Feature 003 admitted ordinary
+  customers. Fixed at both boundaries: a new migration
+  (`event_members_role_self_promotion_guard.sql`, finalized as
+  `event_members_role_guard_role_setting_fix.sql` after two live-verification-driven corrections —
+  see below) adds a `BEFORE UPDATE` trigger rejecting any `role` change unless the caller is a
+  platform admin or `is_event_host_or_organizer(event_id)`; the Members page itself now fails
+  closed on that same predicate before rendering anything.
+  **Bug found and fixed during this same pass's own live verification**: the first two attempts at
+  exempting legitimate service-role writes from the new trigger (`current_user = 'service_role'`,
+  then `session_user = 'service_role'`) were both wrong — `current_user` reflects the function
+  owner inside a `SECURITY DEFINER` trigger, and `session_user` is always the pooled `authenticator`
+  role under this project's PostgREST connection setup regardless of caller. The correct signal,
+  confirmed via a temporary debug probe, is `current_setting('role', true) = 'service_role'`.
+- [x] **F-R5 (security-adjacent, fixed)** — the Bendie Planner integration tab
+  (`bendie-planner/page.tsx`) is an administrative Feature 001 surface (all 5 `planner-*` API
+  routes have only ever authorized platform admins) that previously relied entirely on the old
+  admin-only `/portal` gate. Added a platform-admin-only page guard (fail-closed, same pattern as
+  F-R2); its `product: 'bendie'` navigation classification is unchanged (product classification and
+  administrative role are different concerns).
+- [x] **F-R4 (handled conservatively)** — org/event managers admitted to the Members page under
+  Feature 003 could see "Import CSV"/"Add Member" controls that 403 server-side (both call
+  platform-admin-only `create-user`/`bulk-create-users` routes, correctly left unweakened). Those
+  two controls are now hidden for non-platform-admin managers, with an inline note that new-account
+  provisioning remains a deferred capability; "Add All Organisation Members"/"Assign a Team"
+  (existing-account only) remain visible.
+- [x] **Re-audit performed** across all 24 event tabs for the same pattern: found that ~15 ordinary
+  content tables (agenda, facilitators, activities, etc.) grant write access to any `event_members`
+  row, not host/organizer/admin-restricted — assessed as pre-existing, deliberately-hardened
+  collaborative-content-editing design (no privilege/role column involved, unlike `event_members`),
+  not a second privilege escalation. No code changed for this.
+- [ ] **F-R3 (documented, not fixed)** — `events_insert_creator`'s org-creator fallback clause is
+  pre-existing (predates Feature 003) but is now more practically reachable under widened admission.
+  Reported as an explicit open decision for before `/speckit.converge`, not silently resolved either
+  way — see `specs/003-organization-event-access-foundation/research.md` addendum item 18.
+- [ ] **F-R6 (documented, deferred)** — duplicated `canCreateEvent` authorization effect between
+  `events/page.tsx` and `portal/page.tsx`; LOW-severity maintainability debt, no security impact.
+- [x] **Additional bug found and fixed live during this pass's own verification (not one of the
+  original review findings)**: `EventContext.loadEvents()` unconditionally overwrote
+  `currentEventId`/`currentEvent` with "the first accessible event" once its own network call
+  resolved, racing against — and deterministically beating — `EventLayout`'s synchronous
+  `setCurrentEvent(eventId)` for the event actually named in the URL. Live-observed effect:
+  navigating directly to a workspace-denied event silently displayed a *different*,
+  legitimately-accessible event's dashboard instead, with the URL still showing the denied event's
+  id. Fixed with an `explicitEventIdRef` that `loadEvents()` now defers to regardless of async
+  resolution order; re-verified live.
+- [x] Full live regression re-run after all corrections: self-role-escalation denied, legitimate
+  manager role-changes preserved, non-role self-updates preserved, Members/Bendie-Planner forbidden
+  states correctly rendered for unauthorized roles, the event-selection race fixed and re-verified,
+  platform-admin behavior preserved, Feature 001/002 unaffected, all temporary test data cleaned up.
+
+#### Second corrective pass (second independent review) ✅ Built (2026-09-15)
+
+A second independent `/code-review` found the first corrective pass incomplete in three ways.
+All four findings are now resolved:
+
+- [x] **R2-F1 (F-R3 now actually resolved)** — the product decision was made explicitly:
+  historical creator identity is audit data, not authorization. `events_insert_creator` no longer
+  contains the `organizations.created_by = auth.uid()` fallback — only
+  `created_by = auth.uid() AND is_organization_admin(organization_id)` remains. Live-verified: a
+  former creator removed from an organization's membership is denied event creation; current
+  owner/admin, platform admin, ordinary member, unrelated user, and a manipulated `organization_id`
+  all behave exactly as the approved rule requires.
+- [x] **R2-F2/R2-F3 (EventContext redesign)** — the first pass's `explicitEventIdRef` fix closed
+  only one specific race. Replaced with two coordinated mechanisms: `latestEventIdRef` (every async
+  writer of `currentEvent`/`canAccessWorkspace` compares its own target event against this before
+  committing state, discarding stale out-of-order responses) and `hasExplicitEventRef` (scoped to
+  the navigation lifecycle via a new `clearCurrentEvent()` call on `EventLayout` unmount, instead of
+  permanently latching after the first event visit). Live-verified across authorized↔unauthorized
+  navigation, rapid back-and-forth sequences, leaving the event route, and switching organizations.
+- [x] **R2-F4 (Planner sync metadata database-layer protection)** — the first pass's Bendie Planner
+  fix was UI-only; `event_members.planner_sync_status`/`planner_sync_error` remained readable by any
+  ordinary event member via a direct client query. Consumer-mapped first (3 real consumers found),
+  then fixed with column-level database privileges. **A first attempt was live-tested and found not
+  to work** — `REVOKE SELECT (columns)` while a table-level SELECT grant remained is a documented
+  PostgreSQL no-op (the table-level grant subsumes column REVOKEs); confirmed by inspecting
+  `pg_class.relacl` directly. Corrected: revoke the table-level SELECT entirely, then grant SELECT
+  back only on the safe columns; platform-admin reads now go through a new `SECURITY DEFINER`
+  function, `get_event_planner_sync_status()`, which re-verifies `portal_is_global_admin()` itself.
+  Live-verified: direct customer read denied (`42501`), unrelated columns still readable, RPC denies
+  non-admins and serves admins correctly, and the real Feature 001 write path (an admin's own
+  authenticated-session `UPDATE`, not service-role) is unaffected since only SELECT was revoked.
+- [x] Role-escalation guard and its service-role exemption re-confirmed unweakened after touching
+  `event_members` migrations again.
+- [x] Full 23-item live security regression re-run; `lint`/`type-check`/`build` all clean; all
+  temporary test data and the diagnostic probe function used to root-cause the R2-F4 first-attempt
+  failure cleaned up; baseline (7 organizations, 16 events) unchanged.
+- [x] `lint`/`type-check`/`build` all clean after the corrective pass.
+
+#### Third corrective pass (third independent review) ✅ Built (2026-09-15)
+
+A third independent review found six remaining issues, five database/reproducibility-focused
+(R3-F1, R3-F2, R3-F3, R3-F5) and two `EventContext` concurrency/consistency issues (R3-F4, R3-F6).
+On investigation, R3-F2, R3-F3, and R3-F5's database fixes, and R3-F4/R3-F6's `EventContext`
+redesign, were found **already implemented and (for the database fixes) already live** from an
+earlier, uncommitted session of this same corrective pass — this pass's job was to verify each is
+actually correct and complete (not assume it), close the one gap it found, and bring everything
+under documentation/tasks.md, since none of it had been recorded there yet.
+
+- [x] **R3-F1 (migration ordering, fixed via documented bootstrap order, not a rename)** —
+  `add_planner_sync_status_check.sql` sorts alphabetically *before*
+  `bendie_planner_integration.sql` (the migration that adds the column the CHECK constraint
+  targets). Empirically reproduced against a disposable local Postgres 15 container: naive
+  alphabetical replay crashes with `column "planner_sync_status" does not exist`, aborting the
+  whole replay — no later corrective migration can fix this, since the replay never reaches
+  anything after a hard crash. This repository has no `supabase/config.toml`, no installed CLI
+  convention, and no script anywhere globs this directory (confirmed by full-repo search) — the
+  only real apply mechanism is the Supabase MCP `apply_migration` tool, order-independent of local
+  filenames. Fix: `supabase/migrations/MIGRATION_ORDER.md`, a manifest documenting the exact
+  required fresh-bootstrap order (derived from the live project's actual `list_migrations` history,
+  the ground truth), declared the one supported bootstrap process for this repo — replacing, not
+  supplementing, any assumption of naive alphabetical replay. Neither original file was renamed or
+  edited, per this repository's migration-immutability rule. Re-tested empirically in the correct
+  order: succeeds.
+- [x] **R3-F2 (authorization helper functions, already fixed live, verified + one gap closed)** —
+  `supabase/migrations/000_authorization_helper_functions_baseline.sql` (found already applied live,
+  version `20260915130254`) brings `portal_is_global_admin`, `is_global_admin`,
+  `is_organization_member`, `is_organization_admin`, `is_event_member`, `is_event_host_or_organizer`,
+  and `is_event_manager` under version control — all were previously live-only, referenced by
+  migrations from `006_global_admin_rls_bypass.sql` onward with no `CREATE FUNCTION` anywhere in
+  committed history. Verified byte-for-byte against live `pg_get_functiondef()` output — exact
+  match, not reconstructed from memory. Full dependency audit (grepping every `public.<fn>(` call
+  across all committed migrations against every `CREATE FUNCTION` in them) found one more gap the
+  review didn't name: `public.set_updated_at()`, called by a `CREATE TRIGGER` in Feature 002's
+  `organization_and_event_product_foundation.sql`, also had no committed source. Closed with a new
+  migration, `shared_trigger_helper_functions_baseline.sql`, applied live (idempotent no-op against
+  the current database) and verified byte-identical to the live definition.
+- [x] **R3-F3 (role-guard final-state replay, already fixed live, verified)** — the
+  `event_members` role-immutability trigger function went through four migrations live, in true
+  chronological order ending with the correct, service-role-exempting body — but the four filenames
+  sort alphabetically in the *opposite* order, which would leave the *original, broken* body in
+  place after a naive replay (no error, silently wrong). Already fixed (found already applied live,
+  version `20260915130515`) via `zz_event_members_role_guard_final_authoritative.sql`, named to sort
+  after every other filename in this repository and re-apply the correct body with
+  `CREATE OR REPLACE FUNCTION` regardless of what ran before it. Empirically re-verified against the
+  disposable Postgres container: replaying all five files in pure alphabetical order still ends with
+  the correct, service-role-exempting body. Unlike R3-F1, this class of problem (silently-wrong
+  final state, not a hard crash) is fully self-healing by a later-sorting corrective file — no
+  manifest entry was required for correctness, though the pair is documented in
+  `MIGRATION_ORDER.md` for completeness.
+- [x] **R3-F4 (EventContext ABA staleness, already redesigned, verified + one bug fixed)** — found
+  `EventContext.tsx` already rewritten (uncommitted) to two independent generation counters
+  (`eventGenerationRef` for `currentEvent`/`currentEventId`/`events`; `workspaceGenerationRef` for
+  `canAccessWorkspace`/`workspaceAccessChecked`, bumped unconditionally on every run of the
+  workspace-check effect regardless of which dependency triggered it) — the correct fix for the
+  second corrective pass's `latestEventIdRef` gap (it compared a response's target eventId against
+  "the current eventId," which cannot distinguish two different requests for the *same* event,
+  exactly R3-F4's X→Y→X case). Full async-writer audit performed as required found one real,
+  previously-unflagged bug: three early-return branches in the org-switch effect's `loadEvents()`
+  forced `setLoading(false)` unconditionally on a *stale* (superseded) response, which could
+  prematurely clear the loading indicator while a newer, still-in-flight generation's own fetch was
+  the one that should own that state. Fixed by removing the forced clears from the two genuinely
+  stale branches, leaving only the properly generation-gated `finally` block (and the one
+  non-stale early-return, which is unaffected) responsible for `loading`. Verified via a standalone
+  deterministic script using deferred promises (not browser timing),
+  `specs/003-organization-event-access-foundation/verify-event-context-aba.mjs`: both the
+  same-event ABA case (X₁→Y→X₂, X₂ resolves first, X₁ resolves last) and the cross-organization ABA
+  case (Org A/X₁→Org B→Org A/X₂, stale Org A/X₁ resolves last) pass — the stale response is
+  correctly discarded in both.
+- [x] **R3-F6 (events-array organization consistency, already fixed)** — found already implemented:
+  `loadEvents()` now calls `setEvents(fullEvents)` for the current generation regardless of whether
+  an explicit event route is active, and only the *auto-selection* step below that (choosing and
+  fetching a default `currentEvent`) is suppressed by `hasExplicitEventRef`. An organization switch
+  also now clears `events` to `[]` immediately (not just `currentEvent`/`currentEventId`) while the
+  new organization's fetch is in flight, so `events` can never continue silently representing the
+  previous organization. Verified by code inspection of the exact control flow (not re-forced with a
+  live adversarial timing test this pass, consistent with the second pass's own documented
+  precedent for this class of guarantee).
+- [x] **R3-F5 (Planner-status RPC EXECUTE lockdown, already fixed live, verified)** — found already
+  applied live (version `20260915130736`): `REVOKE EXECUTE ON FUNCTION
+  public.get_event_planner_sync_status(uuid) FROM PUBLIC, anon`. Verified via `pg_proc.proacl`
+  directly: only `postgres`, `authenticated`, and `service_role` hold EXECUTE — no PUBLIC or `anon`
+  grant remains. The function's internal `portal_is_global_admin()` check is untouched and remains
+  the actual authorization boundary for which `authenticated` caller succeeds.
+- [x] **Full dependency/reproducibility audit performed** (not limited to the six named findings):
+  compared all 26 locally-committed migration files against the live project's full 62-entry
+  `list_migrations` history. Finding: **36 migrations applied live have no committed `.sql` source
+  at all** (`015_fix_storage_allow_all_and_org_assets` through
+  `allow_global_admin_update_any_profile`, spanning teams, storage, leaderboard/points, chat,
+  notifications, facilitators, and more — all pre-dating Feature 001 and unrelated to it), plus one
+  Feature-001-era migration (`fix_attendee_travel_details_planner_key_constraint`) and two temporary
+  debug migrations. Of ~58 live `public` schema functions, only 14 have committed source (the 7 in
+  `000_authorization_helper_functions_baseline.sql`, `set_updated_at`, `get_event_planner_sync_status`,
+  `enforce_event_member_role_immutability`, `enforce_event_product_org_consistency`, and the 3 audit-log
+  functions in `014_activity_log_setup.sql`) — confirming **a brand-new database cannot reach the
+  current live schema/security state from committed migrations alone**, for reasons entirely
+  predating and unrelated to Feature 003. Per this repository's scope-discipline rule
+  (`AGENTS.md` — document and flag pre-existing issues, fix only what blocks the current feature),
+  this gap is documented here and in `context/schema-reference.md`'s "Fresh-bootstrap
+  reproducibility" section, not reconstructed — recreating ~36 historical migrations from live
+  state was judged clearly out of this pass's scope and too risky to attempt without being asked
+  (mirrors R3-F2's own "do not reconstruct security-sensitive functions from guesses" instruction,
+  applied to the broader gap it sits inside). Within Feature 003's own migrations specifically, no
+  ordering violation beyond R3-F1/R3-F3 was found (one filename/true-order mismatch was found
+  between `organization_admin_event_metadata_visibility.sql` and
+  `organization_and_event_product_foundation.sql` but confirmed functionally inconsequential — the
+  two touch independent policy/table domains).
+- [x] Live re-confirmation (read-only) that nothing touched by earlier passes regressed:
+  `events_insert_creator`/`organizations_insert_creator` policy text, `event_members` Planner-column
+  SELECT grants (still excluding the 4 Planner columns for `authenticated`/`anon`), and all
+  `events`/`organizations` RLS policy text match the second corrective pass's documented final
+  state exactly.
+- [x] `lint`/`type-check`/`build` (`next build`) all clean; no new warnings in any file this pass
+  touched. No temporary test data was created this pass (all verification was read-only live
+  queries plus a disposable, fully-torn-down local Postgres container used only for the R3-F1/R3-F3
+  ordering proofs).
+
+#### F-NEW-1 correction (final narrow verification's one new finding) ✅ Built (2026-09-15)
+
+The final narrow verification (post-third-review) found one new MEDIUM finding: R2-F4/R3-F5's
+Planner-metadata hardening closed SELECT and RPC EXECUTE exposure but never applied the same fix to
+UPDATE — `authenticated`/`anon` still held table-level UPDATE/INSERT on `event_members` covering the
+four Planner-managed columns, letting an ordinary event member forge their own row's Planner sync
+state (e.g. `planner_sync_status = 'succeeded'`) via a direct PostgREST call.
+
+- [x] **Fixed at the database privilege layer**, not RLS, not a new RPC —
+  `event_members_planner_metadata_update_privilege_fix.sql` revokes the table-level INSERT/UPDATE
+  grant from `authenticated`/`anon` and re-grants both only on the existing customer-safe column set,
+  mirroring the proven SELECT fix exactly. INSERT was closed alongside UPDATE, a deliberate small
+  scope addition (documented, not silent): the self-insert policy has the identical root cause and
+  would otherwise leave an equivalent forgery path open at row creation.
+- [x] **A second pitfall found live while verifying the fix itself**: `GRANT INSERT, UPDATE
+  (column_list) ON t TO role` only applies the column list to the last-listed privilege — the first
+  applied version silently left INSERT unrestricted at the table level. Caught via direct
+  `pg_class.relacl` inspection, corrected to two separate single-privilege `GRANT` statements.
+- [x] **Legitimate Feature 001 write path preserved**: `planner-sync-member/route.ts`'s two
+  `event_members` UPDATE calls now use the Portal service-role client instead of the caller's
+  authenticated session — the same established pattern its sibling route
+  (`planner-pull-travel/route.ts`) already uses for an equivalent system-managed-field problem. No
+  new RPC introduced.
+- [x] Live-verified against the real Postgres privilege engine (rolled-back transactions, no
+  residual state): ordinary `authenticated` role denied UPDATE on all four Planner columns and
+  denied INSERT setting them; safe-column UPDATE still passes; `service_role` UPDATE of Planner
+  columns still passes. Role-escalation guard and Planner SELECT restriction re-confirmed unweakened.
+- [x] `lint`/`type-check`/`build` all clean.
+
+## Feature 004 — Event Product Selection & Planner Provisioning ✅ Built (2026-09-16)
+
+Full Spec Kit lifecycle run (`/architect` equivalent → `/speckit.specify` → `/speckit.clarify` →
+`/speckit.plan` → `/speckit.tasks` → `/speckit.analyze` → `/speckit.implement`), documented in
+`specs/004-event-product-selection-planner-provisioning/`. Makes event creation product-aware and
+closes a pre-existing gap: the previous creation flow (`CreateEventModal.tsx`'s direct browser
+`INSERT`) wrote only an `events` row — no `event_products`, no `event_members` — for **any** product
+mix, meaning a newly created event's own creator had no workspace access to it under Feature 003's
+access model. Also adds the genuinely new capability of provisioning a real Bendie Planner event (and
+its Portal-side counterpart mapping) when Planner is selected.
+
+- [x] **Product-aware creation, atomic Portal foundation**: new `SECURITY DEFINER` RPC
+  `create_event_with_products` atomically creates the `events` row, its `event_products` (Bendie-only,
+  Planner-only, or Both — never inferred, never silently expanded), the creator's `event_members`
+  row (`role='admin'`, uniform across all three product mixes), and the initial Planner-provisioning
+  state, behind a new server route (`POST /api/events/create`) replacing the old direct client insert.
+  Own internal authorization/entitlement/mapping re-verification, independent of the calling route
+  (defense in depth) — including a mapping re-check added during `/speckit.analyze` to close a TOCTOU
+  gap the first implementation draft would have missed.
+- [x] **Planner provisioning**: for Planner-only/Both selections, a synchronous cross-database
+  orchestration (`src/lib/plannerEventProvisioning.ts`) provisions a real Planner-side event using a
+  deterministic, collision-proof `event_code` (`'PORTAL-' || events.id`), recovers rather than
+  duplicates on retry, and writes the counterpart via the **existing, unmodified** `event_planner_links`
+  table — no second mapping concept introduced. An explicit five-column provisioning-state machine on
+  `events` (`not_required`/`pending`/`provisioning`/`succeeded`/`failed`) replaces relying on link
+  presence/absence as a proxy signal.
+- [x] **`event_planner_links` semantic broadening handled**: `event_planner_links` now legitimately
+  represents both Planner-only and Both events, not only Both as under Feature 001's original design.
+  Audited all 5 Feature 001 Planner routes; found (confirmed via direct code inspection, not assumed)
+  that `planner-push-agenda` and `planner-pull-travel` gated solely on link existence — both now also
+  require `'bendie'` in `event_products`, since their entire purpose is moving *Bendie*-side content.
+  `planner-sync-member` (staff/counterpart access) correctly left ungated — access is not
+  product-specific. The creator's own staff-eligible sync now reuses this exact same capability
+  (extracted to `src/lib/plannerStaffSync.ts`, shared by both the admin route and the new creation
+  flow) rather than a second implementation.
+- [x] **Provisioning-column security, closing a near-repeat of Feature 003's F-NEW-1 finding**: the
+  five new `events` provisioning columns are system-managed. `/speckit.analyze` found the first
+  migration draft restricted only `SELECT`, leaving `INSERT`/`UPDATE` fully exposed via `events`'
+  existing table-level grant + `events_update_host_organizer`'s RLS (which now covers the creator this
+  feature itself grants `admin` on their own event) — closed with the full table-level-revoke-then-
+  explicit-regrant pattern for all three privilege types, covering only the 33 pre-existing columns.
+- [x] **Idempotency, both layers**: creation-request idempotency (`event_creation_requests`, keyed by
+  a client-generated UUID, now comparing the full payload — not just the key — after `/speckit.analyze`
+  found the first draft would have silently returned an unrelated event on a conflicting-payload
+  reuse) and Planner-provisioning idempotency (the deterministic `event_code` as lookup-before-insert
+  anchor, including an explicit `mapping_drift` failure path for the case where a Planner event already
+  exists under a *different* Planner organization than the one currently mapped — also found and closed
+  during `/speckit.analyze`, previously undefined).
+- [x] **Concurrency**: a compare-and-swap `UPDATE ... WHERE planner_provisioning_status IN
+  ('pending','failed')` claim, not an advisory lock (the Planner HTTP call isn't inside a database
+  transaction) — a losing concurrent attempt makes no Planner API call at all.
+- [x] `lint`/`type-check`/`build` all clean against the full implementation.
+- [x] **Migrations applied and live-verified**: both Supabase projects were in scheduled maintenance
+  for part of this session (all code/migration files were written in the meantime); once they returned,
+  all 4 migrations were applied and independently re-verified (`pg_class.relacl`,
+  `information_schema.column_privileges`, `pg_proc.proacl`/`proconfig`). `create_event_with_products`
+  was exercised end-to-end for Bendie-only, Planner-only (through to a real linked Planner event), and
+  Both selections; both `/speckit.analyze` HIGH findings and both MEDIUM findings were each
+  independently reproduced and confirmed fixed against the real privilege engine; the Feature 001
+  guards were confirmed both necessary and effective; Feature 003 hardening re-confirmed unweakened.
+  All temporary test data cleaned up; baseline counts on both projects (7 orgs/16 events; 2 orgs/13
+  events) exactly restored. Five narrow scenarios (deliberate Planner-side failure injection, a
+  multi-actor retry-endpoint HTTP matrix requiring a running server, and three related failure/recovery
+  permutations) were not independently exercised as isolated tests — see
+  `specs/004-event-product-selection-planner-provisioning/tasks.md`'s "Implementation status" note for
+  the exact accounting and the one genuine design note it surfaced (a row stuck at `provisioning` from
+  a real crash is not auto-recovered by retry — a documented, intentional MVP limitation, not a gap).
+
 ### Phase 14 — Games: Leaderboard Admin View (nice-to-have)
 
 - [ ] Read-only panel calling `get_leaderboard(p_event_id, p_limit)`
@@ -219,6 +848,157 @@ Not part of the mobile-parity work — a UI bug reported directly: every list-ba
 - [ ] Automated test coverage (no test suite exists yet)
 - [ ] Portal upload UI for the `event-files` bucket (mobile app already reads it)
 - [ ] Verify `types/database.ts` against live schema (it's hand-maintained, drift risk)
+
+### Feature 004 post-review corrective pass (2026-09-16)
+
+An independent review found five actionable findings, all resolved and live-verified — see
+`specs/004-event-product-selection-planner-provisioning/research.md` §21 and `tasks.md` Phase 12
+(T091–T109) for full detail:
+
+- **R1**: `PlannerProvisioningBanner` now truthfully distinguishes a recently-`pending`/`provisioning`
+  event from one stale past `PLANNER_PROVISIONING_STALE_AFTER_MS` (`src/lib/
+  plannerProvisioningStaleness.ts`, 5 minutes) — shows a "contact your administrator or support"
+  message for the stale case, never a Retry button for `provisioning` either way. No automatic
+  stale-reclaim was added; a genuinely stuck row still requires manual/admin database intervention
+  (unchanged, accepted MVP limitation).
+- **R2**: `contracts/retry-planner-provisioning.md` corrected — it previously falsely claimed the
+  retry endpoint defensively reclaims a stuck `provisioning` row.
+- **R3**: `create_event_with_products` (new migration `create_event_with_products_race_auth_
+  validation_fix.sql`) now wraps its creation sequence in a `BEGIN…EXCEPTION WHEN unique_violation`
+  block so a concurrent same-idempotency-key race recovers gracefully (loser's own rows roll back via
+  the implicit SAVEPOINT, then it returns the winner's event) instead of surfacing a raw `23505`.
+- **R4**: authorization is now re-checked before the idempotency-replay fast-return path in the same
+  function — a caller who loses their organization role can no longer replay an old idempotency key to
+  read back an existing event.
+- **R5**: duplicate values in `p_products` (e.g. `['bendie','bendie']`) now raise a clean
+  `invalid_request` instead of a raw `event_products_pkey` violation; product order is canonicalized
+  for idempotency comparison only.
+
+### Feature 005 — Planner Event Workspace Foundation ✅ Built (2026-09-16)
+
+Full Spec Kit lifecycle (architecture discovery → `/speckit.specify` → `/speckit.clarify` →
+`/speckit.plan` → `/speckit.tasks` → four `/speckit.analyze` passes with narrow correction cycles in
+between → `/speckit.implement`), at `specs/005-planner-event-workspace-foundation/`. The first real
+Planner-facing screen inside Portal: a read-only Planner Overview, usable by any ordinary event
+workspace member (not only platform admins), plus a fix for a foundation-only gap Feature 004
+deliberately left open.
+
+- [x] **Architecture correction, made before specifying anything**: the sibling repo initially assumed
+  to be Bendie Planner's client (`Evently-App`) turned out, on live inspection, to be Bendie's own
+  attendee-facing app sharing Portal's database — Bendie Planner has no local client source anywhere in
+  this workspace. Every Planner-specific fact in this feature is grounded in the live Bendie Planner
+  Supabase schema/RLS (inspected via the `supabase-planner` MCP) and this codebase's own existing
+  Feature 001/004 integration code instead.
+- [x] **Data-source correction, found during `/speckit.clarify`**: the originally-assumed session-status
+  source (`session_status_realtime`/`session_summary_realtime`/`overall_session_summary`) was live-verified
+  to have a usable row for only 1 of Bendie Planner's 13 live events, and to be internally inconsistent
+  even there (a real bug in Planner's own refresh job). The Overview's session/production summary was
+  narrowed to what a separate, genuinely reliable materialized view — `event_summary_realtime` — actually
+  supports: a total session count and a date-derived event phase, not a pending/active/completed
+  breakdown. Verified live (this session) to return a real `number_of_sessions = 0` row for zero-session
+  events, not a missing one — a legitimate ready state, never treated as an error.
+- [x] **Planner Overview** (`src/app/portal/events/[eventId]/planner-overview/page.tsx`, backed by
+  `GET /api/events/[eventId]/planner-overview`) shows event identity (title, description, location,
+  start/end/setup date) and the session summary above. Explicitly excludes attendee count, participants,
+  flights, accommodation, transfers, staff identities, task/checklist/vendor content, blueprints,
+  notifications, and agenda content — none of those are touched by this feature.
+- [x] **New narrow server-only data-access module**, `src/lib/plannerOverview.ts` — one explicit-column
+  read against `event_summary_realtime` (`getPlannerOverviewSummary`) and one pure precedence function
+  (`resolvePlannerOverviewStatus`) implementing the provisioning/link-state precedence table exactly:
+  `planner_provisioning_status` is evaluated *before* counterpart-link presence, so an active
+  `event_planner_links` row is never treated as sufficient authority to load Planner data once status
+  says `failed` (or while it's still `pending`/`provisioning`). Reuses Feature 004's existing
+  `isPlannerProvisioningStale()` unchanged — no second state machine.
+- [x] **`src/lib/eventAuth.ts` adaptation**: `requireEventWorkspaceAccess`/`isProductActiveForOrg`/
+  `isProductAvailableForEvent` gained an optional, defaulted `client: SupabaseClient` parameter (plain
+  `SupabaseClient`, not `SupabaseClient<Database>` — matching this codebase's existing untyped-client
+  convention) so the new server route can reuse the identical Feature 003 authorization logic with its
+  own cookie-bound server client, instead of forking a second copy. Every existing call site (which
+  passes no fourth argument) is unchanged — confirmed by the whole-project `type-check` passing.
+- [x] **Live-verified, not assumed**: `event_planner_links` has exactly one RLS policy
+  (`FOR ALL USING (portal_is_global_admin())`) — an ordinary caller's own session can never read it, even
+  for their own event. The new route resolves the canonical counterpart via the Portal service-role
+  client for this one lookup, exactly matching how `plannerEventProvisioning.ts` already *writes* to this
+  table. Missing this would have silently reported "unavailable" to every ordinary event member.
+- [x] **Deterministic Planner-only landing**: one `useEffect` added to `EventLayout`
+  (`src/app/portal/events/[eventId]/layout.tsx`), keyed on the same product-availability state the tab
+  bar already computes — when Bendie is unavailable and Planner is available on the (still hardcoded,
+  unchanged) `.../dashboard` entry point, it redirects to `.../planner-overview` instead of rendering the
+  existing blocked state. Bendie-only and Both events take no new code path (Bendie stays available for
+  both, so the condition never matches) — no other entry-point link needed touching.
+- [x] **Navigation**: exactly one new `EVENT_SECTIONS` entry, `planner-overview`, classified
+  `product: 'planner'` — reuses the existing product-filtering/route-blocking mechanism Feature 003 built
+  unchanged. No product switcher, no placeholder tabs for future Planner modules.
+- [x] **Verification performed this session**: `lint`/`type-check`/`build` all clean, zero new warnings.
+  The provisioning/link precedence function was unit-tested standalone against all 10 named state
+  combinations (10/10 passed, including both explicitly-flagged contradictory ones). The exact
+  `event_summary_realtime` and `organization_products`/`event_products` queries were live-verified against
+  a temporary real fixture (organization, event, product/link rows) for both a zero-session and a
+  33-session Planner event, then fully deleted. Static checks (grep-confirmed) verified no reference to
+  `event_user_assignments`, `attendees`, or the excluded Planner views anywhere in the new files, and that
+  the route accepts no client-suppliable input beyond the URL's own event id.
+- **Not performed this session, explicitly left as open verification rather than assumed**: full
+  browser/HTTP-level walkthroughs (real login, real navigation, observing actual rendered states) for the
+  navigation/landing/UI-rendering scenarios and the remaining regression checks against Features
+  001/002/003/004 — see `tasks.md`'s "Implementation-pass verification status" note for the exact
+  accounting of what was and wasn't exercised, and why.
+- [x] **Post-implementation review corrections (2026-09-16, same day)**: `/code-review` found 5 genuine
+  defects (F1–F5, all Medium/Low) in the shipped code above; all five fixed, no migration, no scope
+  expansion. F1 — the organization-selection fallback in the new route only handled a `null`
+  `current_organization_id`, not a **stale** one (set but no longer a valid membership); corrected to
+  mirror `OrganizationContext`'s exact fallback (`accessible.find(o => o.id === saved) ?? accessible[0]`),
+  re-verified with a standalone 5-case unit test. F2 — `bendie-planner`'s tab classification
+  (`product: 'bendie'` since Feature 003, predating Planner-only events) silently made Feature 001's
+  admin surface unreachable for Planner-only events despite linking/staff-sync already being documented
+  as product-mix-agnostic; reclassified `product: 'shared'` in `eventSectionMeta.ts` — see
+  `schema-reference.md`'s corrected page-visibility-vs-operation-authorization matrix for the full
+  before/after. F3 — a genuine `event_planner_links` query failure was silently falling through to
+  `status: 'unavailable'` instead of `backend_error`; fixed. F4 — the Overview page's fetch had no
+  stale-response guard; added the same `requestIdRef` generation-counter pattern already used by
+  `EventContext.tsx`. F5 — `resolvePlannerOverviewStatus` (Feature 005 above) was split into a
+  link-independent `resolveProvisioningPhase` plus the original combined function, so
+  `event_planner_links` is queried (and the Portal service-role client constructed at all) only for the
+  one `succeeded`-status case that genuinely needs it — re-verified with a standalone 13-case unit test
+  (12 precedence combinations + the deferral property). `lint`/`type-check`/`build` re-run clean after
+  every fix. Full accounting in `specs/005-planner-event-workspace-foundation/tasks.md`'s
+  "Post-implementation review-correction pass" note.
+- [x] **Final corrective re-review pass (2026-09-16, same day)**: a second `/code-review` re-review found
+  one genuine Medium — the F1 fallback's "first accessible membership" wasn't provably deterministic
+  between the browser (`getAccessibleOrganizations()`, an embedded-join query) and the server (this
+  route's plain-select query), since neither carried an explicit order and Postgres/PostgREST gives no
+  same-row-order guarantee across two structurally different queries. Fixed by adding the identical
+  `.order('organization_id', { ascending: true })` to both — a pure, product-meaningless tie-break, not a
+  new fallback rule — re-verified via live SQL against a real 6-membership user (both shapes agree once
+  ordered) and a synthetic adversarial-order test (8/8 passed). Also closed three Low findings from the
+  same re-review: two error-discard patterns in `src/lib/eventAuth.ts`/this route's own memberships query
+  (added server-side-only logging, no behavior change) and a `bendieActive` initial-value race in
+  `bendie-planner/page.tsx` (now defaults `false`, fail closed). One Low nav-visibility observation
+  (the now-`'shared'` `bendie-planner` tab is visible to ordinary event members, not just platform admins
+  — a pre-existing `EventLayout` characteristic widened, not introduced, by F2) left as reported follow-up
+  debt, not fixed, per explicit instruction not to introduce new role-aware navigation logic in this pass.
+  `lint`/`type-check`/`build` re-run clean.
+- [x] **Runtime verification pass (2026-09-16, same day)**: real authenticated-HTTP-session verification
+  against the actual running `next dev` server — two Supabase Auth test users created via the standard
+  Admin API, signed in for genuine tokens, session cookie hand-built in the exact `@supabase/ssr` format
+  and used for real `curl` requests (same code path a browser takes, minus DOM rendering). Confirmed live:
+  401/403 (unauthenticated, zero-membership), F1's null- and stale-selection fallback (both resolve to the
+  same deterministic organization), valid-selection preservation, cross-tenant/wrong-org/org-without-
+  membership denials, platform-admin override, the full Bendie-only/Planner-only/Both product matrix,
+  ready + zero-session rendering, every provisioning state including both contradiction cases (failed/
+  provisioning with an active link never becomes `ready`), all succeeded+link-integrity states, an ordinary
+  member with zero Planner-side identity loading Overview successfully, and Feature 001's admin routes
+  still denying an ordinary session. All 16 dedicated test events + both test users fully deleted and
+  cleanup verified (zero residual rows). Found and fixed a `.next` dev-cache corruption this session's own
+  earlier `npm run build` runs caused against the pre-existing dev server (affected every page, not a
+  Feature 005 defect) by restarting the dev server cleanly. Not performed — genuinely unavailable in this
+  environment, not assumed: actual browser rendering (tab bar, redirects, banners, responsive layout), the
+  F4 client-side race (inherently unobservable via HTTP alone), and `backend_error` (would require
+  degrading real credentials, explicitly out of bounds). No source code changed; no task checkbox changed
+  — tasks.md's "Runtime verification pass" note has the full accounting.
+- **Deferred to future features, by design**: Planner staff/coordinator roster, Planner `event_user_assignments`
+  reconciliation with Portal's `event_members`, and every full operational Planner module (Tasks, Agenda
+  editing, Participants, Flights, Accommodation, Transfers, Event Access, Blueprints, Checklist, Vendors,
+  Notifications) — this feature is workspace-foundation only.
 
 ---
 

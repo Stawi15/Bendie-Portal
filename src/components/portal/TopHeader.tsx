@@ -19,7 +19,7 @@ type TopHeaderProps = {
 export function TopHeader({ onOpenNav }: TopHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile, logout } = useAuth();
+  const { profile, isGlobalAdmin, logout } = useAuth();
   const { organization, organizations, setCurrentOrganization, addOrganization, organizationId, loading: orgLoading } = useOrganization();
   const { events } = useOrgEvents(organizationId, orgLoading);
   const { entries: activityEntries, loading: activityLoading, unreadCount, markAllRead } = useRecentActivity(organizationId, orgLoading);
@@ -95,17 +95,19 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                     )}
                   </button>
                 ))}
-                <div className="border-t border-outline-variant mt-2 pt-2">
-                  <button
-                    onClick={() => {
-                      setOrgMenuOpen(false);
-                      setCreateOrgOpen(true);
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-base">add</span> New Organisation
-                  </button>
-                </div>
+                {isGlobalAdmin && (
+                  <div className="border-t border-outline-variant mt-2 pt-2">
+                    <button
+                      onClick={() => {
+                        setOrgMenuOpen(false);
+                        setCreateOrgOpen(true);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base">add</span> New Organisation
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -143,17 +145,19 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                       )}
                     </button>
                   ))}
-                  <div className="border-t border-outline-variant mt-2 pt-2">
-                    <button
-                      onClick={() => {
-                        setOrgMenuOpen(false);
-                        setCreateOrgOpen(true);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-base">add</span> New Organisation
-                    </button>
-                  </div>
+                  {isGlobalAdmin && (
+                    <div className="border-t border-outline-variant mt-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setOrgMenuOpen(false);
+                          setCreateOrgOpen(true);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-base">add</span> New Organisation
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             )}

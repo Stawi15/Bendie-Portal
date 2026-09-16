@@ -28,10 +28,25 @@ export async function canManageEvent(eventId: string): Promise<boolean> {
 }
 
 /**
- * Get all events accessible to the current user.
- * Global admins (profiles.global_role = 'admin') see ALL events.
+ * Get all events accessible to the current user, scoped to `organizationId`
+ * for non-admins (Feature 003 FR-007/FR-011).
+ *
+ * Global admins (profiles.global_role = 'admin') see ALL events, unchanged.
+ *
+ * For everyone else, this issues one organization-scoped query and lets RLS
+ * determine which rows actually come back per caller -- an organization
+ * owner/admin sees every event in the organization via the additive
+ * events_select_org_admin policy (event METADATA visibility only, never
+ * workspace/content access — see src/lib/eventAuth.ts), an ordinary member
+ * sees only events they hold an explicit event_members row for via the
+ * existing events_select_member policy. No role branching happens here:
+ * branching on a client-known role would duplicate what RLS already has to
+ * enforce authoritatively, and would risk trusting a stale/client-side role
+ * claim instead of the database's own answer.
  */
-export async function getAccessibleEvents(): Promise<
+export async function getAccessibleEvents(
+  organizationId?: string | null
+): Promise<
   Array<{
     id: string;
     name: string;
@@ -52,16 +67,26 @@ export async function getAccessibleEvents(): Promise<
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.global_role !== 'admin') return [];
+    if (profile?.global_role === 'admin') {
+      // Global admins see all events, ordered by most recent
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, name, status, starts_at')
+        .order('starts_at', { ascending: false });
 
-    // Global admins see all events, ordered by most recent
+      if (error || !data) return [];
+      return data;
+    }
+
+    if (!organizationId) return [];
+
     const { data, error } = await supabase
       .from('events')
       .select('id, name, status, starts_at')
+      .eq('organization_id', organizationId)
       .order('starts_at', { ascending: false });
 
     if (error || !data) return [];
-
     return data;
   } catch (err) {
     console.error('Error fetching accessible events:', err);
@@ -106,10 +131,22 @@ export async function getAccessibleOrganizations(): Promise<
       return data;
     }
 
+    // Explicit, deterministic order on the base `organization_members` row (not the
+    // embedded `organizations` object — `.order()` without `foreignTable` always
+    // targets the query's own `.from()` table) — review finding: without this, this
+    // query and the structurally different plain-select fallback query
+    // Feature 005's `GET /api/events/[eventId]/planner-overview` route runs against
+    // the same table had no shared ordering guarantee, so index [0] (used by both as
+    // the "no usable saved selection" fallback) was not provably the same organization
+    // in both places. `organization_id` was chosen deliberately as a pure tie-break —
+    // it carries no product meaning (not join date, not name, not entitlement) — so
+    // this fixes determinism only, without silently redefining "the fallback
+    // organization" as "oldest membership" or any other new semantic.
     const { data, error } = await supabase
       .from('organization_members')
       .select('organizations(id,name,slug,created_by,created_at,updated_at)')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('organization_id', { ascending: true });
 
     if (error || !data) return [];
 

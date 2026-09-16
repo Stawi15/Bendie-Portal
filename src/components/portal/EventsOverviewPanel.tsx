@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { Database } from '@/types/database';
+import type { EventRow } from '@/lib/eventColumns';
 import type { EventStats } from '@/lib/eventStats';
 import { EVENT_STATUS_LABELS, EVENT_STATUS_PILL_CLASSES } from '@/lib/portalLabels';
 
-type Event = Database['public']['Tables']['events']['Row'];
+type Event = EventRow;
 
 type Tab = 'all' | 'draft' | 'upcoming' | 'live';
 const TABS: { key: Tab; label: string }[] = [
@@ -34,7 +34,8 @@ type EventsOverviewPanelProps = {
   events: Event[];
   statsMap: Record<string, EventStats>;
   loading: boolean;
-  onCreateEvent: () => void;
+  /** Omit (or pass undefined) when the caller isn't permitted to create an event -- hides the empty-state button. */
+  onCreateEvent?: () => void;
   title?: string;
   /** Max rows to show; omit to show every event matching the active tab. */
   limit?: number;
@@ -82,9 +83,11 @@ export function EventsOverviewPanel({
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 px-6">
           <p className="text-on-surface-variant text-sm mb-4">No events in this view yet.</p>
-          <button onClick={onCreateEvent} className="btn-primary">
-            Create Event
-          </button>
+          {onCreateEvent && (
+            <button onClick={onCreateEvent} className="btn-primary">
+              Create Event
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto">

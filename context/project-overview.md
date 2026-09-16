@@ -67,6 +67,7 @@ Global admins (`profiles.global_role = 'admin'`) see and manage **every** organi
 /portal/events/[eventId]/event-photos      → Organizer-curated event photos (separate from gallery — see below)
 /portal/events/[eventId]/games             → Quiz games and trivia
 /portal/events/[eventId]/members           → Event members and access codes
+/portal/events/[eventId]/bendie-planner    → Link to Bendie Planner; member sync status, agenda push, travel pull
 /portal/events/[eventId]/activity-log      → Per-event audit trail
 ```
 
@@ -102,6 +103,9 @@ The 16 event tabs are defined once in `src/lib/eventSectionMeta.ts` (`EVENT_SECT
 - Image upload (event assets + org assets) with a public-read, admin-write bucket
 - Org-wide and per-event activity log (audit trail)
 - Role-gated access (`global_role = 'admin'` only, enforced in middleware + RLS)
+- Per-event, opt-in integration with Bendie Planner (a separate app/Supabase project for event
+  organizers): staff-tier member sync, agenda push, and flight/hotel travel pull — see
+  `architecture.md`'s Cross-Project Integration section
 
 ## Features Out of Scope
 

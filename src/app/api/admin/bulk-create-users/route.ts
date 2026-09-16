@@ -74,28 +74,36 @@ export async function POST(request: NextRequest) {
       fullName: typeof u.fullName === 'string' ? u.fullName.trim() : undefined,
     }));
 
-  const results = await runWithConcurrency<BulkUserInput, BulkUserResult>(inputs, 10, async (input) => {
-    if (!input.email) return { email: input.email, error: 'Email is required' };
+  const results = await runWithConcurrency<BulkUserInput, BulkUserResult>(
+    inputs,
+    10,
+    async (input) => {
+      if (!input.email) return { email: input.email, error: 'Email is required' };
 
-    // Same silent, no-email account provisioning as /api/admin/create-user —
-    // these accounts sign in via the Evently-App's event-access codes, not
-    // email/password here.
-    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+      // Same silent, no-email account provisioning as /api/admin/create-user —
+      // these accounts sign in via the Evently-App's event-access codes, not
+      // email/password here.
+      const { data: created, error: createError } = await adminClient.auth.admin.createUser({
+        email: input.email,
+        email_confirm: true,
+        user_metadata: input.fullName ? { full_name: input.fullName } : undefined,
+      });
+
+      if (createError || !created?.user) {
+        return { email: input.email, error: createError?.message ?? 'Failed to create user' };
+      }
+
+      if (input.fullName) {
+        await adminClient.from('profiles').update({ full_name: input.fullName }).eq('id', created.user.id);
+      }
+
+      return { email: input.email, id: created.user.id };
+    },
+    (input, _index, error) => ({
       email: input.email,
-      email_confirm: true,
-      user_metadata: input.fullName ? { full_name: input.fullName } : undefined,
-    });
-
-    if (createError || !created?.user) {
-      return { email: input.email, error: createError?.message ?? 'Failed to create user' };
-    }
-
-    if (input.fullName) {
-      await adminClient.from('profiles').update({ full_name: input.fullName }).eq('id', created.user.id);
-    }
-
-    return { email: input.email, id: created.user.id };
-  });
+      error: error instanceof Error ? error.message : 'Unexpected error while creating this user',
+    })
+  );
 
   return NextResponse.json({ results });
 }
