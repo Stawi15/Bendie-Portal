@@ -45,7 +45,14 @@ export async function canManageEvent(eventId: string): Promise<boolean> {
  * claim instead of the database's own answer.
  */
 export async function getAccessibleEvents(
-  organizationId?: string | null
+  organizationId?: string | null,
+  // Corrective fix (Feature 016 continuation, performance investigation) —
+  // same reasoning as `getAccessibleOrganizations`' `knownUser` param: its
+  // one real caller (`EventContext`) already has the user and their
+  // `global_role` from `AuthContext` by the time it calls this, so passing
+  // them through skips two redundant sequential Supabase round trips.
+  // Optional and backward-compatible.
+  knownUser?: { id: string; globalRole: string | null }
 ): Promise<
   Array<{
     id: string;
@@ -55,19 +62,21 @@ export async function getAccessibleEvents(
   }>
 > {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return [];
+    let globalRole: string | null;
 
-    // Check if user is a global admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('global_role')
-      .eq('id', user.id)
-      .single();
+    if (knownUser) {
+      globalRole = knownUser.globalRole;
+    } else {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return [];
 
-    if (profile?.global_role === 'admin') {
+      const { data: profile } = await supabase.from('profiles').select('global_role').eq('id', user.id).single();
+      globalRole = profile?.global_role ?? null;
+    }
+
+    if (globalRole === 'admin') {
       // Global admins see all events, ordered by most recent
       const { data, error } = await supabase
         .from('events')
@@ -98,8 +107,21 @@ export async function getAccessibleEvents(
  * Get all organisations accessible to the current user.
  * Global admins (profiles.global_role = 'admin') see ALL organisations;
  * everyone else sees only the organisations they belong to via organization_members.
+ *
+ * Corrective fix (Feature 016 continuation, performance investigation) —
+ * this function previously always called `supabase.auth.getUser()` (a real
+ * network round trip to Supabase Auth) and then a SEPARATE
+ * `profiles.select('global_role')` query, even though its one real caller
+ * (`OrganizationContext`) already has both the user id and the full profile
+ * (including `global_role`) available from `AuthContext` by the time it
+ * calls this. `knownUser` lets the caller skip both redundant round trips
+ * when it already knows the answer — optional and backward-compatible, so
+ * any future caller that doesn't have this context yet still works exactly
+ * as before.
  */
-export async function getAccessibleOrganizations(): Promise<
+export async function getAccessibleOrganizations(
+  knownUser?: { id: string; globalRole: string | null }
+): Promise<
   Array<{
     id: string;
     name: string;
@@ -110,18 +132,24 @@ export async function getAccessibleOrganizations(): Promise<
   }>
 > {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return [];
+    let userId: string;
+    let globalRole: string | null;
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('global_role')
-      .eq('id', user.id)
-      .single();
+    if (knownUser) {
+      userId = knownUser.id;
+      globalRole = knownUser.globalRole;
+    } else {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return [];
+      userId = user.id;
 
-    if (profile?.global_role === 'admin') {
+      const { data: profile } = await supabase.from('profiles').select('global_role').eq('id', user.id).single();
+      globalRole = profile?.global_role ?? null;
+    }
+
+    if (globalRole === 'admin') {
       const { data, error } = await supabase
         .from('organizations')
         .select('*')
@@ -145,7 +173,7 @@ export async function getAccessibleOrganizations(): Promise<
     const { data, error } = await supabase
       .from('organization_members')
       .select('organizations(id,name,slug,created_by,created_at,updated_at)')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('organization_id', { ascending: true });
 
     if (error || !data) return [];

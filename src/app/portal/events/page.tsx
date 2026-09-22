@@ -1,84 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useOrganization } from '@/contexts/OrganizationContext';
-import { useOrgEvents } from '@/lib/useOrgEvents';
-import { isOrgAdmin } from '@/lib/portalAuth';
-import { EventsOverviewPanel } from '@/components/portal/EventsOverviewPanel';
-import { CreateEventModal } from '@/components/portal/CreateEventModal';
-import type { EventRow } from '@/lib/eventColumns';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
+import { resolveDefaultProduct } from '@/lib/productNavigation';
+import { PortalLoadingSkeleton, PortalEntitlementError } from '@/components/portal/PortalLoadingSkeleton';
 
-type Event = EventRow;
-
-export default function EventsPage() {
-  const { isGlobalAdmin } = useAuth();
-  const { organizationId, loading: orgLoading } = useOrganization();
-  const { events, loading, statsMap, addEvent } = useOrgEvents(organizationId, orgLoading);
-  const [createOpen, setCreateOpen] = useState(false);
-  // Event creation is restricted to platform admins and organization owner/admin
-  // (Feature 003 / /speckit.analyze finding F3) -- events_insert_creator RLS
-  // enforces this authoritatively; this only controls whether the trigger is shown.
-  const [canCreateEvent, setCanCreateEvent] = useState(false);
+/**
+ * Feature 006 (FR-055): the legacy, pre-Feature-006 organization-wide events
+ * list now resolves to the user's default product's event list
+ * (/portal/bendie/events or /portal/planner/events), or /portal/no-product
+ * when the organization has no active entitlement. This route only ever
+ * matches the exact `/portal/events` path segment — it does not intercept
+ * `/portal/events/[eventId]/...`, which remains the real event-workspace
+ * route tree, untouched by this redirect.
+ *
+ * Corrected 2026-09-17 (/code-review finding F1, extended for consistency):
+ * consumes the shared entitlement context instead of an independent fetch,
+ * and never redirects on a failed lookup.
+ */
+export default function PortalEventsRootPage() {
+  const router = useRouter();
+  const entitlement = useProductEntitlement();
 
   useEffect(() => {
-    if (isGlobalAdmin) {
-      setCanCreateEvent(true);
-      return;
-    }
-    if (!organizationId) {
-      setCanCreateEvent(false);
-      return;
-    }
-    let cancelled = false;
-    isOrgAdmin(organizationId).then((allowed) => {
-      if (!cancelled) setCanCreateEvent(allowed);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isGlobalAdmin, organizationId]);
+    if (entitlement.status !== 'ready') return;
+    const resolved = resolveDefaultProduct(entitlement.available);
+    router.replace(resolved ? `/portal/${resolved}/events` : '/portal/no-product');
+  }, [entitlement, router]);
 
-  const handleCreated = (event: Event) => {
-    addEvent(event);
-    setCreateOpen(false);
-  };
-
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-lg">
-        <div>
-          <h1 className="font-headline-lg text-headline-lg text-on-surface">Events</h1>
-          <p className="text-body-md font-body-md text-on-surface-variant mt-1">
-            All events across your organisation.
-          </p>
-        </div>
-        {canCreateEvent && (
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="bg-primary text-white font-label-md text-label-md px-6 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span> New Event
-          </button>
-        )}
-      </div>
-
-      <EventsOverviewPanel
-        events={events}
-        statsMap={statsMap}
-        loading={loading}
-        onCreateEvent={canCreateEvent ? () => setCreateOpen(true) : undefined}
-        showFooterLink={false}
-      />
-
-      {organizationId && canCreateEvent && (
-        <CreateEventModal
-          open={createOpen}
-          organizationId={organizationId}
-          onClose={() => setCreateOpen(false)}
-          onCreated={handleCreated}
-        />
-      )}
-    </div>
-  );
+  if (entitlement.status === 'error') return <PortalEntitlementError />;
+  return <PortalLoadingSkeleton />;
 }

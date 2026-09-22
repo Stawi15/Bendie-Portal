@@ -71,8 +71,10 @@ export default function LoginPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bendie.png" alt="Bendie" className="w-12 h-12 object-contain mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+          <p className="text-gray-600">Getting things ready…</p>
         </div>
       </div>
     );
@@ -85,8 +87,10 @@ export default function LoginPage() {
         <div className="bg-white rounded-lg shadow-md p-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Event Portal</h1>
-            <p className="text-gray-600">Sign in to manage your events</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/bendie.png" alt="Bendie" className="w-14 h-14 object-contain mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
+            <p className="text-gray-600">Sign in to continue</p>
           </div>
 
           {/* Form */}

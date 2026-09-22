@@ -33,17 +33,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(data ?? null);
   };
 
+  // Corrective fix (Feature 016 continuation, performance investigation) —
+  // the previous version called BOTH `getSession()` on mount AND subscribed
+  // to `onAuthStateChange`, and `onAuthStateChange` itself already fires
+  // once immediately on subscribe with the current session (an
+  // `INITIAL_SESSION` event under the hood) — so every page load, including
+  // login, was fetching the user's profile TWICE from Supabase, sequentially
+  // racing each other, for no benefit. The listener alone is the documented,
+  // sufficient pattern; removing the redundant explicit `getSession()` call
+  // halves the auth-resolution round trips on every single page load without
+  // changing behavior (the listener's first callback already carries
+  // whatever `getSession()` would have returned).
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {

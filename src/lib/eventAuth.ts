@@ -98,6 +98,83 @@ export async function isProductActiveForOrg(
 }
 
 /**
+ * Every actively-owned product for an organization in one query (Feature 006).
+ * `organization_products` alone is authoritative here — never `event_planner_links`
+ * (that table is Planner counterpart infrastructure, not product entitlement) and
+ * never event existence or platform-admin status. `client` — see
+ * requireEventWorkspaceAccess's doc comment (Feature 005).
+ *
+ * Corrective fix (2026-09-17, /code-review finding F1): a Supabase read error
+ * MUST NOT be reported as "zero active products" — those are genuinely
+ * different conditions (FR-050), and collapsing them let a transient
+ * network/RLS error masquerade as a real zero-entitlement organization and
+ * silently misroute an actually-entitled user. Throws instead; every caller
+ * (`useAvailableProducts`) is responsible for catching this and failing
+ * closed to a neutral, non-redirecting state rather than treating it as an
+ * entitlement answer.
+ */
+export async function getAvailableProducts(
+  organizationId: string,
+  client: SupabaseClient = supabase
+): Promise<{ bendie: boolean; planner: boolean }> {
+  const { data, error } = await client
+    .from('organization_products')
+    .select('product_key, is_active')
+    .eq('organization_id', organizationId)
+    .eq('is_active', true);
+  if (error) {
+    console.error('getAvailableProducts: organization_products lookup failed', error);
+    throw error;
+  }
+
+  const rows = data ?? [];
+  return {
+    bendie: rows.some((r) => r.product_key === 'bendie'),
+    planner: rows.some((r) => r.product_key === 'planner'),
+  };
+}
+
+/**
+ * Feature 008 — the permission-administration authority boundary, deliberately
+ * narrower than (and independent of) `requireEventWorkspaceAccess`: platform
+ * admin, or an organization owner/admin of the event's OWN organization
+ * (resolved server-side from `events.organization_id`, never a passed-in or
+ * "currently selected" organization id — same principle as
+ * `requireEventWorkspaceAccess`'s own resolution). Deliberately never consults
+ * `event_members.role` (host/organizer/admin/facilitator/staff/speaker/
+ * attendee are all insufficient on their own, spec.md FR-006) and never any
+ * Planner-side value (`can_manage_*` flags or `access_role` — FR-007/FR-028) —
+ * conflating either into this check would let a Planner module manager or an
+ * event-role holder grant themselves broader access merely by virtue of
+ * managing that module, exactly the escalation spec.md's Locked Decision 2
+ * exists to prevent. `client` — see requireEventWorkspaceAccess's doc comment
+ * (Feature 005); reused identically for client-side UI gating (non-
+ * authoritative) and server-side route enforcement (authoritative, re-checked
+ * on every request).
+ */
+export async function canAdministerPlannerPermissions(
+  eventId: string,
+  userId: string,
+  client: SupabaseClient = supabase
+): Promise<boolean> {
+  if (await isPlatformAdmin(userId, client)) return true;
+
+  const { data: event, error: eventError } = await client.from('events').select('organization_id').eq('id', eventId).maybeSingle();
+  if (eventError) console.error('canAdministerPlannerPermissions: events lookup failed', eventError);
+  if (!event) return false;
+
+  const { data: orgMember, error: orgMemberError } = await client
+    .from('organization_members')
+    .select('role')
+    .eq('organization_id', event.organization_id)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (orgMemberError) console.error('canAdministerPlannerPermissions: organization_members lookup failed', orgMemberError);
+
+  return !!orgMember && (orgMember.role === 'owner' || orgMember.role === 'admin');
+}
+
+/**
  * Product availability for an event: active organization entitlement AND a matching
  * event_products row. An inactive entitlement makes the product unavailable even if
  * a historical event_products row still exists — that row is never deleted here.

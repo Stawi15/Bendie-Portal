@@ -21,7 +21,7 @@ export interface OrganizationContextType {
 export const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
-  const { profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -30,13 +30,26 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (authLoading) return;
+    // Corrective fix (Feature 016 continuation, performance investigation)
+    // — `user`/`profile` are already resolved by AuthContext at this point
+    // (this effect only runs once `authLoading` is false); passing them
+    // through avoids `getAccessibleOrganizations()` re-fetching the user and
+    // their `global_role` from scratch, removing two redundant sequential
+    // Supabase round trips from every page load.
+    if (!user) {
+      setOrganizations([]);
+      setOrganizationId(null);
+      setOrganization(null);
+      setLoading(false);
+      return;
+    }
 
     const resolveOrganization = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const accessible = await getAccessibleOrganizations();
+        const accessible = await getAccessibleOrganizations({ id: user.id, globalRole: profile?.global_role ?? null });
         setOrganizations(accessible);
 
         // Prefer the user's saved default, but only if they can still access it —
@@ -65,7 +78,7 @@ export const OrganizationProvider = ({ children }: { children: ReactNode }) => {
     };
 
     resolveOrganization();
-  }, [authLoading, profile?.current_organization_id, profile?.id]);
+  }, [authLoading, user, profile?.current_organization_id, profile?.id, profile?.global_role]);
 
   const setCurrentOrganization = useCallback(
     async (id: string) => {

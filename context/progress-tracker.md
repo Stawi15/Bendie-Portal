@@ -2,11 +2,43 @@
 
 Update this file after every completed feature. Any AI agent reading this should immediately know what is done, what is in progress, and what is next.
 
-**Last synced against the actual codebase:** 2026-09-16, for the "Planner Event Workspace Foundation" (Feature 005) entry below; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
+**Last synced against the actual codebase:** 2026-09-17, for the "Product-Level Navigation & Product-Aware Event Discovery" (Feature 006) entry below; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
 
 ---
 
-## Carry-forward requirement for the next feature: PRODUCT-LEVEL NAVIGATION + PRODUCT-AWARE EVENT DISCOVERY
+## Carry-forward requirement for the next feature: BENDIE PLANNER STAFF & MODULE PERMISSIONS — OPEN (identified 2026-09-18, during Feature 007 manual acceptance)
+
+**Working title only — FEATURE 008 — Bendie Planner Staff & Module Permissions.** This is a roadmap requirement, not a specification. Do not treat this block as scope-complete or start implementation from it directly — it exists so the requirement survives Feature 007's convergence rather than being lost. A full `/architect` + `/speckit.specify` pass is still required before any implementation.
+
+**Discovered:** 2026-09-18, during Feature 007's own manual browser acceptance (not a Feature 007 defect — Feature 007 was deliberately scoped to Tasks management + enforcement of the *existing* Planner permission model, never the manager-facing administration of that model; see Feature 007's own Out of Scope section). The trigger was a real diagnosis: an org-owning Portal platform admin (`edwin@stawiexperiences.com`) correctly could not see the Tasks tab, because Feature 007's authorization deliberately requires a Planner identity bridge (`profiles.planner_profile_id`) and an active, capability-bearing `event_user_assignments` row — and Portal has no UI anywhere for a manager to establish either for a member of their own team.
+
+**Problem:** `event_user_assignments` (Planner) already carries a real, enforced permission surface — but the only thing that currently writes to it is `plannerStaffSync.ts`'s automatic, role-derived sync (`syncStaffMemberToPlanner()`, fired silently from `members/page.tsx`), which maps a fixed set of Portal `event_members.role` values to an all-or-nothing Planner permission bundle (`host`/`organizer`/`admin` → full view+manage across every module; anything else → view-only, never manage). There is no independent, per-module control, and no visible screen where a manager can see or change what a given staff member can do in Bendie Planner.
+
+**Live permission surface this future feature must work from as its initial source of truth** (confirmed live this session — do not invent additional `can_manage_*` columns without an explicit product/schema decision first):
+
+| Module | View flag | Manage flag |
+|---|---|---|
+| Overview | `can_view_overview` | *(none exists)* |
+| Production | `can_view_production` | *(none exists)* |
+| Logistics | `can_view_logistics` | *(none exists)* |
+| Tasks | `can_view_tasks` | `can_manage_tasks` |
+| Notifications | `can_view_notifications` | *(none exists)* |
+| Checklist | `can_view_checklist` | `can_manage_checklist` |
+| Vendors | `can_view_vendors` | `can_manage_vendors` |
+
+**Intended future scope** (for whichever feature addresses this):
+- A manager-facing Portal workflow to add/select event staff and establish their Planner identity/event assignment explicitly (rather than the current silent, role-derived side effect).
+- Visibility and editing of `event_user_assignments` — including `is_active` (activate/deactivate, not just create).
+- Module-level permission configuration, scoped to what the table above actually supports today.
+- An explicit design decision on whether to decouple Planner permissions from Portal `event_members.role` (today's binding) or continue deriving from it.
+
+**Open questions for that feature to resolve** (not answered here — this is a carry-forward prompt, not a spec): should the existing automatic role-derived sync be replaced, kept as a default with manual override, or removed entirely; should the UI cover only the 3 modules with an existing `can_manage_*` column (Tasks/Checklist/Vendors) or also justify adding the other 4; where does this screen live in the existing Portal navigation (Members tab extension vs. a new dedicated surface); does it depend on any Planner module beyond Tasks actually shipping in the Portal first. See the 2026-09-18 roadmap-inspection analysis (this session) for the full comparison of Features 001–007's existing identity/permission foundations this would build on.
+
+---
+
+## Carry-forward requirement for the next feature: PRODUCT-LEVEL NAVIGATION + PRODUCT-AWARE EVENT DISCOVERY — ✅ RESOLVED by Feature 006 (2026-09-17)
+
+**Resolution:** Implemented exactly as intended below — see the Feature 006 entry further down for the full implementation summary. This block is kept for historical record; do not re-open it.
 
 **Discovered:** 2026-09-16, during Feature 005's own manual browser verification (not a Feature 005 defect —
 Feature 005 was deliberately scoped as workspace-foundation only, per its own spec's Out of Scope section).
@@ -767,6 +799,49 @@ state (e.g. `planner_sync_status = 'succeeded'`) via a direct PostgREST call.
   denied INSERT setting them; safe-column UPDATE still passes; `service_role` UPDATE of Planner
   columns still passes. Role-escalation guard and Planner SELECT restriction re-confirmed unweakened.
 - [x] `lint`/`type-check`/`build` all clean.
+
+## Feature 006 — Product-Level Navigation & Product-Aware Event Discovery ✅ Built (2026-09-17)
+
+Full Spec Kit lifecycle run (`/architect` → `/speckit.specify` → `/speckit.clarify` → `/speckit.plan`
+→ `/speckit.tasks` → `/speckit.analyze` [1 High + 2 Medium finding, corrected, re-analyzed PASS] →
+`/speckit.implement`), documented in `specs/006-product-navigation-event-discovery/`. Resolves the
+carry-forward requirement Feature 005 identified: the Portal now has an explicit product axis
+(Bendie / Bendie Planner), orthogonal to organization selection, with event discovery correctly
+scoped per product.
+
+- [x] New routes `/portal/bendie`, `/portal/bendie/events`, `/portal/planner`,
+  `/portal/planner/events`, `/portal/no-product`; existing `/portal/events/[eventId]/...` workspace
+  routes fully preserved and unchanged in structure.
+- [x] `/portal` and `/portal/events` converted to thin redirects to the resolved default product
+  (Bendie-only → Bendie, Planner-only → Planner, both active → Bendie, none active → no-product) —
+  the actual Overview/Events UI moved to new shared, product-parameterized components
+  (`OrganizationHome.tsx`, `OrganizationEventsList.tsx`), reused by both products.
+- [x] Event discovery filters at the query layer: `useOrgEvents` gained an optional `product`
+  parameter using a PostgREST inner-join embed on `event_products` (never `event_planner_links`) —
+  confirmed live against the real fixture that a Bendie-only event is excluded from the Planner
+  query and vice versa, with zero duplicate rows for a Both event.
+- [x] URL-derived `ProductContext` (no persistence, no competing source of truth) and a product
+  switcher added to `TopHeader.tsx`'s existing organization-switcher visual pattern.
+- [x] Event entry from a product-aware surface carries an explicit `?product=` origin signal;
+  `EventLayout`'s existing one-directional Planner-only landing effect (Feature 005) was generalized
+  into the full bidirectional Both-event/mismatched-origin contract, strictly after the existing
+  workspace-authorization gates.
+- [x] Deliberate in-event product switching (distinct from mismatched-origin redirects, per an
+  explicit clarification) resolved via a click-time `isProductAvailableForEvent` check — corrected
+  mid-analysis (finding H1) away from an initially-planned but non-existent `EventLayout`-state data
+  path.
+- [x] Organization-switch-from-event-workspace hardened (finding L1) with a transition flag so
+  switching organizations from inside an event never flashes a misleading "no access" message.
+- [x] New controlled test fixture: "Stawi Escape — Both Test" created via the real, unmodified
+  Feature 004 creation RPC + retry-provisioning flow (not a raw insert) — see
+  `schema-reference.md`'s 2026-09-17 entry. Feature 004/005's existing fixture events untouched.
+- [x] Zero migrations, zero new HTTP APIs, zero DB persistence of product selection. Regression audit
+  (greps + diffs) confirmed no touch to Feature 001 Planner admin/sync, Feature 002
+  entitlement/membership semantics, Feature 003's `requireEventWorkspaceAccess`, Feature 004's
+  creation/provisioning route, or Feature 005's Planner Overview module.
+- [x] `lint`/`type-check`/`build` all clean.
+- [ ] Manual browser acceptance (Phase 17, 13 tasks) — intentionally left to the user; see the
+  session's implementation report for the exact checklist.
 
 ## Feature 004 — Event Product Selection & Planner Provisioning ✅ Built (2026-09-16)
 

@@ -1,7 +1,7 @@
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
+import { FULL_ACCESS_PORTAL_ROLES, defaultFlagsForPortalRole } from '@/lib/plannerPermissionPresets';
 
 const STAFF_ROLES = ['host', 'organizer', 'admin', 'facilitator', 'staff', 'speaker'];
-const FULL_ACCESS_ROLES = new Set(['host', 'organizer', 'admin']);
 
 // '%'/'_' are wildcard characters to Postgres LIKE/ILIKE, and both are legal
 // in a real email's local part. Escaping them turns ilike into an exact,
@@ -21,7 +21,7 @@ function escapeLikePattern(value: string): string {
 // the same exact-match query, with a short bounded retry since the winner's
 // own explicit profiles insert (no auth-seed trigger exists on Planner) may
 // not have landed yet at the exact instant the loser's createUser rejects.
-async function findOrCreatePlannerProfile(
+export async function findOrCreatePlannerProfile(
   planner: ReturnType<typeof getPlannerAdminClient>,
   email: string,
   fullName: string | null
@@ -67,20 +67,17 @@ async function findOrCreatePlannerProfile(
   return { id: created.user.id };
 }
 
+// Behavior-identical refactor (Feature 008 research.md R6): the role
+// classification and flag shapes themselves now live in
+// plannerPermissionPresets.ts as the single canonical
+// FULL_ACCESS_PORTAL_ROLES/VIEWER_FLAGS/MANAGER_FLAGS, so Feature 008's own
+// "Enable" initial defaults can never drift from what this function has
+// always produced. access_role is derived the same way it always was.
 function roleToPlannerFlags(portalRole: string) {
-  const fullAccess = FULL_ACCESS_ROLES.has(portalRole);
+  const fullAccess = FULL_ACCESS_PORTAL_ROLES.has(portalRole);
   return {
     access_role: fullAccess ? 'admin' : 'member',
-    can_view_overview: true,
-    can_view_production: true,
-    can_view_logistics: true,
-    can_view_tasks: true,
-    can_view_notifications: true,
-    can_view_checklist: true,
-    can_view_vendors: true,
-    can_manage_tasks: fullAccess,
-    can_manage_checklist: fullAccess,
-    can_manage_vendors: fullAccess,
+    ...defaultFlagsForPortalRole(portalRole),
   };
 }
 
@@ -137,15 +134,44 @@ export async function syncStaffMemberToPlanner(params: {
     return { ok: true, status: 'skipped', reason: 'Event is not linked to Bendie Planner' };
   }
 
-  const { data: member } = await authClient
+  // Corrective fix (2026-09-21, /review finding, BLOCKING): planner_permissions_configured_at
+  // deliberately has zero grant to the `authenticated` role (research.md R1) — reading it via
+  // the caller's own authClient fails the ENTIRE select with "permission denied for table
+  // event_members" (Postgres denies a query outright if it references any column the role
+  // lacks privilege on; live-verified via `SET LOCAL ROLE authenticated`), not a partial/null
+  // result. Discarding that error and branching only on `!member` silently treated every real
+  // call as "not a member," breaking automatic sync entirely for every caller. Fixed by reading
+  // through portalAdmin instead — the exact same class of fix, and the exact same reasoning,
+  // already applied to the event_planner_links read immediately above. A genuine query failure
+  // is likewise not the same condition as "not a member" (mirroring the identical distinction
+  // already made for the link lookup above and the profile lookup below) — it is now reported
+  // as a failure, not silently masqueraded as a legitimate skip.
+  const { data: member, error: memberError } = await portalAdmin
     .from('event_members')
-    .select('role')
+    .select('role,planner_permissions_configured_at')
     .eq('event_id', eventId)
     .eq('user_id', userId)
     .maybeSingle();
 
+  if (memberError) {
+    console.error('syncStaffMemberToPlanner: event_members lookup failed', memberError);
+    return { ok: true, status: 'failed', reason: 'Could not verify this event membership — try again' };
+  }
+
   if (!member) {
     return { ok: true, status: 'skipped', reason: 'Not a member of this event' };
+  }
+
+  // Feature 008 (spec.md FR-042–FR-045, FR-036a): once an authorized manager
+  // has explicitly Saved or Disabled this person's Planner permissions,
+  // automatic role-derived sync must never again overwrite their
+  // can_view_*/can_manage_*/access_role flags or silently reactivate
+  // deliberately-disabled access. This one check is sufficient for every
+  // current caller of this function (member add, CSV import, add-all-org-
+  // members, assign-team, the Feature 004 event-creator auto-provision, and
+  // the manual admin re-sync route) since they all funnel through here.
+  if (member.planner_permissions_configured_at) {
+    return { ok: true, status: 'skipped', reason: 'Planner permissions are manager-configured; automatic sync does not apply' };
   }
 
   if (!STAFF_ROLES.includes(member.role)) {

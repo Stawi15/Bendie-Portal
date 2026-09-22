@@ -168,6 +168,20 @@ export interface Database {
           planner_synced_at: string | null;
           planner_sync_status: 'succeeded' | 'failed' | 'skipped' | null;
           planner_sync_error: string | null;
+          planner_permissions_configured_at: string | null;
+        };
+      };
+      planner_permission_audit_log: {
+        Row: {
+          id: number;
+          event_id: string;
+          member_user_id: string;
+          actor_user_id: string | null;
+          action_type: 'access_enabled' | 'permissions_changed' | 'access_disabled' | 'access_reactivated';
+          before_state: Record<string, unknown> | null;
+          after_state: Record<string, unknown>;
+          operation_id: string;
+          created_at: string;
         };
       };
       facilitators: {

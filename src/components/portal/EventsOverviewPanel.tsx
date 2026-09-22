@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { EventRow } from '@/lib/eventColumns';
 import type { EventStats } from '@/lib/eventStats';
-import { EVENT_STATUS_LABELS, EVENT_STATUS_PILL_CLASSES } from '@/lib/portalLabels';
+import { deriveEventLifecycle, EVENT_LIFECYCLE_LABELS, EVENT_LIFECYCLE_PILL_CLASSES } from '@/lib/eventLifecycle';
+import type { ProductKey } from '@/lib/productNavigation';
 
 type Event = EventRow;
 
@@ -22,11 +23,16 @@ const TYPE_ICONS: Record<string, string> = {
   hybrid: 'hub',
 };
 
+// Navigation pass (016 continuation 4) — now the single canonical
+// `deriveEventLifecycle` helper, replacing this file's own compound
+// `status === 'published' && starts_at > now` logic (which was duplicated,
+// identically, in OrganizationHome.tsx — see eventLifecycle.ts for why).
 function matchesTab(event: Event, tab: Tab): boolean {
   if (tab === 'all') return true;
-  if (tab === 'draft') return event.status === 'draft';
-  if (tab === 'live') return event.status === 'active';
-  if (tab === 'upcoming') return event.status === 'published' && Boolean(event.starts_at) && new Date(event.starts_at!) > new Date();
+  const lifecycle = deriveEventLifecycle(event);
+  if (tab === 'draft') return lifecycle === 'draft';
+  if (tab === 'live') return lifecycle === 'active';
+  if (tab === 'upcoming') return lifecycle === 'upcoming';
   return true;
 }
 
@@ -40,7 +46,17 @@ type EventsOverviewPanelProps = {
   /** Max rows to show; omit to show every event matching the active tab. */
   limit?: number;
   showFooterLink?: boolean;
+  /**
+   * Feature 006: when supplied, every row's entry link carries the explicit
+   * `?product=` origin signal and targets that product's entry tab
+   * (`planner-overview` for planner, `dashboard` for bendie) instead of the
+   * legacy hardcoded `.../dashboard`. Omitted call sites keep today's exact
+   * behavior (FR-040/FR-041).
+   */
+  product?: ProductKey;
 };
+
+const PRODUCT_LABEL: Record<ProductKey, string> = { bendie: 'Bendie', planner: 'Bendie Planner' };
 
 export function EventsOverviewPanel({
   events,
@@ -50,6 +66,7 @@ export function EventsOverviewPanel({
   title = 'Events Overview',
   limit,
   showFooterLink = true,
+  product,
 }: EventsOverviewPanelProps) {
   const [tab, setTab] = useState<Tab>('all');
   const tabFiltered = events.filter((e) => matchesTab(e, tab));
@@ -82,7 +99,11 @@ export function EventsOverviewPanel({
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 px-6">
-          <p className="text-on-surface-variant text-sm mb-4">No events in this view yet.</p>
+          <p className="text-on-surface-variant text-sm mb-4">
+            {product
+              ? `No ${PRODUCT_LABEL[product]} events in this view yet.`
+              : 'No events in this view yet.'}
+          </p>
           {onCreateEvent && (
             <button onClick={onCreateEvent} className="btn-primary">
               Create Event
@@ -114,7 +135,14 @@ export function EventsOverviewPanel({
                 return (
                   <tr key={event.id} className="hover:bg-surface-container-low/20 transition-colors">
                     <td className="px-4 sm:px-lg py-5">
-                      <Link href={`/portal/events/${event.id}/dashboard`} className="flex items-center gap-3">
+                      <Link
+                        href={
+                          product
+                            ? `/portal/events/${event.id}/${product === 'planner' ? 'planner-overview' : 'dashboard'}?product=${product}`
+                            : `/portal/events/${event.id}/dashboard`
+                        }
+                        className="flex items-center gap-3"
+                      >
                         <div className="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center flex-shrink-0">
                           <span className="material-symbols-outlined text-primary">{icon}</span>
                         </div>
@@ -153,13 +181,14 @@ export function EventsOverviewPanel({
                       </div>
                     </td>
                     <td className="px-4 sm:px-lg py-5 text-right">
-                      <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          EVENT_STATUS_PILL_CLASSES[event.status] ?? 'bg-surface-container-high text-on-surface-variant'
-                        }`}
-                      >
-                        {EVENT_STATUS_LABELS[event.status] ?? event.status}
-                      </span>
+                      {(() => {
+                        const lifecycle = deriveEventLifecycle(event);
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${EVENT_LIFECYCLE_PILL_CLASSES[lifecycle]}`}>
+                            {EVENT_LIFECYCLE_LABELS[lifecycle]}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );

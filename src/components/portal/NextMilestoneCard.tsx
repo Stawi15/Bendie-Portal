@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { EventRow } from '@/lib/eventColumns';
 import type { EventStats } from '@/lib/eventStats';
+import type { ProductKey } from '@/lib/productNavigation';
 
 type Event = EventRow;
 
@@ -10,9 +11,11 @@ type NextMilestoneCardProps = {
   event: Event | null;
   stats: EventStats | undefined;
   loading: boolean;
+  /** Feature 006: carries the product-origin signal, same as EventsOverviewPanel's entry link. */
+  product?: ProductKey;
 };
 
-export function NextMilestoneCard({ event, stats, loading }: NextMilestoneCardProps) {
+export function NextMilestoneCard({ event, stats, loading, product }: NextMilestoneCardProps) {
   if (loading) {
     return <div className="h-64 bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow animate-pulse" />;
   }
@@ -76,7 +79,11 @@ export function NextMilestoneCard({ event, stats, loading }: NextMilestoneCardPr
           </div>
         </div>
         <Link
-          href={`/portal/events/${event.id}/dashboard`}
+          href={
+            product
+              ? `/portal/events/${event.id}/${product === 'planner' ? 'planner-overview' : 'dashboard'}?product=${product}`
+              : `/portal/events/${event.id}/dashboard`
+          }
           className="block text-center w-full mt-6 py-3 border border-outline-variant rounded-xl font-label-md text-label-md hover:bg-surface-container-low transition-colors"
         >
           Manage Event

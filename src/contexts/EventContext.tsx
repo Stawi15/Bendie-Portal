@@ -41,7 +41,7 @@ export interface EventContextType {
 export const EventContext = createContext<EventContextType | undefined>(undefined);
 
 export const EventProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { organizationId, loading: orgLoading } = useOrganization();
   const [currentEventId, setCurrentEventId] = useState<string | null>(null);
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
@@ -178,7 +178,13 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
       try {
         setLoading(true);
         setError(null);
-        const accessibleEvents = await getAccessibleEvents(organizationId);
+        // Corrective fix (Feature 016 continuation, performance
+        // investigation) — `user`/`profile` are already resolved by
+        // AuthContext by the time this effect can run at all (it's gated on
+        // `orgLoading`, which itself waits on auth); passing them through
+        // skips `getAccessibleEvents()`'s own redundant `getUser()` +
+        // `profiles.global_role` round trips.
+        const accessibleEvents = user ? await getAccessibleEvents(organizationId, { id: user.id, globalRole: profile?.global_role ?? null }) : [];
 
         // A newer request (another organization switch, or an explicit
         // event selection) has since superseded this one. Do NOT force
@@ -266,7 +272,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     };
 
     loadEvents();
-  }, [organizationId, orgLoading, nextEventGeneration]);
+  }, [organizationId, orgLoading, nextEventGeneration, user, profile?.global_role]);
 
   const handleSetCurrentEvent = useCallback(
     async (eventId: string) => {

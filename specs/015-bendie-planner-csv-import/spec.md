@@ -1,0 +1,58 @@
+# Feature 015 Spec: Bendie Portal Bulk CSV Import
+
+Rapid-implementation lightweight spec. Adds CSV bulk import to the six already-implemented Planner management modules. Not a new backend architecture — every imported row goes through the exact same canonical write path (and, where one exists, the exact same domain validation) the existing manual create form already uses.
+
+## Scope
+
+CSV import for: **People, Flights, Hotels, Vendors, Checklist, Production.** Ground Transport, Tasks, Staff/Permissions, Blueprints, and Agenda are explicitly excluded this pass (Ground Transport's Movement→Vehicle→canonical-RPC-driven-Assignment model is not safely reducible to flat CSV rows without reinventing that state machine).
+
+## Architecture (as implemented — revised from the original plan below)
+
+**Pivot from the original design.** The original plan (below, struck through in intent) called for a new `csvParse.ts`, a new generic `CsvImportModal.tsx`, and six new atomic-bulk-insert `/import` API routes. Mid-implementation we discovered an **existing, already-established, production-proven CSV import framework** already in the codebase — `src/lib/csvImport.ts` + `src/components/portal/CsvImportModal.tsx` — already used by 6 pre-existing Bendie-side pages (Agenda, Facilitators, FAQs, Members, Networking, People). AGENTS.md's brownfield mandate ("preserve existing architecture... do not create a parallel architecture simply because a template suggests one") takes priority over the rapid-workflow brief's abstractly-stated atomicity preference, so the original design was abandoned in favor of reusing this framework as-is. This is a deliberate, disclosed divergence, not a silent one.
+
+- **CSV**: parsed with the already-installed `papaparse`, via the existing `parseCsvFile`/`validateHeaders`/`getField`/`buildCsvTemplate`/`parseFlexibleDate` helpers in `src/lib/csvImport.ts` (unchanged, pre-existing).
+- **Flow**: select file → `CsvImportModal<T>` parses client-side and preview-validates every row via a domain-supplied `parseRow(raw, rowIndex): RowResult<T>` → user reviews valid/invalid counts and confirms → `runWithConcurrency(validRows, 5, importRow, onWorkerError)` sends each valid row through a domain-supplied `importRow(data: T): Promise<{error?: string}>`, which POSTs to the **existing single-create endpoint** for that domain (the same endpoint the manual "Add" form already uses — no new API routes were created). Invalid rows (per `parseRow`) are excluded from the import batch and reported, not blocking the valid rows.
+- **Reuse, not duplication**: zero new domain business-logic functions were added to any lib file. Every CSV row is validated client-side for fast feedback, then re-validated authoritatively server-side by the exact same route/lib code path the manual form already uses (`POST /planner-vendors`, `POST /planner-checklist`, `POST /planner-logistics/flights`, `POST /planner-logistics/hotels`, `POST /planner-production`, and for People, the existing `GET .../search` + `POST .../link` + `POST .../` create endpoints).
+- **Atomicity — corrected from the original plan**: import is **row-by-row, non-atomic, with concurrency 5**, for **all six domains**, not just People. This is the established house convention (`CsvImportModal`'s `runWithConcurrency`), used identically by every other CSV-importing page in this codebase; it was not re-invented or special-cased for Planner. A file with one bad row among many good ones imports every good row and reports the bad one as failed — it does **not** roll back the good rows. This is a real, disclosed limitation relative to the original "one bad row blocks the whole file" design, accepted in favor of not building a second, competing import architecture.
+
+## Import Entry Point & Templates
+
+Each of the six pages gets an "Import CSV" button (Manage-capable only) next to its existing "Add" button, opening a shared `CsvImportModal`, and a "Download Template" link inside that modal. Templates contain only the human-enterable fields each domain's own create form already exposes — never database IDs, Portal/Planner event IDs, organization IDs, or system timestamps.
+
+## Duplicate Handling (per-domain, not a universal rule)
+
+- **People**: the only domain with a real, safe global identity — email (case-insensitive). `importRow` searches the existing `GET .../planner-people/search?q=<email>` endpoint for an exact email match; if found, it links (`POST .../planner-people/link`) instead of creating a duplicate `passengers` row; if not found, it creates. `parseRow` additionally rejects (client-side, synchronous, against the already-loaded roster) a row whose email already matches a participant **already linked to this event**, as a validation error naming the row — this is a blocking error, not a silent skip, which is a deliberate (and disclosed) divergence from the original plan's "skip with a warning" design; it was simpler to implement as a rejected row within the established `parseRow`/`RowResult` shape, and the practical effect (the row does not get imported twice) is the same.
+- **Flights**: `parseRow` checks the already-loaded event roster for an existing (`passengerId`, `flightType`, `flightDate`, `flightCode`) tuple and rejects a matching row as a validation error (same rationale as above — a blocking error via the existing framework, not a separate warning/skip channel).
+- **Hotels**: `parseRow` similarly checks for an existing (`passengerId`, `hotelName`, `checkInDate`, `checkOutDate`) tuple and rejects a match as a validation error.
+- **Vendors, Checklist, Production**: **no duplicate detection** — verified during Features 009/010/014 that none of these tables has any natural uniqueness constraint, and repeated line items (two "Extension cords" entries, two "Break" sessions) are legitimate, not mistakes. Inventing a duplicate heuristic here would risk silently dropping real rows. Documented as an intentional exclusion, not a gap.
+
+## Participant Matching (Flights, Hotels)
+
+A CSV row identifies its participant by **email** (preferred) or **exact full name** (fallback, case/whitespace-insensitive) against the current event's own roster (Feature 011). Zero matches or **more than one match** (ambiguous — e.g., two participants sharing a name, or no email supplied) is a **blocking validation error** naming the row, never a guess.
+
+## Field-Level Reuse Per Domain (exact fields — nothing invented)
+
+- **People**: `fullName` (required), `title`, `passport`, `dietaryRequirements`, `gender`, `email`, `phone` — CSV never creates a Planner Auth user, `event_user_assignments` row, or Portal `event_members` row (Feature 011's own boundary, unchanged).
+- **Flights**: `participant` (email or name), `flightType` (`arrival`/`departure`, required), `flightDate` (required), `flightCode`, `region`, `departureTime`, `arrivalTime`, `stops`, `notes` — writes the identical `departuretime`/`arrivaltime` text + `depart_time`/`arrive_time` typed pairs Feature 012 already established, never the legacy city tables.
+- **Hotels**: `participant`, `accommodationRequired` (defaults `true`), `country`, `hotelName`, `roomNumber`, `roomingLabel`, `checkInDate`, `checkOutDate`, `nightsCount`, `specialStayPattern`, `notes` — `accommodationRequired=false` nulls hotel/room fields server-side, identical to the manual-form behavior.
+- **Vendors**: `category`, `description` (required), `quantityText`, `unit`, `notes`, `sortOrder` — never the 5 fields the live trigger protects after creation (nothing changes here; CSV only ever creates, never edits).
+- **Checklist**: `category`, `itemName` (required), `quantityText`, `specification`, `notes`, `dayNumber`, `eventDayDate`, `ownerName` (optional — matched against the event's already-loaded eligible-owners list by exact case-insensitive name; zero or multiple matches leaves the owner unresolved on the client, and the server's own existing default-to-importing-manager rule applies, identical to the manual form, so no row can ever be created with a null owner).
+- **Production**: `sessionTitle` (required), `sessionDate` (required), `dayNumber`, `startTime`, `endTime`, `taskType`, `trackName`, `roomName`, `participants`, `mode`, `micType`, `presentation`, `mainScreen`, `notes`, `stageHandNotes`, `guestExperience`, `status` (one of the real 5-value enum, or blank for automatic). `isParallel`/`parentProductionId` are **excluded from CSV** — referencing another row's not-yet-created ID from within the same file is exactly the kind of "invent a richer system" complexity this pass avoids; parallel sessions remain a manual-form-only capability, unchanged.
+
+## Authorization & Security (reused, never new)
+
+Each domain's import endpoint requires that domain's own existing Manage authority — Vendors' import needs Feature 009's Manage capability, Checklist's needs Feature 010's, People/Flights/Hotels/Production need Features 011/012/014's respective (`canAdministerPlannerPermissions`-based) Manage capability. Enforced server-side identically to every existing mutation route; a Viewer never gets a working import endpoint regardless of UI state. Every mutation resolves the event exactly as every existing route does (Portal `eventId` → workspace access → `event_planner_links` → Planner `event_id`) — CSV rows never supply or influence event identity. Cross-event participant references are rejected exactly like the manual form's own participant-scope check.
+
+## Acceptance Criteria
+
+1. A Manage-capable caller can import a valid CSV into each of the six modules; every row is visible immediately through the same canonical table (and, for Production, through `production_sessions_v`) the manual form already writes to.
+2. A CSV containing invalid rows never writes those rows; valid rows in the same file import independently (row-by-row, non-atomic — see Architecture), and the result summary reports every invalid row's number and a corrected-action message, never a raw Postgres error.
+3. Flights/Hotels ambiguous or unmatched participant references are rejected with a clear message, never guessed.
+4. People/Flights/Hotels duplicate rows (per the rules above) are rejected as validation errors naming the row, not silently duplicated and not blocking the rest of the file's valid rows.
+5. A View-only caller cannot import into any of the six modules — verified server-side, not just by hiding the button.
+6. Downloaded templates contain only human-enterable fields, no internal identifiers.
+7. Existing manual create/edit flows in all six modules are unaffected.
+
+## Exclusions
+
+Ground Transport, Tasks, Staff/Permissions, Blueprints, Agenda CSV import. XLSX/Excel import. Arbitrary column-mapping UI. Background job infrastructure. CSV export. Any database cleanup of unrelated legacy structures. Broad Portal redesign. `isParallel`/`parentProductionId` in the Production template (manual-form-only). Any new `event_user_assignments` permission flag.

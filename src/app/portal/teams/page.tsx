@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTeams, type Team } from '@/lib/useTeams';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -11,11 +12,27 @@ import toast from 'react-hot-toast';
 
 export default function TeamsPage() {
   const { organizationId, loading: orgLoading } = useOrganization();
+  const { isGlobalAdmin } = useAuth();
   const { teams, loading, refetch } = useTeams(organizationId, orgLoading);
   const confirm = useConfirm();
   const [createOpen, setCreateOpen] = useState(false);
   const [managingTeam, setManagingTeam] = useState<Team | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Feature 016 (Event Team Foundation Fix) — teams are now organisation-
+  // owner/admin manageable, not only platform-admin manageable (the RLS fix
+  // this pass added), so this page needs its own admin check to avoid
+  // showing management controls that would 403 for an ordinary org member.
+  const [canManageTeams, setCanManageTeams] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (isGlobalAdmin) { setCanManageTeams(true); return; }
+    if (!organizationId) return;
+    let cancelled = false;
+    supabase.rpc('is_organization_admin', { org_id: organizationId }).then(({ data, error }) => {
+      if (!cancelled) setCanManageTeams(!error && data === true);
+    });
+    return () => { cancelled = true; };
+  }, [organizationId, isGlobalAdmin]);
 
   const handleDelete = async (team: Team) => {
     const ok = await confirm({
@@ -40,14 +57,24 @@ export default function TeamsPage() {
         <div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface">Teams</h1>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">
-            Group people into teams for easier event assignment.
+            Reusable groups of organisation people — add a whole team to an event in one step from that event&apos;s
+            Attendees &amp; Access page (Add People → From team).
           </p>
         </div>
-        <button className="btn-primary flex-shrink-0 flex items-center gap-2" onClick={() => setCreateOpen(true)} disabled={!organizationId}>
-          <span className="material-symbols-outlined text-lg">add</span>
-          Create Team
-        </button>
+        {canManageTeams && (
+          <button className="btn-primary flex-shrink-0 flex items-center gap-2" onClick={() => setCreateOpen(true)} disabled={!organizationId}>
+            <span className="material-symbols-outlined text-lg">add</span>
+            Create Team
+          </button>
+        )}
       </div>
+
+      {canManageTeams === false && (
+        <p className="hint mb-4">
+          You can view your organisation&apos;s teams. Creating, editing, or deleting a team requires organisation
+          owner or admin access.
+        </p>
+      )}
 
       {loading || orgLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -60,10 +87,10 @@ export default function TeamsPage() {
           </div>
           <h2 className="font-headline-md text-headline-md text-on-surface mb-2">No teams yet</h2>
           <p className="text-body-md font-body-md text-on-surface-variant max-w-sm mb-5">
-            Create a team to group people from this organisation — then assign the whole team to an event in one
-            click from the event&apos;s Members tab.
+            Create a team to group people from this organisation — then add the whole team to an event in one step
+            from that event&apos;s Attendees &amp; Access page.
           </p>
-          <button className="btn-primary" onClick={() => setCreateOpen(true)}>Create Team</button>
+          {canManageTeams && <button className="btn-primary" onClick={() => setCreateOpen(true)}>Create Team</button>}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -76,14 +103,16 @@ export default function TeamsPage() {
                     <p className="text-sm text-on-surface-variant mt-1 line-clamp-2">{team.description}</p>
                   )}
                 </div>
-                <button
-                  className="flex-shrink-0 p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors"
-                  onClick={() => handleDelete(team)}
-                  disabled={deletingId === team.id}
-                  aria-label={`Delete ${team.name}`}
-                >
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
-                </button>
+                {canManageTeams && (
+                  <button
+                    className="flex-shrink-0 p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors"
+                    onClick={() => handleDelete(team)}
+                    disabled={deletingId === team.id}
+                    aria-label={`Delete ${team.name}`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                )}
               </div>
 
               <div className="mt-3 flex items-center gap-1.5 text-xs text-on-surface-variant">
@@ -91,13 +120,15 @@ export default function TeamsPage() {
                 {team.memberCount} member{team.memberCount !== 1 ? 's' : ''}
               </div>
 
-              <button
-                className="btn-secondary mt-4 flex items-center justify-center gap-2 text-sm"
-                onClick={() => setManagingTeam(team)}
-              >
-                <span className="material-symbols-outlined text-[18px]">group_add</span>
-                Manage Members
-              </button>
+              {canManageTeams && (
+                <button
+                  className="btn-secondary mt-4 flex items-center justify-center gap-2 text-sm"
+                  onClick={() => setManagingTeam(team)}
+                >
+                  <span className="material-symbols-outlined text-[18px]">group_add</span>
+                  Manage Members
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { isProductActiveForOrg } from '@/lib/eventAuth';
 import { EVENTS_SELECT_COLUMNS, type EventRow } from '@/lib/eventColumns';
+import type { ProductKey } from '@/lib/productNavigation';
 import toast from 'react-hot-toast';
 
 type Event = EventRow;
@@ -14,11 +15,19 @@ type CreateEventModalProps = {
   organizationId: string;
   onClose: () => void;
   onCreated: (event: Event) => void;
+  /**
+   * Feature 006 (FR-042/FR-044): the product context the modal was opened
+   * from. Only ever changes the INITIAL selection when the organization is
+   * entitled to both products — the user remains free to change it before
+   * submitting, and Feature 004's server-side validation stays authoritative
+   * regardless of what this prop suggests.
+   */
+  initialProduct?: ProductKey;
 };
 
 const EMPTY_FORM = { name: '', location: '', starts_at: '', ends_at: '' };
 
-export function CreateEventModal({ open, organizationId, onClose, onCreated }: CreateEventModalProps) {
+export function CreateEventModal({ open, organizationId, onClose, onCreated, initialProduct }: CreateEventModalProps) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
@@ -54,15 +63,17 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated }: C
         setPlannerActive(planner);
         if (bendie && !planner) setProductChoice('bendie');
         else if (!bendie && planner) setProductChoice('planner');
-        // Both active: no auto-selection — the user must choose (FR-004).
-        // Neither active: productChoice stays null, creation stays disabled.
+        else if (bendie && planner && initialProduct) setProductChoice(initialProduct);
+        // Both active, no initialProduct hint: no auto-selection — the user
+        // must choose (FR-004). Neither active: productChoice stays null,
+        // creation stays disabled.
       }
     );
 
     return () => {
       cancelled = true;
     };
-  }, [open, organizationId]);
+  }, [open, organizationId, initialProduct]);
 
   // A client-side "does the Planner mapping exist" preflight used to live
   // here (FR-019, research.md §17), reading `organization_planner_links`

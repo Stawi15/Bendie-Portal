@@ -28,3 +28,13 @@ export const EVENTS_SELECT_COLUMNS =
  * the result of a client-side `events` read.
  */
 export type EventRow = Omit<Database['public']['Tables']['events']['Row'], 'planner_provisioning_error'>;
+
+/**
+ * Same safe column list, plus an inner-join embed of `event_products` used
+ * only to FILTER by `product_key` at the query layer (Feature 006) — never to
+ * expose the embedded rows themselves. Callers strip `event_products` off
+ * each row before it enters component state, so `EventRow`'s shape stays
+ * identical for filtered and unfiltered reads alike.
+ */
+export const EVENTS_SELECT_COLUMNS_WITH_PRODUCT_FILTER =
+  `${EVENTS_SELECT_COLUMNS}, event_products!inner(product_key)` as const;

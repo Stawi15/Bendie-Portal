@@ -17,6 +17,30 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-09-17 — Feature 006 implemented: product-level navigation (Bendie / Bendie Planner) and product-aware event discovery
+
+No schema change. Feature 006 adds an application-layer product axis on top of the existing
+`organization_products`/`event_products` tables (both unchanged, read-only from this feature's
+perspective) — see `specs/006-product-navigation-event-discovery/` for the full spec/plan/tasks.
+New portal routes: `/portal/bendie`, `/portal/bendie/events`, `/portal/planner`,
+`/portal/planner/events`, `/portal/no-product`; `/portal` and `/portal/events` now redirect to the
+resolved default product. Event discovery on these routes filters at the query layer via an
+`event_products!inner(product_key)` embed — `event_planner_links` is never consulted for this.
+
+**New controlled test fixture** (organization "Bendie Planner Sample",
+`08bc8b7d-4579-4f32-aeb1-58b55e927ae1`), created via the real, unmodified Feature 004
+`create_event_with_products` RPC + `retry-planner-provisioning` flow, not a raw insert:
+
+- Event **"Stawi Escape — Both Test"** (`337d0358-1e17-4239-87f0-a2ee6fc39ba0`) —
+  `event_products = ['bendie', 'planner']`, `planner_provisioning_status = 'succeeded'`,
+  `event_planner_links` → Planner `planner_event_id = 53`, `is_active = true`. Draft status,
+  2026-11-10 → 2026-11-12. Created by the same temporary non-platform-admin org-admin account used
+  for Feature 005's fixture (`d39d5af5-a6aa-451e-a65f-9a95160468f5`), auto-synced as Planner staff
+  (`event_members.role = 'admin'`) via the existing, unmodified staff-sync path.
+
+The two pre-existing Feature 004/005 fixture events in this organization — "Stawi Escape"
+(Bendie-only) and "Stawi Escape — Planner Test" (Planner-only) — are unmodified.
+
 ### 2026-09-16 — Feature 004 post-convergence corrective fix: Planner-inclusive event creation was RLS-blind to its own mapping table for non-platform-admin org owners/admins
 
 **Severity: high, brownfield, discovered while preparing a Feature 005 manual-test fixture — not a Feature

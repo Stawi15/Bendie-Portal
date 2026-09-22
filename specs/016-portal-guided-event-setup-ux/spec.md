@@ -1,0 +1,276 @@
+# Feature 016 Spec: Bendie Portal Guided Event Setup UX
+
+Lightweight rapid-implementation spec. Product principle: **"Setup is a journey. Management is a workspace."** The Portal is already a functional management workspace (Features 001–015); this feature reduces the friction of *initial* event population without touching backend architecture, canonical data, authorization, or API contracts.
+
+Full context: `context/portal-ux-current-state-audit.md` (read-only discovery pass that preceded this feature) and `context/planner-backend-coverage-audit.md` (backend domain coverage).
+
+## Non-negotiable brownfield boundary
+
+No database changes, no new API routes, no changed authorization semantics, no changed canonical write targets (Ground Transport stays Movement→Vehicle→Assignment via the existing RPCs; Production stays `production_tasks`), no removed functionality from Features 001–015. Every improvement composes *existing* endpoints/components differently or adds client-side-only orchestration.
+
+## Scope actually delivered this pass
+
+The user's brief specified 9 phases (A–I). Given the size of that brief (a multi-week UX program, by its own admission spanning navigation, a full guided wizard, six forms' worth of "Save & Add Another," a person-centric Logistics rebuild, a Ground Transport workflow redesign, Production progressive disclosure, a Team & Access widget, a dedicated Review & Readiness page, and a full responsive pass), this implementation pass delivers the highest-leverage, safely-shippable subset and defers the rest explicitly rather than shipping all nine phases shallowly or fabricating completion. See `tasks.md` for the exact per-phase status.
+
+**Delivered (this pass):**
+- **Phase A — Grouped navigation.** The event workspace tab bar is grouped (Overview / Event Setup / Programme / Attendees / Content / Media / Operations for Bendie; Overview / People / Planning / Logistics / Production for Planner) via a new pill-selector row, cutting the always-visible tab count from 20+ to ~4 at a time. Zero routes changed, zero hrefs changed, zero availability logic changed — purely a display grouping over the existing `EVENT_SECTIONS` array.
+- **Phase B — Dashboard command centre.** The existing Dashboard tab gained: (1) a fix for a pre-existing crash (`SECTION_CHECKS` was missing entries for 5 Planner tabs, added in Features 009–014, that `EVENT_SECTIONS` already had — every Dashboard render for those tabs threw `Cannot read properties of undefined (reading 'kind')`); (2) a deterministic "Recommended next" callout (first incomplete Bendie section + a dependency-ordered Planner recommendation); (3) a "Bendie Planner Readiness" card grid, shown only when the event has Planner active, built entirely from composing 8 existing GET endpoints (People, Tasks, Vendors, Checklist, Flights, Hotels, Ground Transport movements, Production) client-side — no new API routes.
+- **Phase C (partial) — Save & Add Another + empty states.** "Save & Add Another" implemented end-to-end for Vendors (the simplest form) as the reference pattern — reuses the exact same single-create endpoint, adds no new API behavior, remounts the modal (fresh fields) via a `key` bump instead of closing it. Dependency-aware, actionable empty states (with Add/Import CSV CTAs, or an honest "bulk import isn't available here" note where CSV genuinely doesn't exist) shipped across all eight Planner list surfaces: Vendors, Checklist, People, Flights, Hotels, Ground Transport, Tasks, Production.
+
+**Explicitly deferred (not started this pass — see tasks.md "Deferred" phases):**
+- Phase C remainder: "Save & Add Another" replicated to Checklist, People, Flights, Hotels, Tasks, Production (the pattern is proven on Vendors; repeating it 6× is mechanical but was not done here to keep this pass verifiable rather than rushed).
+- Phase D — Person-centric Logistics view (per-participant Flights/Hotel/Transport readiness on the People tab).
+- Phase E — Ground Transport composite workflow (Movement→Vehicles→Assignments as one guided flow instead of three separate screens).
+- Phase F — Production form progressive disclosure (grouped/collapsed sections).
+- Phase G — Team & Access discoverability widget inside the Planner workspace (currently only reachable via the Bendie-side Members page, unchanged).
+- Phase H — A dedicated Review & Readiness page/tab (the Dashboard's new Planner Readiness grid is a partial, lighter-weight step toward this, not the full page the brief describes).
+- Phase I — Broader responsive pass (fixed grid-cols-2/3 forms, wide-table mobile card views) beyond what Phase A/B's own new markup already handles responsively.
+
+## Why this scope, not less or more
+
+- **Not less**: the crash fix, navigation grouping, and Dashboard readiness summary are the three changes that most directly address the audit's own top-ranked friction ("navigation overload," "no meaningful completion state," "no recommended next action") for the *most* users, at the *lowest* risk (no changes to any create/edit/delete code path).
+- **Not more**: Phases D/E/F are genuine UI *rebuilds* of already-shipped, already-verified interaction models (Features 011–014). Doing them well requires the same discipline as those original features (live verification, disposable fixtures, typecheck/lint) — attempting all of them in one pass risked exactly the kind of "half-migrated between two incompatible systems" the brief explicitly warned against (§21). Shipping Phase A/B/C-partial cleanly, verified, is preferred over shipping six phases unverified.
+
+## Acceptance criteria (this pass)
+
+1. Bendie-only, Planner-only, and Both-product events all open, navigate, and render without regression (verified by typecheck/lint + reasoning about the additive nature of every change; live browser verification not performed — see final report).
+2. The Dashboard no longer crashes on any event with a Planner tab (regression fixed, verified via a direct audit of `EVENT_SECTIONS` vs `SECTION_CHECKS` key coverage).
+3. Grouped navigation preserves every existing route/href; a direct link to any tab still lands on that tab with its correct group auto-selected.
+4. The Planner Readiness grid never fabricates a count — every number is read from an existing endpoint's real response, and a module whose fetch fails or is denied shows "Not available," never a zero pretending to be real.
+5. Vendors' "Save & Add Another" creates exactly one record per click (no duplicate submissions), refreshes the authoritative list, and does not alter the existing "Add Item" (single-save) behavior.
+6. Every modified/new file passes `tsc --noEmit` and introduces zero new ESLint warnings.
+
+## Exclusions (same as the user's original boundary)
+
+No database/migration changes. No new API routes. No changed authorization/permission semantics. No changed canonical write targets. No CSV added to Tasks or Ground Transport. No Blueprints or Agenda work. No convergence of prior deferred features.
+
+---
+
+## Continuation pass 2 — data-entry efficiency and workflow continuity
+
+Second pass, same feature (016), no new feature folder. Focus per the user's explicit priority order: Save & Add Another everywhere it's safe, context preservation, Production progressive disclosure, Ground Transport workflow continuity, People as the participant hub, Team & Access discoverability, and responsive fixes. Same brownfield boundary as above — every change composes existing endpoints/RPCs; no new API routes, no changed canonical write targets, no changed authorization.
+
+**Delivered this pass** (see `plan.md`'s continuation section for exact files/mechanics and `tasks.md` for the itemized checklist):
+1. **Save & Add Another** extended from the Vendors reference to People (new-person path only), Flights, Hotels, Checklist, Tasks, and Production — all six remaining repetitive-creation forms. Edit mode never shows the button. Every module still calls its existing single-create endpoint exactly as the manual "Save" path always has.
+2. **Context preservation**: Flights/Hotels carry the selected participant forward; Checklist carries category/day/date/owner; Production carries date/day/track/room; Tasks carries only category. People deliberately resets fully (per the brief's own conservative-default instruction).
+3. **Production progressive disclosure**: the ~17-field modal is now five visually grouped sections (Session Details, Programme & Location, Production Requirements, Additional Details, Advanced), Advanced collapsed by default on create and auto-expanded on edit whenever a record already has an Advanced value set (never hidden/lost). No validation or write-shape change.
+4. **Ground Transport workflow continuity**: creating a Movement auto-opens Add Vehicle for it; creating a Vehicle auto-opens Assign Passengers for it (both with a guiding toast). Assignment is now multi-select — the UI collects several participant IDs, but the page still calls the existing single-assignment endpoint once per participant (`assign_or_board_passenger` via the same route, never a bulk RPC), reporting partial failure by name rather than claiming atomicity.
+5. **People as the participant hub**: the People table gained a Logistics column (Flights/Hotel/Transport status per participant) built from three aggregate fetches (Flights, Hotels, Ground Transport movements — the same endpoints/shapes Phase B's Dashboard already established), correlated client-side by `passengerId`. Zero per-row requests. Each row also gets "Add Flight"/"Add Hotel"/"Transport" links that deep-link into Logistics with the participant preselected.
+6. **Logistics summary + URL-backed sub-tab**: a truthful counts strip (Participants/Flights/Accommodation/Ground Transport, "N configured · M need attention") sits above the Flights/Hotels/Ground Transport sub-tabs, computed from data the page already fetches. The active sub-tab now lives in `?view=flights|hotels|ground-transport`, so a refresh or a deep link (from People, or from the Dashboard's readiness cards) lands on the right sub-tab instead of always resetting to Flights.
+7. **Team & Access discoverability**: a new card on Planner Overview explains that Planner access is granted per staff member from the Members page, reusing the existing `can-administer` endpoint to decide whether to show a "Manage Team & Access" link — no new permissions editor, no new permission flags.
+8. **Responsive**: every remaining `grid-cols-2`/`grid-cols-3` in the eight Planner create/edit modals (Vendors, Checklist, People, Flights, Hotels, Movement, Vehicle — Tasks/Production already covered by Phase A's own pass) now collapses to one column below the `sm` breakpoint.
+
+**Explicitly deferred, still** (unchanged in kind from pass 1, now smaller in scope):
+- A full responsive **table→card** rewrite for Flights/Hotels/Production on narrow viewports (the brief's §14) — not attempted; these tables still rely on horizontal scroll. This is the largest remaining item from the original 9-phase brief.
+- A dedicated **Review & Readiness page/tab** distinct from the Dashboard's existing Planner Readiness grid — the grid now deep-links to the exact sub-tab per issue (§12's ask), but no separate page was built; the brief was explicit not to build a second competing readiness engine, and a full dedicated page is additional net-new surface beyond that instruction's scope.
+- **Browser/visual verification** — no browser automation tool is available in this environment (confirmed via tool search; `WebFetch` explicitly cannot reach `localhost`). This is disclosed, not hidden — see the final report's verification section.
+
+---
+
+## Continuation pass 3 — Navigation Hierarchy & Dashboard Simplification
+
+Third pass, same feature (016), no new feature folder. Triggered by the user's own visual review of pass 1/2's UI, which surfaced concrete, confirmed bugs (not new feature requests): group pills that changed labels without navigating, a sidebar that never highlighted "Events" while inside an event, a redundant event name repeated in both the global breadcrumb and the workspace's own title, and a Dashboard that still rendered 25+ individual section cards despite pass 1's grouped navigation. This pass fixes navigation/presentation only — no forms, no backend, no Blueprints/Agenda work, matching the user's explicit scope boundary.
+
+**Navigation hierarchy adopted** (per the user's own 5-level model): Organisation (sidebar + org selector) → Product (Bendie/Planner selector) → Event (title inside the workspace) → Event Area (group pills) → Section (child tabs / page-internal sub-tabs for Logistics). Each level now owns exactly one job; no level repeats what another already shows.
+
+**Confirmed bugs fixed:**
+1. **Group pills weren't navigation.** Clicking a pill (e.g. "Logistics") only changed which child tabs were *listed* — the page content stayed on whatever section was previously routed to, via an independent `selectedGroup` React state that could silently disagree with the actual route. Fixed by deleting that state entirely: the active group is now purely derived from the current route (`activeSection.group`), and each pill is a real `<Link>` to its group's first (or product-context-matching, for the one merged "Overview" pill) section.
+2. **Sidebar never highlighted "Events" inside an event workspace.** The old `isActive('/portal/events')` check only matched the three exact discovery-list routes, never falling through to a prefix check for `/portal/events/{id}/...`. Fixed by explicitly matching that prefix. Every other sidebar item (People/Assets/Teams/Activity Log/Settings — none of which has any nested child route) was tightened from `startsWith` to an exact match, so none of them could ever falsely match a longer, unrelated path.
+3. **Redundant event name in the global breadcrumb.** `TopHeader`'s breadcrumb used to end in the event's name whenever inside a workspace, duplicating the `<h1>` EventLayout already renders immediately below it. That branch is removed; the global bar now stops at product context (`Organisations > Org ▾ > Product ▾`) for event-workspace routes, and the "← All Events" back-link in the workspace itself is untouched.
+4. **Dashboard was still a 25+-card grid.** Replaced with 5 Bendie "setup area" cards (Event Setup, Programme, Attendees, Content & Media, Operations) plus one Bendie Planner card, each showing a compact "N of M complete" status and linking to the first incomplete section in that area — reusing the exact same per-section completion truth the progress bar already used, not a new calculation. The separate 8-card "Bendie Planner Readiness" grid is now one compact list panel instead.
+5. **Duplicate "what's next" controls on the Dashboard.** The floating "Next: {label}" button is now suppressed specifically on the Dashboard tab (every other tab keeps it), since "Recommended Next" already serves that exact purpose there.
+
+**Also delivered**: horizontal-scroll affordance (chevrons) added to the group-pill row (previously only the child-tab row had one); a subtle divider + faint orange tint distinguishing Planner group pills from Bendie ones at rest on a Both event; a stronger active-state treatment for child tabs (background tint added alongside the existing colored underline).
+
+**Deferred / not touched**: no form, backend, API, authorization, entitlement, or database change of any kind (confirmed via `git status` — no file under `src/app/api/` touched). No new browser-automation verification became available this pass either — the same disclosed gap as passes 1 and 2.
+
+---
+
+## Continuation pass 4 — Global Header Redesign, Organisation Isolation & Event Status Audit
+
+Fourth pass, same feature (016), no new feature folder. Two independent workstreams per the user's explicit split: (A) implementing an approved visual redesign of the global header, and (B) auditing organization-access security and the event-status model — the latter genuinely security/correctness work, not cosmetic, done first since its findings determined what the header's organisation/product selectors should actually show.
+
+### A. Organisation access audit — result: no bug found, no fix required
+
+Read-only audit (client code + live Supabase RLS inspection via `mcp__supabase__execute_sql` against the Portal project) confirmed organization visibility is enforced at **both** layers: `getAccessibleOrganizations()` (`src/lib/portalAuth.ts`) scopes non-admin users to their own `organization_members` rows client-side, **and** the live `organizations_select_member`/`organization_members_select_org_member` RLS policies independently enforce the identical restriction at the database level — a non-admin cannot see or switch into an organization they don't belong to, even by tampering with the client query. Platform admins get a real, RLS-backed bypass (`portal_is_global_admin()`), not a client-only one. Organization creation is gated both client-side (`isGlobalAdmin` in `TopHeader.tsx`, unchanged) and server-side (`organizations_insert_creator` RLS, platform-admin-only, live-verified). **No security fix was required** — this audit's result directly determined the header redesign's organisation-selector behavior (§B below), not the other way around.
+
+### B. Header redesign
+
+`TopHeader.tsx` — replaced the entire "Organisations > Org ▾ > Product ▾ > Page" breadcrumb (arrows, repeated labels, and all) with two independent context controls, matching the approved mockup exactly: no breadcrumb arrows, no repeated product name, no page-name segment, no event name (already removed in pass 3).
+- **Organisation selector**: a compact pill (`🏢 OrgName`). Renders as a real dropdown button **only when `organizations.length > 1`** (the audit-confirmed, already-correctly-scoped list) — a user with exactly one accessible organization sees a plain, non-interactive label instead of a dropdown with nothing to switch to, per §4 of the brief. "New Organisation" remains reachable only for `isGlobalAdmin`, exactly as before — inside the dropdown for multi-org admins, as a small standalone button for single-org admins (so the capability isn't lost when the dropdown itself doesn't exist).
+- **Product switcher**: a two-segment control (`[Bendie] [Bendie Planner]`, active segment highlighted) when both products are entitled; a plain static label (no control chrome at all) when only one is — the same "don't render a switcher with nothing to switch to" principle applied to product context. Entitlement source (`useProductEntitlement()`), `?product=` semantics, and `resolveProductSwitchDestination` are **completely untouched** — this is a display-only change on top of unchanged switching logic.
+- **Right-side actions** (search, notifications, settings, profile, Create): unchanged in function; Create remains the existing single-link action (`/portal/events`) — no dropdown was added, since none existed to preserve (per §9's explicit instruction not to invent functionality the mockup merely implies).
+- **Responsive**: the organisation pill always renders (icon + truncated name, `max-w-[220px]`) since it's compact enough not to need a separate mobile form; the product segmented control is desktop-only (`hidden sm:flex`), with a compact icon-triggered dropdown fallback on narrow screens — but, consistent with the "nothing to switch to" principle, that mobile fallback only renders when both products are genuinely available.
+
+### C. Event status/lifecycle audit — result: confirmed real bug, fixed with a shared helper
+
+Read-only audit (component reads + live schema/data inspection) found: `events.status` (`text NOT NULL CHECK (status IN ('draft','published','active','completed','archived'))`) is a single, fully manual dimension — nothing in the application auto-transitions it. "Upcoming" is not a status value at all; it was a compound `status === 'published' && starts_at > now` check, duplicated identically in `EventsOverviewPanel.tsx` and `OrganizationHome.tsx`. **Confirmed bug**: an event whose dates had clearly passed but whose `status` was never manually updated became permanently invisible from both the "Upcoming" and "Live" tabs/counts, surfacing only under "All" still labeled by its stale status — live-verified against real production events (see plan.md's verification table), and found to affect **`active`-status events at least as much as `published` ones** (the majority of real `active` events in the database had end dates weeks-to-months in the past).
+
+**Fix**: a new single canonical helper, `src/lib/eventLifecycle.ts`'s `deriveEventLifecycle()`, now used everywhere status is displayed or counted (`EventsOverviewPanel.tsx`'s tabs and pill, `OrganizationHome.tsx`'s metric counts and attention-scan filter, `EventLayout.tsx`'s workspace status pill). Rule: `draft`/`archived`/`completed` are terminal human decisions that always win outright, never second-guessed by dates. `active` and `published` are each reclassified to `completed` when their own recorded `ends_at` has unambiguously passed (closing the exact gap found); `published` is further split into `upcoming` (future `starts_at`) or `active`/"Live" (currently within its date window) when dates are present, and left as plain `published` only when there's no date evidence to reason from at all. No database change — this is purely a smarter, consistent, shared *read-side* derivation.
+
+### D. Overview copy simplification
+
+`OrganizationHome.tsx`'s greeting sentence — "Here is what is happening across {org} in {product}." — no longer repeats the product name in words, since the header's new segmented control already makes it visually unambiguous: "Here's what's happening in {org}."
+
+---
+
+## Continuation pass 5 — Activity Log Simplification + People/Teams/Event Access Discovery
+
+Fifth pass, same feature (016), no new feature folder. Two independent workstreams: (A) a real UI implementation — simplifying both Activity Log surfaces from raw table/action/JSON exposure to human-readable "who did what, where, when" — and (B) a pure read-only discovery/audit of the People → Teams → Event Members → Bendie access → Planner access model, explicitly **not** implemented this pass (no schema changes, no new membership tables, no role changes — discovery only, per the user's own instruction).
+
+### A. Activity Log — implemented
+
+**Problem confirmed**: both `/portal/activity-log` (`organization_audit_log`) and the event workspace's own Activity Log tab (`event_content_audit_log`) rendered every row as a raw `INSERT`/`UPDATE`/`DELETE` badge, a raw table name in `<code>`, and — on expansion — a raw `JSON.stringify(diff)` blob including UUIDs, storage paths, and internal foreign keys by default.
+
+**Live-verified `diff` shapes** (read-only queries against real audit rows) that the fix is built on: INSERT/DELETE `diff` is a flat snapshot of the row's own columns; UPDATE `diff` has one key per **already-changed** field only, each shaped `{old, new}` — the trigger populating it has already done the "only show what changed" filtering at the database level, so no unchanged-field noise needed removing at the UI layer for UPDATE rows.
+
+**New shared module**: `src/lib/activityPresentation.ts` — one place for both Activity Log pages (which share an identical row shape and had an identical problem) rather than two copies of the same mapping. Exports: `friendlyArea(table)` (friendly module names, e.g. `organization_assets` → "Assets", `event_members` → "Event Members", with an automatic humanized fallback for any table not explicitly mapped — never a broken UI for an unanticipated table); `describeAction(entry, subjectName?)` (per-table, per-action human verb phrases, e.g. `event_members`+`DELETE` → "removed {subject} from the event," with a generic "{Added/Updated/Removed} {area}" fallback for anything unmapped); `extractHeadline(entry)` (a short second line — e.g. an asset's file name — from whichever common field is present, `null` when none is found, never fabricated); `extractSubjectId`/`tableHasSubject` (resolves which `diff` field names the *person the row is about*, e.g. `event_members.user_id`, distinct from `actor_user_id` who performed the action); `summarizeChanges(entry)` (the human "old → new" list for UPDATE, or a handful of the record's own meaningful fields for INSERT/DELETE — always excluding a fixed set of internal fields: ids, foreign keys, storage paths, sync bookkeeping).
+
+**Subject-name resolution**: both pages now do one small batch `profiles` lookup per page of results (never per-row) to resolve `event_members`/`organization_members`/`team_members`' subject `user_id` into an actual name, enabling "Mary Mwende removed John Kamau from the event" rather than a bare UUID — the exact detail the brief's own worked examples asked for.
+
+**Raw JSON**: never the default view. It sits behind a second, nested "Technical details" disclosure inside the already-expanded human "Changes" view, and that disclosure is only rendered at all for `isGlobalAdmin` — the existing platform-admin flag already used elsewhere in the app for exactly this class of "raw technical view" gating, not a new permission concept.
+
+**Filters**: "All Tables" → "All Areas" (values still map to the real table names for the query; only the visible label is friendlied); "Insert/Update/Delete" → "Added/Updated/Removed".
+
+**Known, disclosed gap**: the brief's own worked example shows a second line naming the *event* an `event_members` change happened on ("Stawi Escape — Event Members"). This wasn't implemented — on the event-scoped Activity Log page it would be redundant (the whole page is already scoped to one event, visible in the page header), and the org-scoped page doesn't currently log `event_members` at all in real data (confirmed live — only `organization_assets` INSERTs exist there today). Implementing event-name resolution for a hypothetical future cross-event org-level member log was judged not worth a second batch-lookup path for a case that doesn't occur in current data — flagged honestly rather than silently built partially.
+
+### B. People/Teams/Event Access — discovery only, see plan.md's full findings and the final report
+
+No implementation. A dedicated research pass audited: the Organisation People model (`organization_members`), Organisation Teams (`teams`/`team_members`) and whether they integrate with events today, the Event Members model and its three add-paths (Add Member, Add All Organisation Members, CSV import), the Organisation-People-page's own event-assignment action, actual `event_members.role` values and their real effects, what grants Bendie vs. Planner access, and confirmation that Planner People/Participants (`passengers`/`event_passengers`) remains structurally separate from every staff/access identity table. Full findings, the identity matrix, and the three-person worked example are in the final report — no code, schema, or migration changes were made for this half of the pass.
+
+---
+
+## Continuation pass 6 — Event Team Foundation Fix + Unified People Assignment
+
+Sixth pass, same feature (016), no new feature folder. Implements against the pass 5 discovery findings: fixes the two confirmed foundation bugs (Teams RLS, `event_members` DELETE RLS), then consolidates the previously-scattered Add Member / Add All Organisation Members / Import CSV / Assign Team / People-page-checkbox provisioning paths into one shared service and one "+ Add People" entry point on the renamed "Event Team" page, with Event Role and Product Access made visually and architecturally distinct per the locked product decision.
+
+### Foundation fixes (Phase 1)
+
+- **Teams RLS**: `teams`/`team_members` were previously readable/writable only by `portal_is_global_admin()`. Added organisation-scoped policies (additive — the existing global-admin policies are untouched): any organisation member can `SELECT` their org's teams/membership; only organisation owner/admin can `INSERT`/`UPDATE`/`DELETE` a team belonging to their own organisation, and can only add people who are themselves already members of that same organisation. Cross-organisation access remains structurally impossible (every check is scoped via the team's own `organization_id`). Verified via direct boolean-expression evaluation of the exact `is_organization_admin`/`is_organization_member` calls the new policies use, against real organisation admins and a real cross-organisation pair (see plan.md for the query results) — not a full session-impersonation behavioral test (this session's tooling cannot safely construct a fake authenticated session; the logical-equivalence proof is the safe alternative, consistent with the precedent set in Feature 008's convergence pass).
+- **`event_members` DELETE**: previously had no DELETE policy beyond the global-admin one, so an authorized event host/organizer/admin saw a working "Remove" control with no underlying DELETE path. Added `event_members_delete_host_or_organizer`, mirroring the existing UPDATE policy's host/organizer half exactly (`is_event_host_or_organizer(event_id, auth.uid())`) — cross-event/cross-organisation deletion remains impossible since that helper is already event-scoped, and the existing role-update guard trigger is UPDATE-only and untouched.
+- Neither fix required inventing a new security rule — both are additive uses of already-established, already-tested helper functions, so the "stop and ask" escalation path in the brief was not triggered.
+
+### Shared provisioning service (Phase 2)
+
+New `src/lib/eventTeamProvisioning.ts` — the single service every add-people entry point now routes through, replacing four previously-divergent hardcoded-`attendee` implementations (`handleAddAllOrgMembers`, `handleAssignTeam`, `EventAssignmentsDropdown`'s direct insert, and the CSV importer's own insert). Event Role and Product Access are deliberately independent: adding someone always writes one `event_members` row (Event Role is a required field of that row — there is no way to represent "product access with no event role" without a schema change, and none was invented), then Bendie/Planner access are separate, optional, individually-awaited-and-checked steps layered on top. Planner access reuses Feature 008's own `enable`/`PATCH` routes verbatim (never a second permissions implementation) — both independently re-verify `canAdministerPlannerPermissions` server-side, so a UI that incorrectly offered the option still cannot bypass authorization; the result (`granted`/`denied`/`failed`) is reported per person, never assumed.
+
+**Bendie access — the disclosed architectural limitation (per the brief's own instruction not to fake independence):** an `event_members` row is architecturally always Bendie-eligible in the current schema (an access code can be issued for any member at any time via the pre-existing Resend Code action) — there is no independent "Bendie enabled" flag to toggle without a schema change, and none was added. The "Bendie access" toggle in the new Add People flow is therefore honestly scoped to mean "send an access code now," not "grant/deny eligibility" — documented in the Event Team list's own inline copy and in code comments, not silently glossed over.
+
+### Unified Add People experience (Phases 3–6)
+
+- **Event Team page** (`members/page.tsx`, route path unchanged — no route migration): "Members" → "Event Team" throughout (page title, section label in `eventSectionMeta.ts`, counts, empty states); the single `+ Add People ▾` menu (`AddPeopleMenu.tsx`) replaces the old scattered buttons, offering From organisation, From team, Invite new person, Import CSV, and — deliberately last, not beside the primary CTA — Add all organisation people.
+- **From organisation / Invite new** (`AddPeopleModal.tsx`, one component with a `mode` switch — selection UI differs, the Event Role/Product Access configuration step and the underlying provisioning call are identical): multi-select search picker or email+name form, then the shared config step, then a per-person result list (never a bare success toast for a multi-step operation).
+- **From team** (`AddFromTeamModal.tsx`): pick a team → live preview of exactly who would actually be added (already-on-event people are pre-excluded, never blindly inserting the whole team) → deselect individuals if needed → shared config step. Teams themselves carry no event-role or product-access implication, matching the locked "Teams = reusable grouping only" decision.
+- **Add all organisation people** (`AddAllOrgPeopleModal.tsx`): shows total/already-in-event/will-be-added counts and the shared config step before any write — never a silent bulk attendee-add.
+- **Event Role / Product Access — visually separated** (`EventAccessConfigFields.tsx`, one shared component used by all four flows above): two bordered sections, "Event Role" (a single select) and "Product Access" (Bendie checkbox + Planner Viewer/Manager/None, each only shown when the event actually has that product). When the caller cannot administer Planner permissions, the Planner control is replaced with explanatory text, never a toggle that would silently 403 — satisfying the brief's "a UI toggle must never bypass authorization" rule directly, on top of the server-side re-verification already described above.
+- **People page** (`EventAssignmentsDropdown.tsx`): "adding" a person to an event now opens an inline Event Role picker + Bendie-access checkbox and calls the exact same `addPersonToEvent` shared function, instead of the old instant hardcoded-`attendee` insert — the two provisioning engines are now one. Planner access configuration was deliberately left out of this compact inline surface (full Planner configuration remains a page-level concern) — a disclosed scope reduction, not an oversight. Removal (unchecking) is functionally unchanged, now genuinely reliable given the `event_members` DELETE RLS fix above.
+- **Teams page**: added an organisation-admin client-side check (`is_organization_admin` RPC) so Create/Delete/Manage Members controls are only shown to people who can actually use them post-RLS-fix; copy updated to reference the new "Add People → From team" journey. No event-role, Planner-permission, or Bendie-access concept was added to Teams (teams remain pure grouping, per the locked decision).
+- **CSV** (`Import Event Team` on the Event Team page): `csvImport.ts`/`CsvImportModal.tsx` (Feature 015) are unchanged. The row template gained two optional columns — `bendieAccess` (yes/no) and `plannerAccess` (none/viewer/manager) — additive and backward-compatible: an omitted `bendieAccess` defaults to `false` (matching the pre-existing CSV path, which never auto-issued a code either) and an omitted `plannerAccess` defaults to `none`. This is a deliberate, disclosed behavior change from the old CSV path's implicit role-derived Planner auto-sync: per the locked "never infer product access from role" decision, Planner access must now be explicit even via CSV. Each row now routes through the same shared `resolveOrCreatePersonByEmail` + `addPersonToEvent` calls as every other entry point (previously its own separate insert logic), at the cost of per-row rather than batched identity resolution — a simplicity trade-off, not a correctness gap.
+
+### Deliberately deferred within this pass
+
+- Planner access "Custom" module-by-module configuration is not offered in the Add People flow (Viewer/Manager/None only) — a manager needing Custom permissions for a newly-added person uses the pre-existing per-row "Bendie Planner Access" action afterward (unchanged, still available). A simplicity trade-off, not a missing capability.
+- The Event Team list's "Products" column shows a static "Bendie" badge for every row (per the architectural limitation above) and a "Planner…" link rather than eagerly fetching and displaying live per-row Planner status — building that would require a new batch-read endpoint against Planner's `event_user_assignments` that does not exist today; out of scope for a focused pass.
+- The Teams page's "Manage Members" control is hidden entirely (not shown read-only) for non-admin organisation members, even though the new Teams RLS lets them `SELECT` team membership — a minor, disclosed UX gap, not a security gap.
+- No browser/visual verification was performed (same disclosed environment limitation as every prior pass in this feature — no browser-automation tool is available in this workspace).
+
+---
+
+## Continuation pass 7 — Attendees / Participants Person-Journey Clarification
+
+Seventh pass, same feature (016), no new feature folder. Two stages: Stage 1 traced the current person models (no code changes); Stage 2 implemented the safest UX improvement the evidence supported.
+
+### Stage 1 finding — the central discovery
+
+**"Bendie Attendees" is not a separate canonical model.** It is `event_members` itself — the exact same table and page as "Event Team" (Continuation pass 6). The Portal's "Attendees" navigation group today contains the Event Team tab, `attendee-travel`, and `networking` — there is no distinct attendee-only table or page underneath the word "Attendees." Any event_members row (any role) is what makes someone Bendie-eligible, confirmed again this pass via `issue_event_access_code`'s precondition check. This means the premise "should Jane be entered twice" for Bendie access doesn't arise for Bendie itself — Event Team IS the attendee list. The real duplicate-entry question is specifically about **Planner Participants** (`passengers`/`event_passengers`, Feature 011), which are genuinely, structurally separate — confirmed again this pass: zero FK from `passengers`/`event_passengers` to `profiles`/`event_members`, matching Continuation pass 5's finding.
+
+**The matching mechanism was not invented — it was found, already twice-precedented.** `src/app/api/admin/planner-pull-travel/route.ts` (Feature 001) already matches Planner `passengers.email` against Portal `event_members`' joined `profiles.email` (exact, lowercased, event-scoped) to pull travel data into Bendie's `attendee_travel_details`. `planner-people/page.tsx`'s existing CSV importer (Feature 015) already implements the identical "search by email → exact match → link, else create" rule for adding participants from a spreadsheet. Both are real, shipped, already-accepted uses of exact-email matching between these two models — this pass's "From Bendie Attendees"/"From Organisation" flows apply the exact same rule a third time, in the reverse direction, via Feature 011's own existing routes. No new stable cross-model ID was found or was needed; per the locked "safe matching" rule, only exact email matches link to an existing global `passengers` record, and a person is always an explicit, named selection by the manager — never an automatic guess.
+
+### Stage 2 — implemented
+
+New shared `src/lib/plannerParticipantMatching.ts` (`matchOrCreateParticipant`) — reuses Feature 011's existing `/planner-people`, `/planner-people/search`, `/planner-people/link` routes only, no new API. New `AddParticipantMenu.tsx` (From Bendie Attendees — gated to Bendie-available events only — / From organisation / Add new participant / Import CSV) and `AddParticipantFromPortalModal.tsx` (multi-select picker, excludes/marks already-linked participants, per-person outcome reporting) on the Planner Participants page. The CSV importer was refactored (not rewritten) to call the same shared matcher for its common case. Planner "People" was relabeled "Participants" in user-facing copy (`eventSectionMeta.ts` label/desc/group only — route `key` unchanged, Feature 011's CRUD/component names untouched). A "Bendie Attendee" cross-status badge appears on a Participant row only on an exact-email match against the event's own `event_members` — never inferred from name, and never shown before the match data has loaded.
+
+**Explicitly preserved, per instruction:** no `event_user_assignments` row is ever created as a side effect of becoming a Participant — Feature 008 remains the sole authority for Planner staff access, and nothing in this pass's new code path touches Planner permissions at all.
+
+### Visual cleanup completed this pass
+
+Event Team's role column no longer shows a duplicate badge+select pair — one editable colored-pill `<select>`. The Person-column pencil icon was inspected and confirmed to open `EditProfileModal` (profile fields, not role) — retained, not removed. The organisation selector's `max-w-[220px]` cap (both dropdown-button and static-label variants) was widened to `max-w-[360px]` so normal-length organisation names display fully; `truncate` remains as a safety net. Activity Log's raw-JSON "Technical details" disclosure was confirmed still gated to `isGlobalAdmin` only (unchanged from Continuation pass 5) — no code change was needed there, only verification. A "Planner…" product-label truncation site beyond the already-fixed organisation selector could not be located from source alone (`TopHeader.tsx`, `OrganizationEventsList.tsx`, `EventLayout.tsx`, `OrgSideNav.tsx` were all checked) — deferred pending a concrete repro.
+
+### Deliberately not done
+
+No new "Attendees" page distinct from Event Team was built — the evidence shows they are the same model today, and fabricating a separate page/table split would have been the "merge/split models without evidence" mistake this pass was explicitly warned against in the other direction. No schema change, no new API route, no change to Feature 008/011/012/013's canonical relationships.
+
+---
+
+## Continuation pass 8 — Portal UX Cleanup, Identity Clarity & Navigation Polish
+
+### Locked terminology (per this pass's explicit instruction — record verbatim)
+
+- **Organisation People** = reusable people belonging to the organisation (`organization_members`).
+- **Bendie Attendees & Access** = `event_members` — people belonging to the Bendie event / Bendie access population. (Renamed from "Event Team," which wrongly implied internal-staff-only.)
+- **Planner Participants** = `passengers` + `event_passengers` — people operationally tracked for travel/logistics (Feature 011, unchanged).
+- **Planner Team & Access** = `event_user_assignments` + the Feature 008 permission model — people who actually work inside Planner and their permissions.
+
+These four remain architecturally independent — this pass changed presentation/copy only, never the underlying models or their relationships.
+
+### Planner Participants navigation-stability investigation
+
+Traced end-to-end: `EventLayout`'s per-module capability state machine (`plannerPeopleCapability`/`plannerPeopleCapabilityPending`/`plannerPeopleDeferToPage`), the redirect effects (mismatched-origin safety net, origin-signal backfill), the group-pill/tab href construction, and the Participants page's own data-loading effects. The capability state machine itself is structurally sound and identical in shape to every other already-shipped Planner module (Tasks/Vendors/Checklist/Logistics/Production), none of which are reported as crashing — this rules out the state machine itself as a uniquely-Participants-specific cause. Two genuine, concrete defects were found and fixed in the Participants-specific code from the previous pass (missing error handling that could leave the UI stuck), plus one confirmed real navigation bug affecting the group-pill link itself (wrong `?product=` signal for single-product groups), and one defense-in-depth hardening was added to `EventLayout`'s redirect effect. Full technical detail in plan.md, including an honest account of what live verification was and wasn't possible in this environment.
+
+### Terminology and presentation changes
+
+"Event Team" → "Attendees & Access" everywhere user-visible (route/`key` unchanged). "People" → "Participants" for every Planner-participant-specific label, including one the previous pass missed (Dashboard's Planner Readiness card). "Organisation People" (a distinct, legitimate concept) was explicitly left untouched. The Products/access column on Attendees & Access no longer shows a Planner-access pill that looked like live status but wasn't — it's been replaced with an honest, static Bendie-eligibility label, and the Planner-access management action moved to Actions, relabeled "Team & Access."
+
+### Deliberately not done
+
+No broad empty-state audit across every Planner module (Tasks/Vendors/Checklist/Production/Logistics) — only Planner Participants (the one actually reported) was fixed; Tasks was spot-checked and found not to have the same duplication. No live Planner-access batch-status endpoint was built (would be N+1 or require new infrastructure) — the Products column was made honest instead of building that. No browser verification was performed (disclosed, consistent with every prior pass).
+
+---
+
+## Continuation pass 9 — Portal Performance, Navigation Stability & Login UX Pass
+
+### The Logistics/Production flicker — root cause and fix
+
+**Confirmed root cause**: `EventLayout` fires six independent Planner sub-module capability fetches (Tasks/Vendors/Checklist/Participants/Logistics/Production) concurrently once Planner availability is confirmed. They resolve at whatever speed each individual network request happens to complete — not atomically. `visibleSections`/`groupedVisibleSections` are recomputed on every render directly from current capability state, so a module whose fetch simply hasn't resolved *yet* is correctly-but-misleadingly excluded from the tab bar while its faster-resolving siblings are already shown. This is exactly the reported "Participants and Production visible, Logistics missing" symptom — a genuine race, unrelated to the user's actual capabilities or the event's product configuration, and unrelated to which tab is currently active.
+
+**Fix**: a new `navSettled` flag (true once every relevant Planner sub-module capability has left `'loading'`) gates the group-pill/tab-bar rendering specifically — while unsettled, a stable skeleton placeholder renders instead of the partially-computed section list. This directly closes the "`undefined` treated as `false`" anti-pattern this investigation was asked to look for.
+
+### Performance findings
+
+Two genuine, confirmed duplicate-request bugs were found and fixed on the login/initial-page-load critical path: `AuthContext` was fetching the user's profile TWICE on every single page load (an unnecessary explicit `getSession()` call racing the already-sufficient `onAuthStateChange` listener, which fires once immediately with the current session on subscribe); `getAccessibleOrganizations()` and `getAccessibleEvents()` (`portalAuth.ts`) were each independently re-fetching the user and their `global_role` from scratch via `supabase.auth.getUser()` + a separate profile query, even though their real callers (`OrganizationContext`/`EventContext`) already have both from `AuthContext`. All three are fixed with a minimal, backward-compatible pattern (an optional `knownUser`/removed-redundant-call), removing real, unnecessary sequential Supabase round trips from every login and every fresh page load — not a speculative change, each one traced to an exact duplicate request in the actual source. Full request-waterfall map in plan.md.
+
+### Login page and loading UX
+
+Reused the existing `/public/bendie.png` logo (already used in `OrgSideNav.tsx` — no new asset created or downloaded) above the login form, matching the requested "Welcome back / Sign in to continue" hierarchy. The submit-button loading state ("Signing in…", disabled inputs, credentials preserved on failure) was found to already meet every requirement in this pass's brief — confirmed, not rebuilt. The post-login transitional screen (`AuthContext.loading`) now carries the same branding and clearer copy instead of a bare unbranded spinner.
+
+### Small cleanup items
+
+Participants page description de-duplicated (one line in `eventSectionMeta.ts`, a subtle contextual link instead of a second paragraph); "Add People" → "Add Attendees" / "Invite new person" → "Invite new attendee" (the explicitly-preserved source labels — From organisation, From team, Import CSV, Add all organisation people — left unchanged); Attendees & Access description simplified to one sentence; role filter chips and selects properly capitalized via the existing `EVENT_MEMBER_ROLE_LABELS` map (stored values unchanged).
+
+### Bendie Access / Onboarding — documented, not changed
+
+Re-confirmed: "Eligible" reflects genuine architecture (any `event_members` row is Bendie-eligible), `onboarding_status` has no write path anywhere in this codebase, and `event_user_access_codes`' own RLS (`user_id = auth.uid()` only) means a manager cannot read whether another person's access code exists, was sent, or was used — so no richer truthful status is currently derivable without an RLS change, which was correctly not made. No fake status logic was introduced.
+
+### Deliberately not done
+
+No route-level `loading.tsx` files added, no further Supabase query restructuring beyond the two confirmed duplicate-request fixes, no prefetch tuning, and no measured before/after millisecond timings (no browser-timing/APM tool available in this environment — only source-level request-count reduction could be established, not measured latency). No broader Actions-menu redesign on Attendees & Access (explicitly out of scope this pass).
+
+---
+
+## Continuation pass 10 — Portal Navigation Performance & Stress-Stability Pass
+
+### The rapid-navigation instability — root cause
+
+Every event-workspace child page implicated in the reported stress sequences already guarded its own local state against a stale response overwriting fresher state (`requestIdRef` staleness counters) — ruling out state corruption as the primary mechanism. The genuine, evidenced mechanism instead: none of these pages' `fetch()`/Supabase calls were ever actually CANCELLED when superseded by a newer navigation — only state-guarded after the fact. Under rapid tab switching, every previous tab's in-flight request kept running to completion regardless, consuming real network/Supabase capacity that the currently-visible destination was competing for. This is a genuine request-storm/resource-contention problem, not a logic bug — and it directly explains every symptom reported (feels frozen, unstable under stress, slow across many pages), independent of the earlier passes' already-fixed duplicate-fetch and nav-flicker issues.
+
+### Fix
+
+New shared `src/lib/useLatestRequest.ts` — a small "latest request wins" primitive built on the standard `AbortController` pattern, retrofitted into the four highest-traffic pages named in the user's own stress sequences (Participants, Logistics, Production, Attendees & Access). A superseded request is now actually aborted, and an abort is always treated as a silent no-op — never a toast, never an error state, never a redirect, per the explicit "cancellation is not an application error" rule.
+
+### EventLayout — re-verified, not changed
+
+Re-traced the capability/redirect state machine specifically for the RAPID-clicking scenario (as opposed to the previous pass's initial-load-race scenario): the six Planner capability fetches only run once per event (not per tab click), and the redirect effect's single-authority bypass (added last pass) already prevents spurious redirects once capability state has settled. No further EventLayout logic change was needed — confirmed via source tracing, not assumed.
+
+### Deliberately not done (scope discipline)
+
+The remaining ~16 simple Bendie content pages (not named in any stress sequence, and structurally simpler single-table reads) were NOT retrofitted with `useLatestRequest` — flagged as a future candidate, not done here, to avoid the "broad refactor" this pass was explicitly warned against. Server-side per-request re-verification of the full Planner authorization chain (a real, measurable source of redundant work) was investigated and deliberately left unchanged — it is this codebase's own established, repeatedly-documented security posture across 6+ shipped modules, and the explicit "authorization must remain correct" instruction rules out trading it for speed. No automated tests were added (no existing test framework in this codebase). No browser-based stress testing was performed (no browser-automation tool available) — verification this pass is source-level tracing plus live HTTP probing, disclosed honestly throughout.

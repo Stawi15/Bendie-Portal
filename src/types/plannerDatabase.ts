@@ -167,6 +167,102 @@ export interface PlannerDatabase {
         };
       };
       /**
+       * Feature 007 — `operational_tasks`, existing live table, read/write from
+       * this feature. Deliberately narrowed, matching this file's own convention
+       * (see `event_summary_realtime` below): omits `assigned_to` (legacy `users`
+       * FK, unused), the trigger-derived `pending`/`active`/`completed` booleans
+       * (never set directly — `enforce_operational_task_status()` derives them),
+       * and three additional live columns confirmed present via a fresh
+       * `information_schema` query during `/speckit.analyze` but never read or
+       * written by this feature: `responsible_party` (legacy free-text, superseded
+       * by `assigned_profile_id`), `source_ref`, `metadata` (`jsonb`, defaulted).
+       * `PlannerDatabase` is never used as a generic type parameter anywhere in
+       * this codebase (confirmed via `grep`) — this block is a hand-maintained
+       * documentation/reference only, matching every other block in this file.
+       */
+      operational_tasks: {
+        Row: {
+          task_id: number;
+          event_id: number | null;
+          task_code: string | null;
+          task: string;
+          category: string | null;
+          status: string | null;
+          priority: string | null;
+          due_date: string | null;
+          remarks: string | null;
+          assigned_profile_id: string | null;
+          created_by_profile_id: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          task_id?: number;
+          event_id: number;
+          task_code?: string | null;
+          task: string;
+          category?: string | null;
+          status?: string | null;
+          priority?: string | null;
+          due_date?: string | null;
+          remarks?: string | null;
+          assigned_profile_id?: string | null;
+          created_by_profile_id?: string | null;
+        };
+      };
+      /**
+       * Feature 009 — `event_vendor_items`, existing live table, read/write from
+       * this feature. Canonical source of truth for Bendie Planner vendor items;
+       * no Portal-side copy exists. `is_packed`/`is_loaded`/`is_on_site` and their
+       * paired `*_at`/`*_by_profile_id` columns are database-trigger-governed
+       * (`trg_enforce_vendor_item_stage_order`, `trg_prevent_unsafe_vendor_item_edit`
+       * — see data-model.md §2): the trigger enforces packed→loaded→on-site
+       * ordering/cascade and re-stamps each stage's timestamp/actor on change,
+       * deriving the actor from `auth.uid()` (always null for this feature's
+       * service-role writes). `category`/`item_description`/`quantity_text`/`unit`/
+       * `sort_order` are immutable after creation through this feature (the same
+       * trigger raises an exception on any such edit without a live Planner
+       * session) — `notes` is deliberately excluded from that guard and remains
+       * editable. `PlannerDatabase` is never used as a generic type parameter
+       * anywhere in this codebase — this block is hand-maintained documentation
+       * only, matching every other block in this file.
+       */
+      event_vendor_items: {
+        Row: {
+          vendor_item_id: number;
+          event_id: number;
+          category: string;
+          item_description: string;
+          quantity_text: string | null;
+          unit: string | null;
+          sort_order: number;
+          is_packed: boolean;
+          packed_at: string | null;
+          packed_by_profile_id: string | null;
+          is_loaded: boolean;
+          loaded_at: string | null;
+          loaded_by_profile_id: string | null;
+          is_on_site: boolean;
+          on_site_at: string | null;
+          on_site_by_profile_id: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+          created_by_profile_id: string | null;
+        };
+        Insert: {
+          vendor_item_id?: number;
+          event_id: number;
+          category?: string;
+          item_description: string;
+          quantity_text?: string | null;
+          unit?: string | null;
+          sort_order?: number;
+          notes?: string | null;
+          created_by_profile_id?: string | null;
+        };
+      };
+      /**
        * Feature 005 — a materialized view (`~1 minute` `pg_cron` refresh),
        * one row per event including zero-session events. Only the columns
        * Feature 005's Planner Overview actually reads are declared here —

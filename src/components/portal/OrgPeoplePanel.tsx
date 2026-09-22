@@ -123,6 +123,8 @@ export function OrgPeoplePanel({
                     {organizationId ? (
                       <EventAssignmentsDropdown
                         userId={person.userId}
+                        userEmail={person.email}
+                        userLabel={person.fullName ?? person.email ?? 'this person'}
                         organizationId={organizationId}
                         events={events}
                         assignedEventIds={person.assignedEventIds}

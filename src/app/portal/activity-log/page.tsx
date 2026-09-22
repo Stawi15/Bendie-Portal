@@ -2,41 +2,43 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
+import {
+  type AuditEntry,
+  type AuditAction,
+  TABLE_AREA_LABELS,
+  friendlyArea,
+  describeAction,
+  extractHeadline,
+  extractSubjectId,
+  tableHasSubject,
+  summarizeChanges,
+} from '@/lib/activityPresentation';
 
-type AuditEntry = {
-  id: string;
-  table_name: string;
-  action: 'INSERT' | 'UPDATE' | 'DELETE';
-  row_id: string;
-  diff: Record<string, unknown> | null;
-  created_at: string;
-  profiles: {
-    full_name: string | null;
-    email: string | null;
-    avatar_url: string | null;
-  } | null;
-};
-
-const ACTION_COLORS = {
-  INSERT: 'bg-green-100 text-green-700',
-  UPDATE: 'bg-primary/10 text-primary',
-  DELETE: 'bg-error/10 text-error',
+const ACTION_FILTER_LABELS: Record<AuditAction | 'all', string> = {
+  all: 'All Actions',
+  INSERT: 'Added',
+  UPDATE: 'Updated',
+  DELETE: 'Removed',
 };
 
 const PAGE_SIZE = 30;
 
 export default function OrganizationActivityLogPage() {
   const { organizationId, loading: orgLoading } = useOrganization();
+  const { isGlobalAdmin } = useAuth();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [subjectNames, setSubjectNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [tableFilter, setTableFilter] = useState('all');
   const [actionFilter, setActionFilter] = useState('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [technicalOpenId, setTechnicalOpenId] = useState<string | null>(null);
   const [tables, setTables] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
@@ -56,12 +58,31 @@ export default function OrganizationActivityLogPage() {
     if (error) {
       console.error(error);
       setEntries([]);
+      setSubjectNames({});
     } else {
-      setEntries((data as unknown as AuditEntry[]) ?? []);
+      const rows = (data as unknown as AuditEntry[]) ?? [];
+      setEntries(rows);
       setTotal(count ?? 0);
       if (data) {
-        const uniqueTables = Array.from(new Set((data as unknown as AuditEntry[]).map(e => e.table_name)));
-        setTables(prev => Array.from(new Set([...prev, ...uniqueTables])));
+        const uniqueTables = Array.from(new Set(rows.map((e) => e.table_name)));
+        setTables((prev) => Array.from(new Set([...prev, ...uniqueTables])));
+      }
+
+      // Resolve subject names (e.g. "John Kamau" in "added John Kamau to
+      // the organisation") for tables that have one — one small batch
+      // lookup, not a per-row request.
+      const subjectIds = Array.from(
+        new Set(rows.filter((e) => tableHasSubject(e.table_name)).map((e) => extractSubjectId(e)).filter((id): id is string => !!id))
+      );
+      if (subjectIds.length > 0) {
+        const { data: profileRows } = await supabase.from('profiles').select('id, full_name, email').in('id', subjectIds);
+        const map: Record<string, string> = {};
+        for (const p of (profileRows as { id: string; full_name: string | null; email: string | null }[]) ?? []) {
+          map[p.id] = p.full_name ?? p.email ?? 'Unknown person';
+        }
+        setSubjectNames(map);
+      } else {
+        setSubjectNames({});
       }
     }
     setLoading(false);
@@ -80,8 +101,8 @@ export default function OrganizationActivityLogPage() {
         <div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface">Activity Log</h1>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">
-            Audit trail of organisation-level changes — Teams and Assets. Per-event content changes are on each
-            event&apos;s own Activity Log tab.
+            Who did what, and when — organisation-level changes (Teams and Assets). Per-event content changes are on
+            each event&apos;s own Activity Log tab.
           </p>
         </div>
         <button onClick={fetchData} className="btn-secondary text-xs py-1.5 flex-shrink-0">
@@ -90,21 +111,26 @@ export default function OrganizationActivityLogPage() {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-5">
-        <select value={tableFilter} onChange={e => { setTableFilter(e.target.value); setPage(0); }} className="input w-full sm:w-44 text-sm">
-          <option value="all">All Tables</option>
-          {tables.map(t => <option key={t} value={t}>{t}</option>)}
+        <select value={tableFilter} onChange={(e) => { setTableFilter(e.target.value); setPage(0); }} className="input w-full sm:w-48 text-sm">
+          <option value="all">All Areas</option>
+          {tables.map((t) => (
+            <option key={t} value={t}>
+              {TABLE_AREA_LABELS[t] ?? friendlyArea(t)}
+            </option>
+          ))}
         </select>
-        <select value={actionFilter} onChange={e => { setActionFilter(e.target.value); setPage(0); }} className="input w-full sm:w-36 text-sm">
-          <option value="all">All Actions</option>
-          <option value="INSERT">Insert</option>
-          <option value="UPDATE">Update</option>
-          <option value="DELETE">Delete</option>
+        <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(0); }} className="input w-full sm:w-36 text-sm">
+          {(['all', 'INSERT', 'UPDATE', 'DELETE'] as const).map((a) => (
+            <option key={a} value={a}>
+              {ACTION_FILTER_LABELS[a]}
+            </option>
+          ))}
         </select>
         {total > 0 && <span className="self-center text-sm text-on-surface-variant">{total} entries</span>}
       </div>
 
       {loading || orgLoading ? (
-        <div className="animate-pulse space-y-2">{[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 bg-surface-container-low rounded-[20px]" />)}</div>
+        <div className="animate-pulse space-y-2">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : entries.length === 0 ? (
         <div className="text-center py-20 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">history</p>
@@ -114,43 +140,85 @@ export default function OrganizationActivityLogPage() {
       ) : (
         <>
           <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow overflow-hidden divide-y divide-outline-variant/30">
-            {entries.map(entry => {
+            {entries.map((entry) => {
               const p = entry.profiles;
               const isExpanded = expandedId === entry.id;
+              const actorName = p?.full_name ?? p?.email ?? 'Someone';
+              const subjectName = tableHasSubject(entry.table_name) ? subjectNames[extractSubjectId(entry) ?? ''] : undefined;
+              const actionLine = describeAction(entry, subjectName);
+              const headline = extractHeadline(entry);
+              const changes = isExpanded ? summarizeChanges(entry) : [];
+              const showTechnical = technicalOpenId === entry.id;
+
               return (
                 <div key={entry.id}>
-                  <button className="w-full flex items-center gap-4 px-5 py-3 hover:bg-surface-container-low/40 transition text-left" onClick={() => setExpandedId(isExpanded ? null : entry.id)}>
-                    <span className={`text-xs px-2 py-0.5 rounded font-semibold flex-shrink-0 ${ACTION_COLORS[entry.action]}`}>
-                      {entry.action}
-                    </span>
-                    <code className="hidden sm:inline-block text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded flex-shrink-0">{entry.table_name}</code>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {p?.avatar_url && <Avatar name={p.full_name} email={p.email} avatarUrl={p.avatar_url} size={20} />}
-                      <span className="text-sm text-on-surface truncate">{p?.full_name ?? p?.email ?? 'Unknown user'}</span>
+                  <button
+                    className="w-full flex items-start gap-3 px-5 py-3.5 hover:bg-surface-container-low/40 transition text-left"
+                    onClick={() => setExpandedId(isExpanded ? null : entry.id)}
+                  >
+                    <Avatar name={p?.full_name} email={p?.email} avatarUrl={p?.avatar_url} size={32} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-on-surface">
+                        <span className="font-semibold">{actorName}</span> {actionLine}
+                      </p>
+                      {headline && <p className="text-sm text-on-surface-variant truncate mt-0.5">{headline}</p>}
+                      <p className="text-xs text-on-surface-variant/70 mt-1">
+                        {friendlyArea(entry.table_name)} ·{' '}
+                        <span className="sm:hidden">{formatRelativeTime(entry.created_at)}</span>
+                        <span className="hidden sm:inline">
+                          {new Date(entry.created_at).toLocaleString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </p>
                     </div>
-                    <span className="text-xs text-on-surface-variant/70 flex-shrink-0">
-                      <span className="sm:hidden">{formatRelativeTime(entry.created_at)}</span>
-                      <span className="hidden sm:inline">
-                      {new Date(entry.created_at).toLocaleString('en-ZA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </span>
-                    <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0">
+                    <span className="material-symbols-outlined text-on-surface-variant text-[18px] flex-shrink-0 mt-1">
                       {isExpanded ? 'expand_less' : 'expand_more'}
                     </span>
                   </button>
 
                   {isExpanded && (
-                    <div className="px-5 pb-4 bg-surface-container-low/40 border-t border-outline-variant">
-                      <p className="text-xs text-on-surface-variant mb-2 mt-2">Row ID: <code className="bg-surface-container-low px-1 py-0.5 rounded">{entry.row_id}</code></p>
-                      {entry.diff ? (
-                        <div>
-                          <p className="text-xs font-semibold text-on-surface-variant mb-1">Changes:</p>
-                          <pre className="text-xs bg-white border border-outline-variant rounded-xl p-3 overflow-x-auto text-on-surface max-h-48">
-                            {JSON.stringify(entry.diff, null, 2)}
-                          </pre>
+                    <div className="px-5 pb-4 pl-16 bg-surface-container-low/40 border-t border-outline-variant">
+                      {changes.length > 0 ? (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs font-bold uppercase tracking-wide text-on-surface-variant">Changes</p>
+                          {changes.map((c) => (
+                            <div key={c.field} className="text-sm">
+                              <p className="text-on-surface-variant text-xs">{c.label}</p>
+                              <p className="text-on-surface">
+                                {c.from ? (
+                                  <>
+                                    {c.from} <span className="text-on-surface-variant">→</span> {c.to}
+                                  </>
+                                ) : (
+                                  c.to
+                                )}
+                              </p>
+                            </div>
+                          ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-on-surface-variant/70 italic">No diff recorded</p>
+                        <p className="text-xs text-on-surface-variant/70 italic mt-3">No further details recorded.</p>
+                      )}
+
+                      {/* Raw JSON is never the default view (§6) — a collapsed
+                          disclosure, and only reachable at all for platform
+                          admins, reusing the existing isGlobalAdmin flag
+                          rather than inventing a new permission concept. */}
+                      {isGlobalAdmin && entry.diff && (
+                        <div className="mt-3 pt-3 border-t border-outline-variant/50">
+                          <button
+                            type="button"
+                            onClick={() => setTechnicalOpenId(showTechnical ? null : entry.id)}
+                            className="text-xs font-semibold text-on-surface-variant hover:text-on-surface flex items-center gap-1"
+                          >
+                            Technical details
+                            <span className="material-symbols-outlined text-[16px]">{showTechnical ? 'expand_less' : 'expand_more'}</span>
+                          </button>
+                          {showTechnical && (
+                            <pre className="text-xs bg-white border border-outline-variant rounded-xl p-3 overflow-x-auto text-on-surface max-h-48 mt-2">
+                              {JSON.stringify({ table: entry.table_name, action: entry.action, row_id: entry.row_id, diff: entry.diff }, null, 2)}
+                            </pre>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -161,9 +229,9 @@ export default function OrganizationActivityLogPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="btn-secondary text-xs py-1.5 disabled:opacity-40">← Previous</button>
+              <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="btn-secondary text-xs py-1.5 disabled:opacity-40">← Previous</button>
               <span className="text-sm text-on-surface-variant">Page {page + 1} of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="btn-secondary text-xs py-1.5 disabled:opacity-40">Next →</button>
+              <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="btn-secondary text-xs py-1.5 disabled:opacity-40">Next →</button>
             </div>
           )}
         </>

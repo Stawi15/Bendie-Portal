@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 
 /**
@@ -44,6 +45,12 @@ function formatDate(value?: string) {
 export default function PlannerOverviewPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const [state, setState] = useState<OverviewState>({ kind: 'loading' });
+  // Portal UX continuation (016) — Team & Access discoverability (section 11).
+  // Reuses the existing can-administer endpoint the Members page's own
+  // "Bendie Planner Access" button gating already calls; no new permissions
+  // model, no new "who has access" aggregate query (that would require an
+  // N+1 fetch across every org member and isn't attempted here).
+  const [canAdminister, setCanAdminister] = useState<boolean | null>(null);
 
   // Review finding F4 — request-generation guard, the same class of fix
   // EventContext.tsx already applies for the identical ABA/stale-response hazard:
@@ -83,6 +90,21 @@ export default function PlannerOverviewPage() {
       requestIdRef.current += 1;
     };
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/events/${eventId}/planner-permissions/can-administer`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled) setCanAdminister(data?.ok ? data.canAdminister === true : false);
+      })
+      .catch(() => {
+        if (!cancelled) setCanAdminister(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId]);
 
   if (state.kind === 'loading') {
     return (
@@ -207,6 +229,27 @@ export default function PlannerOverviewPage() {
             </span>
           </div>
           <p className="text-body-sm font-body-sm text-on-surface-variant">Event phase: {sessionSummary?.eventPhase}</p>
+        </div>
+
+        <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8 sm:col-span-2">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1">Team & Access</h2>
+              <p className="text-body-sm font-body-sm text-on-surface-variant max-w-md">
+                Bendie Planner access — who can view or manage each module — is granted per person from the event&apos;s Attendees &amp; Access page.
+              </p>
+            </div>
+            {canAdminister && (
+              <Link href={`/portal/events/${eventId}/members`} className="btn-secondary flex-shrink-0">
+                Manage Team & Access
+              </Link>
+            )}
+          </div>
+          {canAdminister === false && (
+            <p className="text-xs text-on-surface-variant/70 mt-2">
+              Granting or changing Planner access requires organisation admin authority — ask your organisation owner/admin if you need a change.
+            </p>
+          )}
         </div>
       </div>
     </div>
