@@ -143,8 +143,33 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
       toast.success('Event created');
     }
 
-    const { data: event } = await supabase.from('events').select(EVENTS_SELECT_COLUMNS).eq('id', result.eventId).single();
-    if (event) onCreated(event);
+    // Corrective fix (2026-09-23, live bug report): the event is already
+    // durably created at this point (the server call above already
+    // succeeded) — this read-back is only to hand the full row to
+    // `onCreated` for the local list. It previously had no error handling
+    // and no retry: a transient failure (e.g. a brief read-after-write
+    // visibility gap right after the server-side insert) meant `event` came
+    // back null, `onCreated` was silently never called, and the modal never
+    // closed — even though the event genuinely existed. From the user's
+    // side this looked exactly like "it didn't create," prompting a retry
+    // that created a real duplicate event. Now retries briefly before
+    // giving up, and even on failure still closes the modal and tells the
+    // user honestly what happened (the event exists; only the list refresh
+    // failed) instead of leaving them staring at a blank, unresponsive form.
+    let event: Event | null = null;
+    for (let attempt = 0; attempt < 3 && !event; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 400));
+      const { data, error } = await supabase.from('events').select(EVENTS_SELECT_COLUMNS).eq('id', result.eventId).maybeSingle();
+      if (error) console.error('CreateEventModal: post-create read-back failed', error);
+      if (data) event = data;
+    }
+
+    if (event) {
+      onCreated(event);
+    } else {
+      toast.error('Event created, but the list couldn’t refresh automatically — reload the page to see it.');
+      onClose();
+    }
     setForm(EMPTY_FORM);
   };
 
