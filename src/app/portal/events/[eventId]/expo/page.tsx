@@ -10,7 +10,83 @@ import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { TagInput } from '@/components/portal/TagInput';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import { getField, parseFlexibleBoolean, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+
+/**
+ * Feature 016 CSV coverage expansion. This module represents the Expo
+ * DIRECTORY of exhibiting/sponsoring organisations (`expo_spaces` —
+ * name/summary/contact/is_exhibitor/is_sponsor), NOT Feature 009's Bendie
+ * Planner Vendors (`event_vendor_items`, a completely different canonical
+ * table and product) — confirmed by inspecting this page's own data model
+ * before writing this CSV, per the explicit instruction not to assume
+ * Expo === Vendors.
+ */
+type ExpoCsvRow = {
+  name: string; summary: string | null; image_url: string | null; chips: string[]; intro: string | null; offering: string | null;
+  contact_name: string | null; contact_email: string | null; contact_phone: string | null; is_exhibitor: boolean; is_sponsor: boolean;
+};
+
+const EXPO_CSV_COLUMNS: ColumnSpec[] = [
+  { key: 'name', label: 'Name', required: true },
+  { key: 'summary', label: 'Summary' },
+  { key: 'imageUrl', label: 'Logo / Image URL' },
+  { key: 'chips', label: 'Chips (comma-separated)' },
+  { key: 'intro', label: 'Intro' },
+  { key: 'offering', label: "What They're Offering" },
+  { key: 'contactName', label: 'Contact Name' },
+  { key: 'contactEmail', label: 'Contact Email' },
+  { key: 'contactPhone', label: 'Contact Phone' },
+  { key: 'isExhibitor', label: 'Exhibitor (true/false)' },
+  { key: 'isSponsor', label: 'Sponsor (true/false)' },
+];
+
+const EXPO_CSV_SAMPLES: Record<string, string>[] = [
+  {
+    name: 'TechCorp Solutions', summary: 'POS devices and merchant loans', imageUrl: '', chips: 'POS devices, Loans',
+    intro: 'TechCorp helps merchants accept payments anywhere.', offering: 'Live demos of our latest POS terminal.',
+    contactName: 'Amina Yusuf', contactEmail: 'amina@techcorp.com', contactPhone: '+254 700 000000', isExhibitor: 'true', isSponsor: 'false',
+  },
+  {
+    name: 'Coastal Bank', summary: 'Headline event sponsor', imageUrl: '', chips: 'Banking',
+    intro: '', offering: '', contactName: '', contactEmail: '', contactPhone: '', isExhibitor: 'false', isSponsor: 'true',
+  },
+];
+
+function parseExpoCsvRow(raw: Record<string, string>, rowIndex: number): RowResult<ExpoCsvRow> {
+  const errors: string[] = [];
+  const name = getField(raw, 'name');
+  if (!name) errors.push('name is required');
+
+  const exhibitorRaw = parseFlexibleBoolean(getField(raw, 'isExhibitor'));
+  if (!exhibitorRaw.ok) errors.push('isExhibitor must be true or false');
+  const sponsorRaw = parseFlexibleBoolean(getField(raw, 'isSponsor'));
+  if (!sponsorRaw.ok) errors.push('isSponsor must be true or false');
+
+  const chipsRaw = getField(raw, 'chips');
+  const chips = chipsRaw ? chipsRaw.split(',').map((c) => c.trim()).filter(Boolean) : [];
+
+  const email = getField(raw, 'contactEmail');
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('contactEmail is not a valid email address');
+
+  const data: ExpoCsvRow = {
+    name,
+    summary: getField(raw, 'summary') || null,
+    image_url: getField(raw, 'imageUrl') || null,
+    chips,
+    intro: getField(raw, 'intro') || null,
+    offering: getField(raw, 'offering') || null,
+    contact_name: getField(raw, 'contactName') || null,
+    contact_email: email || null,
+    contact_phone: getField(raw, 'contactPhone') || null,
+    // Matches the manual form's own default (is_exhibitor: true) when left blank.
+    is_exhibitor: exhibitorRaw.ok ? exhibitorRaw.value ?? true : true,
+    is_sponsor: sponsorRaw.ok ? sponsorRaw.value ?? false : false,
+  };
+
+  return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
+}
 
 type ExpoSpace = {
   id: string;
@@ -67,6 +143,7 @@ export default function ExpoDirectoryPage() {
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [csvOpen, setCsvOpen] = useState(false);
 
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -93,7 +170,7 @@ export default function ExpoDirectoryPage() {
     setShowForm(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (keepOpen = false) => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
 
@@ -112,14 +189,24 @@ export default function ExpoDirectoryPage() {
       event_id: form.is_global ? null : eventId,
     };
 
+    // Feature 016 Data Entry UX pass — "Save & Add Another" retains
+    // `is_exhibitor`/`is_sponsor` (organisers commonly enter a whole batch of
+    // exhibitors, then a whole batch of sponsors, back-to-back) — every
+    // identity/contact-specific field always clears.
+    const afterSuccess = () => {
+      if (keepOpen && !editing) setForm({ ...EMPTY_FORM, is_exhibitor: form.is_exhibitor, is_sponsor: form.is_sponsor });
+      else setShowForm(false);
+      fetchData();
+    };
+
     if (editing) {
       const { error } = await supabase.from('expo_spaces').update(payload).eq('id', editing.id);
       if (error) toast.error(error.message);
-      else { toast.success('Updated'); setShowForm(false); fetchData(); }
+      else { toast.success('Updated'); afterSuccess(); }
     } else {
       const { error } = await supabase.from('expo_spaces').insert({ ...payload, display_order: spaces.length });
       if (error) toast.error(error.message);
-      else { toast.success('Added'); setShowForm(false); fetchData(); }
+      else { toast.success('Added'); afterSuccess(); }
     }
     setSaving(false);
   };
@@ -137,13 +224,23 @@ export default function ExpoDirectoryPage() {
     return s.name.toLowerCase().includes(q) || (s.summary ?? '').toLowerCase().includes(q);
   });
 
+  const importExpoRow = async (row: ExpoCsvRow) => {
+    const { error } = await supabase.from('expo_spaces').insert({ ...row, event_id: eventId, display_order: spaces.length });
+    return { error: error?.message };
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <SectionHeader sectionKey="expo" desc={`${spaces.length} organisation${spaces.length !== 1 ? 's' : ''} in the directory`} />
-        <button onClick={openAdd} className="btn-primary flex-shrink-0">
-          <span className="material-symbols-outlined text-[18px]">add</span> Add Organisation
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+          </button>
+          <button onClick={openAdd} className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add</span> Add Organisation
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -159,7 +256,8 @@ export default function ExpoDirectoryPage() {
       ) : spaces.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">storefront</p>
-          <p className="text-on-surface-variant">No exhibitors or sponsors yet. Add the first one.</p>
+          <p className="text-on-surface-variant">No exhibitors or sponsors yet.</p>
+          <p className="text-on-surface-variant/70 text-sm mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
@@ -266,8 +364,13 @@ export default function ExpoDirectoryPage() {
             </label>
           </div>
         </div>
-        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
-          <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Organisation'}</button>
+        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
+          <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Organisation'}</button>
+          {!editing && (
+            <button onClick={() => handleSave(true)} disabled={saving} className="btn-secondary">
+              {saving ? 'Saving...' : 'Save & Add Another'}
+            </button>
+          )}
           <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
         </div>
       </FormModal>
@@ -280,6 +383,18 @@ export default function ExpoDirectoryPage() {
           onSelect={(url) => setForm(p => ({ ...p, image_url: url }))}
         />
       )}
+
+      <CsvImportModal<ExpoCsvRow>
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={fetchData}
+        title="Import Expo Directory"
+        templateFilename="expo-template.csv"
+        columns={EXPO_CSV_COLUMNS}
+        sampleRows={EXPO_CSV_SAMPLES}
+        parseRow={parseExpoCsvRow}
+        importRow={importExpoRow}
+      />
     </div>
   );
 }

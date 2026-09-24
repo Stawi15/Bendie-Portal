@@ -50,7 +50,7 @@ export type TaskCapability =
 /** The narrower shape `resolveTaskCapability` always returns — it is only ever called once a non-null Planner identity is already confirmed (T005), so it structurally never produces the `hasPlannerIdentity: false` arm of `TaskCapability`. */
 export type ResolvedTaskCapability = Extract<TaskCapability, { hasPlannerIdentity: true }>;
 
-export type AssignableStaffMember = { profileId: string; name: string };
+export type AssignableStaffMember = { profileId: string; name: string; email: string | null };
 
 /** Distinguishable error categories `normalizePlannerTaskError` maps to safe, documented contract codes. */
 export class PlannerTaskValidationError extends Error {
@@ -198,19 +198,24 @@ export async function resolveTaskCapability(plannerEventId: number, plannerProfi
   };
 }
 
-/** Event-scoped only (FR-029) — never the organization-wide `get_task_assignable_profiles()` helper, never fuzzy matching (FR-030). */
+/**
+ * Event-scoped only (FR-029) — never the organization-wide `get_task_assignable_profiles()` helper, never fuzzy matching (FR-030).
+ * `email` (Feature 016 CSV coverage expansion) exists solely so a CSV-imported task's assignee can be matched by
+ * email/exact-name (mirroring `planner-logistics/page.tsx`'s established `resolveParticipantForCsv` pattern) instead of
+ * requiring a raw Planner profile UUID in the spreadsheet — it is not rendered anywhere in the existing assignee dropdown.
+ */
 export async function listAssignableStaff(plannerEventId: number): Promise<AssignableStaffMember[]> {
   const planner = getPlannerAdminClient();
   const { data, error } = await planner
     .from('event_user_assignments')
-    .select('profile_id, profiles(full_name)')
+    .select('profile_id, profiles(full_name, email)')
     .eq('event_id', plannerEventId)
     .eq('is_active', true);
   if (error) throw error;
 
-  return (data ?? []).map((row: { profile_id: string; profiles?: { full_name: string | null } | { full_name: string | null }[] | null }) => {
+  return (data ?? []).map((row: { profile_id: string; profiles?: { full_name: string | null; email: string | null } | { full_name: string | null; email: string | null }[] | null }) => {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-    return { profileId: row.profile_id, name: profile?.full_name?.trim() || 'Unnamed staff member' };
+    return { profileId: row.profile_id, name: profile?.full_name?.trim() || 'Unnamed staff member', email: profile?.email?.trim() || null };
   });
 }
 

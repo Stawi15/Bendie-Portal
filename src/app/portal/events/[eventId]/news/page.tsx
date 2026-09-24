@@ -10,7 +10,88 @@ import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { TagInput } from '@/components/portal/TagInput';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import { getField, parseFlexibleBoolean, parseFlexibleDate, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+
+/**
+ * Feature 016 CSV coverage expansion. `body` is a plain long-text field on
+ * this table (not rich HTML), so it survives a quoted CSV cell — including
+ * the app's existing "blank line separates paragraphs" convention — without
+ * any loss of fidelity; nothing is excluded here. `isGlobal` is intentionally
+ * not offered as a CSV column: bulk-imported rows always belong to the
+ * current event, never organization-wide, so a CSV mistake can't accidentally
+ * fan a bad row out to every other event.
+ */
+type NewsCsvRow = {
+  title: string; summary: string | null; body: string | null; themes: string[]; image_url: string | null;
+  is_featured: boolean; registration_url: string | null; read_time_minutes: number | null; published_at: string;
+};
+
+const NEWS_CSV_COLUMNS: ColumnSpec[] = [
+  { key: 'title', label: 'Title', required: true },
+  { key: 'summary', label: 'Summary' },
+  { key: 'body', label: 'Body' },
+  { key: 'themes', label: 'Themes (comma-separated)' },
+  { key: 'imageUrl', label: 'Image URL' },
+  { key: 'isFeatured', label: 'Featured (true/false)' },
+  { key: 'registrationUrl', label: 'Registration URL' },
+  { key: 'readTimeMinutes', label: 'Read Time (minutes)' },
+  { key: 'publishedAt', label: 'Published At (YYYY-MM-DD)' },
+];
+
+const NEWS_CSV_SAMPLES: Record<string, string>[] = [
+  {
+    title: 'Welcome to the Conference', summary: 'Kickoff details and what to expect', body: 'We are thrilled to welcome you...',
+    themes: 'Welcome', imageUrl: '', isFeatured: 'true', registrationUrl: '', readTimeMinutes: '2', publishedAt: '2026-08-01',
+  },
+  {
+    title: 'Shuttle Departure Update', summary: 'Updated pickup times for the airport shuttle', body: 'Please note the revised schedule...',
+    themes: 'Logistics', imageUrl: '', isFeatured: 'false', registrationUrl: '', readTimeMinutes: '', publishedAt: '2026-08-02',
+  },
+];
+
+function parseNewsCsvRow(raw: Record<string, string>, rowIndex: number): RowResult<NewsCsvRow> {
+  const errors: string[] = [];
+  const title = getField(raw, 'title');
+  if (!title) errors.push('title is required');
+
+  const featuredRaw = parseFlexibleBoolean(getField(raw, 'isFeatured'));
+  if (!featuredRaw.ok) errors.push('isFeatured must be true or false');
+
+  const readTimeRaw = getField(raw, 'readTimeMinutes');
+  let readTimeMinutes: number | null = null;
+  if (readTimeRaw) {
+    const parsed = parseInt(readTimeRaw, 10);
+    if (isNaN(parsed) || parsed < 0) errors.push('readTimeMinutes must be a non-negative number');
+    else readTimeMinutes = parsed;
+  }
+
+  const publishedRaw = getField(raw, 'publishedAt');
+  let publishedAt = new Date().toISOString();
+  if (publishedRaw) {
+    const parsed = parseFlexibleDate(publishedRaw);
+    if (!parsed) errors.push('publishedAt is not a recognizable date');
+    else publishedAt = parsed.toISOString();
+  }
+
+  const themesRaw = getField(raw, 'themes');
+  const themes = themesRaw ? themesRaw.split(',').map((t) => t.trim()).filter(Boolean) : [];
+
+  const data: NewsCsvRow = {
+    title,
+    summary: getField(raw, 'summary') || null,
+    body: getField(raw, 'body') || null,
+    themes,
+    image_url: getField(raw, 'imageUrl') || null,
+    is_featured: featuredRaw.ok ? featuredRaw.value ?? false : false,
+    registration_url: getField(raw, 'registrationUrl') || null,
+    read_time_minutes: readTimeMinutes,
+    published_at: publishedAt,
+  };
+
+  return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
+}
 
 type NewsItem = {
   id: string;
@@ -65,6 +146,7 @@ export default function NewsFeedPage() {
   const [form, setForm] = useState<NewsForm>(emptyForm());
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   const fetchData = async () => {
     // Matches the app's own read order — published_at desc, not display_order
@@ -94,7 +176,7 @@ export default function NewsFeedPage() {
     setShowForm(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (keepOpen = false) => {
     if (!form.title.trim()) { toast.error('Title is required'); return; }
     setSaving(true);
 
@@ -111,14 +193,24 @@ export default function NewsFeedPage() {
       event_id: form.is_global ? null : eventId,
     };
 
+    // Feature 016 Data Entry UX pass — "Save & Add Another" retains `themes`
+    // (plausible for a batch of related announcements entered back-to-back)
+    // and resets `published_at` to "now" fresh, per article; every other
+    // field is genuinely per-article and always clears.
+    const afterSuccess = () => {
+      if (keepOpen && !editing) setForm({ ...emptyForm(), themes: form.themes });
+      else setShowForm(false);
+      fetchData();
+    };
+
     if (editing) {
       const { error } = await supabase.from('news_items').update(payload).eq('id', editing.id);
       if (error) toast.error(error.message);
-      else { toast.success('Article updated'); setShowForm(false); fetchData(); }
+      else { toast.success('Article updated'); afterSuccess(); }
     } else {
       const { error } = await supabase.from('news_items').insert(payload);
       if (error) toast.error(error.message);
-      else { toast.success('Article added'); setShowForm(false); fetchData(); }
+      else { toast.success('Article added'); afterSuccess(); }
     }
     setSaving(false);
   };
@@ -136,13 +228,23 @@ export default function NewsFeedPage() {
     else fetchData();
   };
 
+  const importNewsRow = async (row: NewsCsvRow) => {
+    const { error } = await supabase.from('news_items').insert({ ...row, event_id: eventId });
+    return { error: error?.message };
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <SectionHeader sectionKey="news" desc={`${items.length} article${items.length !== 1 ? 's' : ''}`} />
-        <button onClick={openAdd} className="btn-primary flex-shrink-0">
-          <span className="material-symbols-outlined text-[18px]">add</span> Add Article
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+          </button>
+          <button onClick={openAdd} className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add</span> Add Article
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -150,7 +252,8 @@ export default function NewsFeedPage() {
       ) : items.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">newspaper</p>
-          <p className="text-on-surface-variant">No articles yet. Add the first one.</p>
+          <p className="text-on-surface-variant">No articles yet.</p>
+          <p className="text-on-surface-variant/70 text-sm mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -250,8 +353,13 @@ export default function NewsFeedPage() {
             </label>
           </div>
         </div>
-        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
-          <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Article'}</button>
+        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
+          <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Article'}</button>
+          {!editing && (
+            <button onClick={() => handleSave(true)} disabled={saving} className="btn-secondary">
+              {saving ? 'Saving...' : 'Save & Add Another'}
+            </button>
+          )}
           <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
         </div>
       </FormModal>
@@ -264,6 +372,18 @@ export default function NewsFeedPage() {
           onSelect={(url) => setForm(p => ({ ...p, image_url: url }))}
         />
       )}
+
+      <CsvImportModal<NewsCsvRow>
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={fetchData}
+        title="Import News"
+        templateFilename="news-template.csv"
+        columns={NEWS_CSV_COLUMNS}
+        sampleRows={NEWS_CSV_SAMPLES}
+        parseRow={parseNewsCsvRow}
+        importRow={importNewsRow}
+      />
     </div>
   );
 }

@@ -180,21 +180,28 @@ export async function canAdministerPlannerPermissions(
  * a historical event_products row still exists — that row is never deleted here.
  * `client` — see requireEventWorkspaceAccess's doc comment (Feature 005).
  */
+/**
+ * Feature 016 performance pass — the entitlement check and the event_products
+ * row check are independent reads (neither's query depends on the other's
+ * result; only the final boolean AND depends on both), so they're issued in
+ * parallel instead of sequentially. This function is called from most
+ * event-workspace routes/pages (every product-gated tab, every Planner API
+ * route's `resolveAuthorizedContext`), so removing one full network round
+ * trip here is a broad, low-risk win rather than a page-specific one. No
+ * behavior change: both queries still always run, and the result is still
+ * "actively entitled AND has an event_products row" — only the ordering
+ * changed, never the logic.
+ */
 export async function isProductAvailableForEvent(
   eventId: string,
   organizationId: string,
   productKey: ProductKey,
   client: SupabaseClient = supabase
 ): Promise<boolean> {
-  const active = await isProductActiveForOrg(organizationId, productKey, client);
-  if (!active) return false;
-
-  const { data, error } = await client
-    .from('event_products')
-    .select('product_key')
-    .eq('event_id', eventId)
-    .eq('product_key', productKey)
-    .maybeSingle();
-  if (error) console.error('isProductAvailableForEvent: event_products lookup failed', error);
-  return !!data;
+  const [active, eventProductResult] = await Promise.all([
+    isProductActiveForOrg(organizationId, productKey, client),
+    client.from('event_products').select('product_key').eq('event_id', eventId).eq('product_key', productKey).maybeSingle(),
+  ]);
+  if (eventProductResult.error) console.error('isProductAvailableForEvent: event_products lookup failed', eventProductResult.error);
+  return active && !!eventProductResult.data;
 }

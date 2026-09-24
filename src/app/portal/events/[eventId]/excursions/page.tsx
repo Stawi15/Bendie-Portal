@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useEvent } from '@/contexts/EventContext';
@@ -9,7 +9,50 @@ import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+
+/**
+ * Feature 016 CSV coverage expansion. `category` is a human-enterable label,
+ * never a database ID (per the CSV design principle) — `beforeImport` below
+ * resolves each row's label to an existing event-scoped category or creates
+ * one, sequentially, BEFORE the per-row concurrent import starts, so two rows
+ * naming the same brand-new category can never race each other into a
+ * duplicate-key error. Global (`event_id IS NULL`) categories/excursions are
+ * out of scope for CSV — bulk-imported rows always belong to this one event;
+ * "apply to all events" remains a deliberate, one-at-a-time manual action.
+ */
+type ExcursionCsvRow = { category: string; title: string; description: string | null; image_url: string | null };
+
+const EXCURSION_CSV_COLUMNS: ColumnSpec[] = [
+  { key: 'category', label: 'Category', required: true },
+  { key: 'title', label: 'Title', required: true },
+  { key: 'description', label: 'Description' },
+  { key: 'imageUrl', label: 'Image URL' },
+];
+
+const EXCURSION_CSV_SAMPLES: Record<string, string>[] = [
+  { category: 'Tours', title: 'Nairobi National Park Visit', description: 'Half-day game drive close to the city', imageUrl: '' },
+  { category: 'Tours', title: 'City Cultural Tour', description: 'Guided walking tour of the historic quarter', imageUrl: '' },
+];
+
+function parseExcursionCsvRow(raw: Record<string, string>, rowIndex: number): RowResult<ExcursionCsvRow> {
+  const errors: string[] = [];
+  const category = getField(raw, 'category');
+  if (!category) errors.push('category is required');
+  const title = getField(raw, 'title');
+  if (!title) errors.push('title is required');
+
+  const data: ExcursionCsvRow = {
+    category,
+    title,
+    description: getField(raw, 'description') || null,
+    image_url: getField(raw, 'imageUrl') || null,
+  };
+
+  return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
+}
 
 type Category = {
   id: string;
@@ -60,6 +103,8 @@ export default function ExcursionsPage() {
 
   const [saving, setSaving] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
+  const csvCategoryMapRef = useRef<Map<string, string>>(new Map());
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -151,7 +196,7 @@ export default function ExcursionsPage() {
     setShowExcursionForm(true);
   };
 
-  const handleSaveExcursion = async () => {
+  const handleSaveExcursion = async (keepOpen = false) => {
     if (!excursionForm.title.trim()) { toast.error('Title is required'); return; }
     if (!selectedCategory) return;
     setSaving(true);
@@ -163,16 +208,26 @@ export default function ExcursionsPage() {
       event_id: excursionForm.is_global ? null : eventId,
     };
 
+    // Feature 016 Data Entry UX pass — "Save & Add Another." The category is
+    // already fixed context for this whole panel (not a form field here), so
+    // it naturally carries over for free; only the excursion-specific fields
+    // below are cleared for the next entry.
+    const afterSuccess = () => {
+      if (keepOpen && !editingExcursion) setExcursionForm(EMPTY_EXCURSION);
+      else setShowExcursionForm(false);
+      fetchExcursions(selectedCategory.id);
+    };
+
     if (editingExcursion) {
       const { error } = await supabase.from('excursions').update(payload).eq('id', editingExcursion.id);
       if (error) toast.error(error.message);
-      else { toast.success('Excursion updated'); setShowExcursionForm(false); fetchExcursions(selectedCategory.id); }
+      else { toast.success('Excursion updated'); afterSuccess(); }
     } else {
       const { error } = await supabase.from('excursions').insert({
         ...payload, category_id: selectedCategory.id, display_order: excursions.length,
       });
       if (error) toast.error(error.message);
-      else { toast.success('Excursion added'); setShowExcursionForm(false); fetchExcursions(selectedCategory.id); }
+      else { toast.success('Excursion added'); afterSuccess(); }
     }
     setSaving(false);
   };
@@ -184,13 +239,60 @@ export default function ExcursionsPage() {
     else { toast.success('Deleted'); if (selectedCategory) fetchExcursions(selectedCategory.id); }
   };
 
+  // Resolves every distinct category label in the batch to an event-scoped
+  // category id BEFORE the concurrent per-row import starts (sequential, one
+  // insert at a time) — avoids two rows racing to create the same brand-new
+  // category and hitting the (event_id, key) unique constraint.
+  const prepareExcursionImport = async (rows: ExcursionCsvRow[]) => {
+    const map = new Map<string, string>();
+    for (const c of categories) map.set(c.label.trim().toLowerCase(), c.id);
+
+    const distinctLabels = [...new Set(rows.map((r) => r.category.trim()))];
+    for (const label of distinctLabels) {
+      const key = label.toLowerCase();
+      if (map.has(key)) continue;
+      const { data, error } = await supabase
+        .from('excursion_categories')
+        .insert({ label, key: toKey(label), event_id: eventId, display_order: categories.length + map.size })
+        .select('id')
+        .single();
+      if (error || !data) throw new Error(`Failed to create category "${label}": ${error?.message ?? 'unknown error'}`);
+      map.set(key, data.id);
+    }
+    csvCategoryMapRef.current = map;
+  };
+
+  const importExcursionRow = async (row: ExcursionCsvRow) => {
+    const categoryId = csvCategoryMapRef.current.get(row.category.trim().toLowerCase());
+    if (!categoryId) return { error: `Category "${row.category}" could not be resolved` };
+    const { error } = await supabase.from('excursions').insert({
+      category_id: categoryId,
+      title: row.title,
+      description: row.description,
+      image_url: row.image_url,
+      event_id: eventId,
+      display_order: 0,
+    });
+    return { error: error?.message };
+  };
+
+  const handleExcursionCsvImported = () => {
+    fetchCategories();
+    if (selectedCategory) fetchExcursions(selectedCategory.id);
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <SectionHeader sectionKey="excursions" desc={`${categories.length} categor${categories.length !== 1 ? 'ies' : 'y'}`} />
-        <button onClick={openAddCategory} className="btn-primary flex-shrink-0">
-          <span className="material-symbols-outlined text-[18px]">add</span> New Category
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+          </button>
+          <button onClick={openAddCategory} className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add</span> New Category
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -239,7 +341,7 @@ export default function ExcursionsPage() {
               </div>
 
               {excursions.length === 0 ? (
-                <p className="text-sm text-on-surface-variant/70 italic">No excursions in this category yet.</p>
+                <p className="text-sm text-on-surface-variant/70 italic">No excursions in this category yet. Add one manually, or use Import CSV above to paste rows or upload a file.</p>
               ) : (
                 <div className="space-y-2">
                   {excursions.map(x => (
@@ -319,8 +421,13 @@ export default function ExcursionsPage() {
             <span className="text-sm font-medium text-on-surface">Apply to all events</span>
           </label>
         </div>
-        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
-          <button onClick={handleSaveExcursion} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editingExcursion ? 'Update' : 'Add Excursion'}</button>
+        <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
+          <button onClick={() => handleSaveExcursion(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editingExcursion ? 'Update' : 'Add Excursion'}</button>
+          {!editingExcursion && (
+            <button onClick={() => handleSaveExcursion(true)} disabled={saving} className="btn-secondary">
+              {saving ? 'Saving...' : 'Save & Add Another'}
+            </button>
+          )}
           <button onClick={() => setShowExcursionForm(false)} className="btn-secondary">Cancel</button>
         </div>
       </FormModal>
@@ -333,6 +440,19 @@ export default function ExcursionsPage() {
           onSelect={(url) => setExcursionForm(p => ({ ...p, image_url: url }))}
         />
       )}
+
+      <CsvImportModal<ExcursionCsvRow>
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={handleExcursionCsvImported}
+        title="Import Excursions"
+        templateFilename="excursions-template.csv"
+        columns={EXCURSION_CSV_COLUMNS}
+        sampleRows={EXCURSION_CSV_SAMPLES}
+        parseRow={parseExcursionCsvRow}
+        importRow={importExcursionRow}
+        beforeImport={prepareExcursionImport}
+      />
     </div>
   );
 }

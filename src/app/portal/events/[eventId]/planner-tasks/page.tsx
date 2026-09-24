@@ -12,6 +12,49 @@ import {
   type AssignableStaffMemberClient,
   type PlannerTaskFormValues,
 } from '@/components/portal/PlannerTaskModal';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
+
+/**
+ * Feature 016 CSV coverage expansion. Mirrors `planner-logistics/page.tsx`'s
+ * established `resolveParticipantForCsv` identity-matching rule exactly
+ * (email preferred, else exact case-insensitive full-name match; zero or 2+
+ * matches is never guessed) — applied here to Tasks' assignable-staff list
+ * instead of the participant roster. Rows import through the existing
+ * `POST /api/events/[eventId]/planner-tasks` route (not a direct Supabase
+ * write), the same authorization/capability/validation boundary the manual
+ * "New Task" form already goes through.
+ */
+function resolveAssigneeForCsv(
+  staff: AssignableStaffMemberClient[],
+  identifier: string
+): { status: 'unassigned' } | { status: 'matched'; profileId: string } | { status: 'not_found' } | { status: 'ambiguous' } {
+  const trimmed = identifier.trim();
+  if (!trimmed) return { status: 'unassigned' };
+  const isEmailLike = trimmed.includes('@');
+  const matches = isEmailLike
+    ? staff.filter((s) => s.email?.trim().toLowerCase() === trimmed.toLowerCase())
+    : staff.filter((s) => s.name.trim().toLowerCase() === trimmed.toLowerCase());
+  if (matches.length === 1) return { status: 'matched', profileId: matches[0].profileId };
+  if (matches.length > 1) return { status: 'ambiguous' };
+  return { status: 'not_found' };
+}
+
+type TaskCsvRow = { task: string; category: string | null; priority: string; dueDate: string | null; remarks: string | null; assignedProfileId: string | null };
+
+const TASK_CSV_COLUMNS: ColumnSpec[] = [
+  { key: 'task', label: 'Task', required: true },
+  { key: 'category', label: 'Category' },
+  { key: 'priority', label: 'Priority (Low, Medium, High)' },
+  { key: 'dueDate', label: 'Due Date (YYYY-MM-DD)' },
+  { key: 'assignee', label: 'Assignee (email preferred, or exact full name)' },
+  { key: 'remarks', label: 'Remarks' },
+];
+
+const TASK_CSV_SAMPLES: Record<string, string>[] = [
+  { task: 'Confirm stage lighting rig', category: 'Production', priority: 'High', dueDate: '2026-08-01', assignee: 'jane@example.com', remarks: '' },
+  { task: 'Print delegate badges', category: 'Registration', priority: 'Medium', dueDate: '2026-08-03', assignee: '', remarks: 'Order includes 50 spares' },
+];
 
 /**
  * Feature 007 — Bendie Planner Tasks. Fetches the bundled
@@ -48,6 +91,7 @@ export default function PlannerTasksPage() {
   const [modalResetKey, setModalResetKey] = useState(0);
   const [lastTaskCategory, setLastTaskCategory] = useState<string | undefined>(undefined);
   const [busyTaskId, setBusyTaskId] = useState<number | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   // Same ABA/stale-response guard as `planner-overview/page.tsx` — a response
   // for a superseded request (previous eventId, or an earlier reload of this
@@ -212,6 +256,38 @@ export default function PlannerTasksPage() {
     }
   };
 
+  // Feature 016 Data Entry UX pass — manager-only inline status control.
+  // Reuses the exact same PATCH endpoint/authorization path the "Edit Task"
+  // modal's Status field already goes through (`updateTaskAsManager` sends
+  // only the fields present in the payload, so this never touches
+  // task/category/priority/dueDate/remarks/assignee). Resolves to whether it
+  // succeeded so PlannerTaskList can roll its optimistic row back on failure.
+  const handleManagerStatusChange = async (task: PlannerTaskClient, status: PlannerTaskClient['status']): Promise<boolean> => {
+    setBusyTaskId(task.taskId);
+    try {
+      const res = await fetch(`/api/events/${eventId}/planner-tasks/${task.taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!mountedRef.current) return false;
+      if (!res.ok) {
+        toast.error(data.message ?? 'Could not update status.');
+        return false;
+      }
+      await load();
+      return true;
+    } catch (err) {
+      if (!mountedRef.current) return false;
+      console.error('Planner Tasks: inline status change failed', err);
+      toast.error('Could not update status.');
+      return false;
+    } finally {
+      if (mountedRef.current) setBusyTaskId(null);
+    }
+  };
+
   // Returns whether the save succeeded, so PlannerTaskList only clears its
   // local draft for this row once the server has actually confirmed the
   // change (manual-acceptance corrective fix) — never on an assumed/optimistic
@@ -300,14 +376,61 @@ export default function PlannerTasksPage() {
 
   const { capability, callerProfileId, tasks, assignableStaff } = state;
 
+  const parseTaskCsvRow = (raw: Record<string, string>, rowIndex: number): RowResult<TaskCsvRow> => {
+    const errors: string[] = [];
+    const task = getField(raw, 'task');
+    if (!task) errors.push('task is required');
+
+    const priorityRaw = getField(raw, 'priority');
+    const priority = priorityRaw || 'Medium';
+    if (priorityRaw && !['low', 'medium', 'high'].includes(priorityRaw.toLowerCase())) {
+      errors.push('priority must be Low, Medium, or High');
+    }
+
+    const dueDateRaw = getField(raw, 'dueDate');
+    if (dueDateRaw && isNaN(new Date(dueDateRaw).getTime())) errors.push('dueDate is not a recognizable date');
+
+    const assigneeRaw = getField(raw, 'assignee');
+    const assigneeMatch = resolveAssigneeForCsv(assignableStaff, assigneeRaw);
+    if (assigneeMatch.status === 'not_found') errors.push('No active staff member matches this assignee');
+    if (assigneeMatch.status === 'ambiguous') errors.push('Multiple staff members match this assignee — ambiguous');
+
+    const data: TaskCsvRow = {
+      task,
+      category: getField(raw, 'category') || null,
+      priority,
+      dueDate: dueDateRaw || null,
+      remarks: getField(raw, 'remarks') || null,
+      assignedProfileId: assigneeMatch.status === 'matched' ? assigneeMatch.profileId : null,
+    };
+
+    return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
+  };
+
+  const importTaskRow = async (row: TaskCsvRow) => {
+    const res = await fetch(`/api/events/${eventId}/planner-tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(row),
+    });
+    if (res.ok) return {};
+    const data = await res.json().catch(() => ({}));
+    return { error: data.message ?? 'Failed to create task' };
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SectionHeader sectionKey="planner-tasks" />
         {capability.canManage && (
-          <button className="btn-primary" onClick={openCreate}>
-            New Task
-          </button>
+          <div className="flex gap-2 flex-shrink-0">
+            <button className="btn-secondary" onClick={() => setCsvOpen(true)}>
+              <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            </button>
+            <button className="btn-primary" onClick={openCreate}>
+              New Task
+            </button>
+          </div>
         )}
       </div>
 
@@ -320,6 +443,7 @@ export default function PlannerTasksPage() {
           onEdit={openEdit}
           onDelete={handleDelete}
           onSelfAssigneeUpdate={handleSelfAssigneeUpdate}
+          onManagerStatusChange={handleManagerStatusChange}
           onAdd={openCreate}
         />
       </div>
@@ -335,6 +459,20 @@ export default function PlannerTasksPage() {
         onSubmit={handleSubmit}
         presetCategory={lastTaskCategory}
       />
+
+      {capability.canManage && (
+        <CsvImportModal<TaskCsvRow>
+          open={csvOpen}
+          onClose={() => setCsvOpen(false)}
+          onImported={load}
+          title="Import Tasks"
+          templateFilename="tasks-template.csv"
+          columns={TASK_CSV_COLUMNS}
+          sampleRows={TASK_CSV_SAMPLES}
+          parseRow={parseTaskCsvRow}
+          importRow={importTaskRow}
+        />
+      )}
     </div>
   );
 }

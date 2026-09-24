@@ -510,3 +510,111 @@ Retrofitted into:
 ### Not performed
 
 Browser-based stress testing of the actual rapid-click sequences (no browser-automation tool available in this environment) — every claim above is either a source-level trace/proof or a live HTTP probe, never a fabricated browser-interaction claim. No automated tests added (no existing test framework in this codebase to extend).
+
+## Continuation pass 11 — CSV Coverage Expansion & Both-Product Travel Journey Guidance
+
+### Files changed — Part A (CSV)
+
+- `src/lib/csvImport.ts` — added `parseFlexibleBoolean` (shared, Feature 015's own file extended in place).
+- `src/app/portal/events/[eventId]/activities/page.tsx` — `ACTIVITY_CSV_COLUMNS`/`ACTIVITY_CSV_SAMPLES`/`parseActivityCsvRow`/`importActivityRow`, header "Import CSV" button, `CsvImportModal` instance.
+- `src/app/portal/events/[eventId]/excursions/page.tsx` — `EXCURSION_CSV_COLUMNS`/`EXCURSION_CSV_SAMPLES`/`parseExcursionCsvRow`, `prepareExcursionImport` (`beforeImport`, resolves/creates categories sequentially), `importExcursionRow`, `csvCategoryMapRef`.
+- `src/app/portal/events/[eventId]/news/page.tsx` — `NEWS_CSV_COLUMNS`/`NEWS_CSV_SAMPLES`/`parseNewsCsvRow`/`importNewsRow`.
+- `src/app/portal/events/[eventId]/expo/page.tsx` — `EXPO_CSV_COLUMNS`/`EXPO_CSV_SAMPLES`/`parseExpoCsvRow`/`importExpoRow`.
+- `src/app/portal/events/[eventId]/planner-tasks/page.tsx` — `resolveAssigneeForCsv`, `TASK_CSV_COLUMNS`/`TASK_CSV_SAMPLES`/`parseTaskCsvRow`/`importTaskRow` (posts to the existing route, gated behind `capability.canManage`).
+- `src/lib/plannerTasks.ts` — `AssignableStaffMember`/`listAssignableStaff` now also select and return `email` (verified live that Planner's `profiles.email` column exists first).
+- `src/components/portal/PlannerTaskModal.tsx` — `AssignableStaffMemberClient` type extended with `email`; the one existing synthetic "(no longer active)" assignee option updated to match the widened type. No visible UI change — the dropdown never renders email.
+
+No API routes were created for Activities/Excursions/News/Expo (direct Supabase writes, matching the existing Bendie-side CSV precedent exactly). No API route was created for Tasks either — it reuses the existing `POST /api/events/[eventId]/planner-tasks` route unmodified. No database migrations. No RLS changes.
+
+### Files changed — Part B (Travel Journey)
+
+- `src/lib/travelReturnContext.ts` (new) — `markTravelJourneyStarted`/`hasActiveTravelJourney`/`completeTravelJourney`/`consumeTravelJourneyReturnFlag`, all `sessionStorage`-backed, keyed per `eventId`.
+- `src/app/portal/events/[eventId]/attendee-travel/page.tsx` — Both-product detection (`isProductAvailableForEvent`), the guidance banner (both copy variants), `handleSetUpInPlanner`, `handlePullTravel` (a second caller of the existing `/api/admin/planner-pull-travel` endpoint).
+- `src/app/portal/events/[eventId]/planner-logistics/page.tsx` — `hasReturnContext` state, `handleReturnToAttendeeTravel`, the return banner (with the empty-roster nudge), a new `Link` import.
+- `src/app/portal/events/[eventId]/planner-people/page.tsx` — the same `hasReturnContext`/`handleReturnToAttendeeTravel`/return-banner pattern.
+
+### Why `sessionStorage` instead of a query parameter
+
+The guided journey can legitimately span Attendee Travel → Planner Logistics (Flights) → Planner Participants (to link a Bendie attendee, via the pre-existing "From Bendie Attendees" flow) → back to Planner Logistics (Hotels/Ground Transport) → back to Attendee Travel. Several of those hops happen via the ordinary event-workspace tab bar, which threads only its own `?product=`/section-routing state between tabs — it does not (and per `AGENTS.md`'s "no broad navigation redesign" constraint, should not be modified to) forward an arbitrary extra query parameter to every tab link. A `?from=attendee-travel` param would therefore silently vanish the moment the user clicked a normal tab instead of one of this feature's own contextual links, defeating the "remains available through the relevant Planner travel setup journey" requirement. Per-event `sessionStorage` survives any in-tab navigation path (tab bar, browser back, a direct URL, a refresh) without touching `EventLayout`'s shared tab-link-building code at all — zero cross-cutting risk to the other ~28 unrelated tabs. It holds exactly one fixed enum value per key, never a URL; every "return" destination in the two consuming pages is a hardcoded, locally-constructed path (`/portal/events/{eventId}/attendee-travel`), so there is no arbitrary-redirect surface for a tampered `sessionStorage` value to exploit even in principle. This was evaluated against, and preferred over, the query-param design the brief suggested as its primary option — a deliberate, disclosed engineering choice, not a misreading of the brief (which explicitly allowed "another lightweight route-state mechanism consistent with the current architecture" as an alternative).
+
+### Destination choice — Planner Logistics, Flights sub-tab
+
+`eventSectionMeta.ts` and `productNavigation.ts` were read before choosing a destination. `planner-logistics` (group "Logistics", `product: 'planner'`) already has an established `?view=` deep-link contract (`VIEW_TO_SUBTAB`/`SUBTAB_TO_VIEW`) built for exactly this purpose in Features 012/013 ("Deep links (e.g. from People's contextual actions...) may navigate here with a different `?view=`"). `planner-overview` was ruled out as the destination — it is read-only event-identity/session-status, not an entry point into configuring anything. `planner-logistics?product=planner&view=flights` was chosen as the concrete first actionable step of "setting up travel," matching `resolveEventTabProduct`'s existing rule that non-entry tabs (which `planner-logistics` is) simply carry forward whatever `?product=` origin they're given — confirmed this does not risk reintroducing the earlier "Planner route receives Bendie product context" navigation bug, since the origin here is explicitly set by this pass's own link, not inferred.
+
+### Reused vs. new
+
+Reused, unmodified: `POST /api/admin/planner-pull-travel` (Feature 001), `planner-logistics/page.tsx`'s `?view=` mechanism (Features 012/013), the `?product=` origin signal and `resolveEventTabProduct` (Feature 006), the "From Bendie Attendees" participant-linking flow (already existing), `isProductAvailableForEvent` (`eventAuth.ts`), `resolveParticipantForCsv`'s matching rule (mirrored, not imported, since the original is a private, non-exported function local to `planner-logistics/page.tsx`). New: the `travelReturnContext.ts` helper and the banners themselves. Nothing was added to `event_planner_links`, `attendee_travel_details`, or any Planner table.
+
+### Typecheck/lint/build
+
+`npm run type-check` — clean. `npm run lint` — identical warning file list to the pre-pass baseline; the five newly CSV-touched pages already carried a pre-existing `fetchData`-missing-dependency warning from before this pass (their `useEffect` dependency arrays were not touched), and no new warning category was introduced anywhere, including the three Part B pages. `npm run build` (production) — clean; confirmed no dev server held `.next` before running it.
+
+### Not performed
+
+Browser verification of the CSV upload/preview/import flow and the two-directional travel-journey banners (no browser-automation tool available in this environment) — verified via full source-level state-branch tracing instead, plus one live read-only schema check (Planner `profiles.email` column existence) before depending on it. No live/disposable-fixture CSV import run was performed this pass (not explicitly requested, and Feature 015's own underlying import mechanism was already live-verified in its own pass); the five new modules add only column specs/parse/insert logic on top of that already-proven mechanism.
+
+## Continuation pass 12 — Portal Data Entry UX & Productivity Pass
+
+### Files changed
+
+- `src/lib/csvImport.ts` — new `parseCsvText(text): ParsedCsv`.
+- `src/components/portal/CsvImportModal.tsx` — `sourceMode` state, `resetToPick` (split from the full-reset `handleClose` so switching source modes doesn't lose the user's choice), `applyParsedRows` (the now-shared tail of both `handleFile` and the new `handleParsePastedText`), the pick-step's Upload/Paste toggle UI and textarea.
+- `src/app/portal/events/[eventId]/activities/page.tsx` — `openDuplicate`, `handleSave(keepOpen)` with `location` retention, Save & Add Another button, a Duplicate icon-button per row, empty-state copy.
+- `src/app/portal/events/[eventId]/excursions/page.tsx` — `handleSaveExcursion(keepOpen)`, Save & Add Another button, empty-state copy (category already outside the form, needs no explicit retention).
+- `src/app/portal/events/[eventId]/news/page.tsx` — `handleSave(keepOpen)` with `themes` retention, Save & Add Another button, empty-state copy.
+- `src/app/portal/events/[eventId]/expo/page.tsx` — `handleSave(keepOpen)` with `is_exhibitor`/`is_sponsor` retention, Save & Add Another button, empty-state copy.
+- `src/components/portal/PlannerTaskList.tsx` — `onManagerStatusChange` prop, manager-only inline status `<select>` with a self-clearing `statusOverride` map for optimistic-with-rollback behavior, corrected the stale "Bulk CSV import isn't available" empty-state copy.
+- `src/app/portal/events/[eventId]/planner-tasks/page.tsx` — `handleManagerStatusChange`, wired to `PlannerTaskList`.
+
+No API routes created. No database/RLS changes. Tasks' inline status control reuses the existing `PATCH /api/events/[eventId]/planner-tasks/[taskId]` route and `updateTaskAsManager` exactly as the Edit modal already does.
+
+### Why extend `CsvImportModal` itself rather than build a new `PasteImportModal`
+
+The brief's own item 34 lists `PasteImportModal` as a possible new component name, but also states the governing principle in item 9: "CSV and Paste should ideally converge into the SAME validated row representation... do not maintain separate business rules." A separate component sharing `columns`/`parseRow`/`importRow` props would still need to duplicate the entire pick→preview→import state machine (or import/wrap the existing one, which is more coupling for no benefit) and would only benefit the modules explicitly wired to render it — realistically a handful, given the pass's time budget. Extending the existing shared modal in place instead means every module that already calls `<CsvImportModal>` — all 16 of them, with zero per-module code changes — gained paste support the moment this one file was edited. This was judged the correct application of "reuse existing components... do not create a giant generic form engine" (item 3) over literally following item 34's suggested name.
+
+### Duplicate — design decision
+
+Considered two designs: (a) insert the duplicate row directly into the database, then open it in edit mode; (b) open the create form pre-filled, unsaved, requiring an explicit Save. Chose (b) exactly as the brief's item 7 prescribes ("Prefer: Duplicate → prefilled create form → user reviews → Save, rather than immediately creating the duplicate in the database") — this also means a duplicate that the user decides not to keep never touches the database at all, and the exact same validation path a normal "Add" goes through still applies (item 31 — convenience features never bypass validation/authorization, because there is no separate write path to bypass it with).
+
+### Inline status edit — why optimistic-with-rollback, and why not the self-assignee draft pattern
+
+`PlannerTaskList.tsx`'s existing self-assignee control intentionally does NOT fire on every `onChange` — a prior corrective fix (documented in that file) specifically moved it to an explicit draft+Save step, because it originally fired a PATCH straight from the status `<select>`'s `onChange` while a companion `remarks` field was also being edited in the same draft, and needed the two fields committed together. The new manager inline control has no companion field — it only ever sends `{ status }` — so item 14's "immediate saving state" contract is safe to implement directly via optimistic UI + rollback, without reintroducing the bug the draft pattern exists to prevent. This distinction is deliberate, not an inconsistency between the two controls.
+
+### Typecheck/lint/build
+
+`npm run type-check` — clean. `npm run lint` — identical 30-warning baseline, zero new categories. `npm run build` (production) — clean; a dev server was discovered running partway through this pass (started between two checks, not present at the start) — the build still completed successfully and the dev server was confirmed still responding (200) immediately after, but this is disclosed as a known-risk pattern per earlier passes' own documented caution about concurrent builds sharing `.next`, not silently glossed over.
+
+### Not performed
+
+Browser verification of paste, Save & Add Another retention, Duplicate, and inline status editing (no browser-automation tool available) — verified via full source-level tracing of every new state branch instead. No live/disposable-fixture import run was performed this pass (the underlying mechanism is unchanged from Feature 015/Continuation pass 11, both already live-verified). Bulk actions, column-alias matching, post-save next actions, and the Dashboard setup assistant were investigated (found safe/feasible where applicable) but deliberately not implemented — see spec.md's "Deliberately not done this pass" for the reasoning behind each.
+
+## Continuation pass 13 — Theme Colour Picker & Measured Screen Performance Pass
+
+### Files changed — theme picker
+
+- `src/app/portal/events/[eventId]/theme/page.tsx` — full rewrite: `normalizeHex`, `relativeLuminance`/`contrastRatio` (pure, no dependency), `PRESETS` (from `tailwind.config.js`), a `draft`-based `ColorField` component (local draft absorbs in-progress invalid typing so nothing is destroyed mid-keystroke; only a valid HEX ever commits upward to `form`), session-only `recentColors` state, the contrast-warning banner, and a "Reset to Default" button restoring the pre-existing `DEFAULTS` constant. Storage contract (`events.theme_primary`/`theme_secondary`/`theme_tertiary`, six-digit HEX text, direct client-side `update`) is completely unchanged — this pass is UX-only, exactly as instructed.
+
+### Files changed — performance
+
+- `src/lib/eventAuth.ts` — `isProductAvailableForEvent` now runs its two independent reads via `Promise.all`.
+- `src/app/api/events/[eventId]/planner-tasks/route.ts`, `planner-vendors/route.ts`, `planner-checklist/route.ts`, `planner-people/route.ts`, `planner-production/route.ts`, `planner-logistics/flights/route.ts`, `planner-logistics/hotels/route.ts`, `planner-logistics/ground-transport/movements/route.ts` — each route's initial `profiles` select now also includes `planner_profile_id`; the subsequent `resolveCallerPlannerIdentity(authClient, user.id)` call (a second round trip to the identical row) is replaced with `profile?.planner_profile_id ?? null`, reading the value already in hand. `resolveCallerPlannerIdentity` itself was NOT deleted from any of the 6 lib files that export it — other call sites (the ~21 item-mutation routes not touched this pass) still use it correctly, and it remains a valid, correct, independently-usable function; only these 8 routes' own now-redundant second call to it was removed.
+
+No new API routes. No database/RLS/index changes — every fix this pass changes only which existing queries run in parallel vs. sequentially, or removes an exact-duplicate query; no query's filter, table, or resulting authorization decision changed in any way.
+
+### Methodology — why these specific measurements, and what could not be measured
+
+`EXPLAIN ANALYZE` was chosen over guessing at query cost because it is genuine, live evidence from the real databases (read-only, via the same MCP access already established for verification in earlier passes), immediately available without needing an authenticated browser session. `curl` timing against the live dev server was chosen to establish a routing/middleware baseline — sufficient because Next.js's own auth-check-and-redirect middleware fires and returns a 307 before any page component or data-fetching code ever runs, so its timing is a genuine, if partial, measurement, not a proxy standing in for something else.
+
+What could not be measured, and is disclosed rather than glossed over: full authenticated end-to-end timing of a real Planner route's complete chain. Constructing a session for a disposable test identity to drive this was considered and rejected for the same reason Feature 008's convergence pass rejected it — it would mean adding an unauthenticated-reachable privileged network surface (a temporary internal route or a minted session cookie) purely for measurement purposes, which this session's own safety controls correctly treat as a real risk, not a formality to route around. No fabricated "before/after ms" figures are reported anywhere in this pass for the full chain; every number reported (query execution time, routing time, round-trip count) is something this pass genuinely measured or counted from source.
+
+### Why the Logistics 4-way fan-out was documented, not fixed
+
+Considered three options: (a) leave it; (b) apply the same small profiles-merge fix to all four of its routes (already done, since three of the four — flights, hotels, movements — are among the 8 routes fixed above; only `planner-people`, itself one of the 8, remains, so all four legs already got the small fix); (c) consolidate all four into one bundled route matching Tasks/Vendors/Checklist/People/Production's shape. (c) is the fix that actually addresses the structural problem (four parallel authorization chains instead of one), but it means rewriting `planner-logistics/page.tsx`'s fetch logic and merging four separate route handlers' worth of authorization/data logic into one — a genuinely larger change than anything else in this pass, and exactly the kind of thing the brief's "do not change architecture unless profiling proves necessary and the change is small/safe" instruction exists to gate. It was evaluated, understood, and deliberately left for a dedicated future pass rather than attempted here under time pressure.
+
+### Typecheck/lint/build
+
+`npm run type-check` — clean. `npm run lint` — identical 30-warning baseline, zero new categories. `npm run build` (production) — clean; this time the dev server was explicitly stopped (`taskkill`) before building and restarted fresh afterward, directly incorporating the lesson from the `.next` corruption incident earlier in this session rather than repeating it.
+
+### Not performed
+
+Browser verification of the colour picker and of normal/rapid/return navigation timing (no browser-automation tool available). Full authenticated end-to-end HTTP timing of a complete Planner request chain (see "Methodology" above for why). The Logistics bundled-endpoint consolidation, the remaining ~21 item-mutation routes' duplicate-profile-query fix, and blanket `useLatestRequest` retrofitting of the ~16 simple Bendie pages were all investigated and are documented as deliberate, reasoned deferrals — not oversights.

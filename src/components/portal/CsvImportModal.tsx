@@ -6,6 +6,7 @@ import {
   type ColumnSpec,
   type RowResult,
   parseCsvFile,
+  parseCsvText,
   validateHeaders,
   downloadCsvTemplate,
   runWithConcurrency,
@@ -28,6 +29,8 @@ type CsvImportModalProps<T> = {
 };
 
 type Step = 'pick' | 'preview' | 'result';
+/** Feature 016 Data Entry UX pass — the two ways a batch of rows can enter this same modal. Both converge on the identical `ParsedCsv` shape immediately, so every downstream step (`parseRow`, preview, `runWithConcurrency` import) is 100% shared, never duplicated per source. */
+type SourceMode = 'file' | 'paste';
 
 export function CsvImportModal<T>({
   open,
@@ -42,6 +45,8 @@ export function CsvImportModal<T>({
   beforeImport,
 }: CsvImportModalProps<T>) {
   const [step, setStep] = useState<Step>('pick');
+  const [sourceMode, setSourceMode] = useState<SourceMode>('file');
+  const [pasteText, setPasteText] = useState('');
   const [headerErrors, setHeaderErrors] = useState<string[]>([]);
   const [rawColumns, setRawColumns] = useState<string[]>([]);
   const [results, setResults] = useState<RowResult<T>[]>([]);
@@ -53,8 +58,10 @@ export function CsvImportModal<T>({
 
   if (!open) return null;
 
-  const reset = () => {
+  /** Returns to the 'pick' step without forgetting which source mode (file vs. paste) the user was already using. */
+  const resetToPick = () => {
     setStep('pick');
+    setPasteText('');
     setHeaderErrors([]);
     setRawColumns([]);
     setResults([]);
@@ -66,27 +73,47 @@ export function CsvImportModal<T>({
   };
 
   const handleClose = () => {
-    reset();
+    resetToPick();
+    setSourceMode('file');
     onClose();
+  };
+
+  const applyParsedRows = (headers: string[], rows: Record<string, string>[]) => {
+    const missing = validateHeaders(headers, columns);
+    if (missing.length > 0) {
+      setHeaderErrors(missing);
+      setRawColumns(headers);
+      setResults([]);
+      setStep('preview');
+      return;
+    }
+    setHeaderErrors([]);
+    setRawColumns(headers);
+    setResults(rows.map((raw, i) => parseRow(raw, i)));
+    setStep('preview');
   };
 
   const handleFile = async (file: File) => {
     try {
       const { headers, rows } = await parseCsvFile(file);
-      const missing = validateHeaders(headers, columns);
-      if (missing.length > 0) {
-        setHeaderErrors(missing);
-        setRawColumns(headers);
-        setResults([]);
-        setStep('preview');
-        return;
-      }
-      setHeaderErrors([]);
-      setRawColumns(headers);
-      setResults(rows.map((raw, i) => parseRow(raw, i)));
-      setStep('preview');
+      applyParsedRows(headers, rows);
     } catch (err) {
       toast.error('Failed to read CSV file');
+      console.error(err);
+    }
+  };
+
+  const handleParsePastedText = () => {
+    if (!pasteText.trim()) return;
+    try {
+      const { headers, rows } = parseCsvText(pasteText);
+      if (rows.length === 0) {
+        toast.error('No rows detected — check that you copied the header row too');
+        return;
+      }
+      applyParsedRows(headers, rows);
+    } catch (err) {
+      toast.error('Failed to read pasted data');
       console.error(err);
     }
   };
@@ -147,8 +174,26 @@ export function CsvImportModal<T>({
         {step === 'pick' && (
           <div className="space-y-4">
             <p className="hint">
-              Upload a CSV file. Required columns: {columns.filter((c) => c.required).map((c) => c.label).join(', ')}.
+              Upload a CSV file or paste rows copied from a spreadsheet. Required columns:{' '}
+              {columns.filter((c) => c.required).map((c) => c.label).join(', ')}.
             </p>
+
+            <div className="flex gap-1 bg-surface-container-low rounded-xl p-1 w-fit">
+              <button
+                type="button"
+                onClick={() => setSourceMode('file')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sourceMode === 'file' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant'}`}
+              >
+                Upload File
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourceMode('paste')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sourceMode === 'paste' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant'}`}
+              >
+                Paste from Spreadsheet
+              </button>
+            </div>
 
             <div>
               <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-2">
@@ -189,16 +234,34 @@ export function CsvImportModal<T>({
             >
               <span className="material-symbols-outlined text-[18px]">download</span> Download as CSV File
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFile(file);
-              }}
-              className="block w-full text-sm text-on-surface-variant border border-outline-variant rounded-xl p-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-sm file:font-medium"
-            />
+
+            {sourceMode === 'file' ? (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFile(file);
+                }}
+                className="block w-full text-sm text-on-surface-variant border border-outline-variant rounded-xl p-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-sm file:font-medium"
+              />
+            ) : (
+              <div className="space-y-2">
+                <textarea
+                  className="input h-40 resize-none font-mono text-xs"
+                  placeholder="Select and copy your rows (including the header row) from Excel or Google Sheets, then paste them here…"
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                />
+                <button type="button" className="btn-primary text-xs py-1.5" onClick={handleParsePastedText} disabled={!pasteText.trim()}>
+                  Parse Pasted Data
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -266,8 +329,8 @@ export function CsvImportModal<T>({
             )}
 
             <div className="flex gap-3 pt-2">
-              <button className="btn-secondary" onClick={reset}>
-                Choose a Different File
+              <button className="btn-secondary" onClick={resetToPick}>
+                {sourceMode === 'paste' ? 'Start Over' : 'Choose a Different File'}
               </button>
               {headerErrors.length === 0 && (
                 <button

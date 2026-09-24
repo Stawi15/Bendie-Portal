@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
+import { useEvent } from '@/contexts/EventContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
+import { isProductAvailableForEvent } from '@/lib/eventAuth';
+import { markTravelJourneyStarted, consumeTravelJourneyReturnFlag } from '@/lib/travelReturnContext';
 import toast from 'react-hot-toast';
 
 type Member = {
@@ -53,7 +56,9 @@ const EMPTY_FORM: TravelForm = {
 
 export default function AttendeeTravelPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  const router = useRouter();
   const confirm = useConfirm();
+  const { currentEvent } = useEvent();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +70,56 @@ export default function AttendeeTravelPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<TravelForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  // Part B — Both-Product Travel Journey guidance (Feature 016). `isBothProduct`
+  // starts `null` (unknown) so the banner never flashes incorrectly before the
+  // check resolves; this page is only ever reachable on an event that already
+  // has Bendie active (attendee-travel is classified `product: 'bendie'` in
+  // EVENT_SECTIONS), so only Planner's own availability needs checking here.
+  const [isBothProduct, setIsBothProduct] = useState<boolean | null>(null);
+  const [justReturnedFromPlanner, setJustReturnedFromPlanner] = useState(false);
+  const [pullingTravel, setPullingTravel] = useState(false);
+
+  useEffect(() => {
+    if (!eventId || !currentEvent?.organization_id) return;
+    let cancelled = false;
+    isProductAvailableForEvent(eventId, currentEvent.organization_id, 'planner')
+      .then((available) => { if (!cancelled) setIsBothProduct(available); })
+      .catch((err) => { console.error('AttendeeTravelPage: planner availability check failed', err); if (!cancelled) setIsBothProduct(false); });
+    return () => { cancelled = true; };
+  }, [eventId, currentEvent?.organization_id]);
+
+  useEffect(() => {
+    if (!eventId) return;
+    setJustReturnedFromPlanner(consumeTravelJourneyReturnFlag(eventId));
+  }, [eventId]);
+
+  const handleSetUpInPlanner = () => {
+    markTravelJourneyStarted(eventId);
+    router.push(`/portal/events/${eventId}/planner-logistics?product=planner&view=flights`);
+  };
+
+  const handlePullTravel = async () => {
+    setPullingTravel(true);
+    try {
+      const res = await fetch('/api/admin/planner-pull-travel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId }),
+      });
+      const body = await res.json();
+      if (!res.ok) { toast.error(body.error ?? 'Failed to pull travel data'); return; }
+      if ((body.unmatched ?? 0) > 0) toast(`Pulled ${body.pulled}, ${body.unmatched} traveler(s) unmatched`, { icon: '⚠️' });
+      else toast.success(`Pulled ${body.pulled} travel record${body.pulled === 1 ? '' : 's'} from Bendie Planner`);
+      setJustReturnedFromPlanner(false);
+      if (selected) fetchDetails(selected.user_id);
+    } catch (err) {
+      toast.error('Failed to pull travel data');
+      console.error(err);
+    } finally {
+      setPullingTravel(false);
+    }
+  };
 
   const fetchMembers = async () => {
     const { data, error } = await supabase
@@ -155,6 +210,54 @@ export default function AttendeeTravelPage() {
       <div className="mb-6">
         <SectionHeader sectionKey="attendee-travel" desc="Flight and ground-transfer details, organiser-entered per attendee" />
       </div>
+
+      {/* Part B — Both-Product Travel Journey guidance (Feature 016). Never
+          rendered for a Bendie-only or Planner-only event — `isBothProduct`
+          only ever resolves `true` once this event's own `event_products`
+          confirms an active Planner entitlement too. Inline, non-blocking:
+          the ordinary manual travel workflow below remains fully usable
+          either way, this is guidance, not a gate. */}
+      {isBothProduct && (
+        <div className="mb-6 bg-primary/5 border border-primary/20 rounded-[20px] p-4 flex items-start gap-3">
+          <span className="material-symbols-outlined text-primary mt-0.5">sync_alt</span>
+          <div className="flex-1 min-w-0">
+            {justReturnedFromPlanner ? (
+              <>
+                <p className="text-sm font-medium text-on-surface">Travel setup in Planner complete?</p>
+                <p className="text-sm text-on-surface-variant mt-0.5">Pull the latest travel details into Bendie so you don&apos;t have to enter them twice.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-on-surface">Using Bendie Planner for this event?</p>
+                <p className="text-sm text-on-surface-variant mt-0.5">
+                  Set up participant travel in Planner first, then pull the travel details into Bendie so you don&apos;t have to enter them twice.
+                </p>
+              </>
+            )}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {justReturnedFromPlanner ? (
+                <>
+                  <button onClick={handlePullTravel} disabled={pullingTravel} className="btn-primary text-xs py-1.5">
+                    {pullingTravel ? 'Pulling…' : 'Pull from Bendie Planner'}
+                  </button>
+                  <button onClick={handleSetUpInPlanner} className="text-xs text-primary hover:opacity-80 font-medium px-2 py-1.5">
+                    Continue in Planner
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={handleSetUpInPlanner} className="btn-primary text-xs py-1.5">
+                    Set up in Bendie Planner
+                  </button>
+                  <button onClick={handlePullTravel} disabled={pullingTravel} className="btn-secondary text-xs py-1.5">
+                    {pullingTravel ? 'Pulling…' : 'Pull from Bendie Planner'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Attendee picker */}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { hasActiveTravelJourney, completeTravelJourney } from '@/lib/travelReturnContext';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { SectionHeader } from '@/components/portal/SectionHeader';
@@ -55,6 +56,17 @@ type PageState =
 
 export default function PlannerPeoplePage() {
   const { eventId } = useParams<{ eventId: string }>();
+  const router = useRouter();
+
+  // Part B — Both-Product Travel Journey guidance (Feature 016). See
+  // src/lib/travelReturnContext.ts for why this is sessionStorage-backed
+  // rather than a query param.
+  const [hasReturnContext, setHasReturnContext] = useState(false);
+  useEffect(() => { setHasReturnContext(hasActiveTravelJourney(eventId)); }, [eventId]);
+  const handleReturnToAttendeeTravel = () => {
+    completeTravelJourney(eventId);
+    router.push(`/portal/events/${eventId}/attendee-travel`);
+  };
   const confirm = useConfirm();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [modalOpen, setModalOpen] = useState(false);
@@ -555,6 +567,18 @@ export default function PlannerPeoplePage() {
         Need someone to work inside Planner? Manage them under Team &amp; Access
         <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
       </Link>
+
+      {/* Part B — Both-Product Travel Journey guidance (Feature 016). Only
+          rendered when the user actually arrived via the guided flow from
+          Bendie Attendee Travel — never on an ordinary visit to this page. */}
+      {hasReturnContext && (
+        <div className="mt-4 bg-primary/5 border border-primary/20 rounded-2xl p-3 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-on-surface">You&apos;re setting up travel before continuing in Bendie.</p>
+          <button onClick={handleReturnToAttendeeTravel} className="btn-primary text-xs py-1.5 flex-shrink-0">
+            Return to Attendee Travel
+          </button>
+        </div>
+      )}
 
       <div className="mt-6">
         <PlannerPeopleList

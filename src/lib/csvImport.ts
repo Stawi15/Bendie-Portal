@@ -33,6 +33,26 @@ export function parseCsvFile(file: File): Promise<ParsedCsv> {
   });
 }
 
+/**
+ * Feature 016 Data Entry UX pass — "Paste from spreadsheet." Parses raw text
+ * pasted from Excel/Google Sheets (tab-separated) or a comma-separated block,
+ * converging on the exact same `ParsedCsv` shape `parseCsvFile` produces so
+ * every existing `parseRow`/`validateHeaders`/`CsvImportModal` consumer works
+ * completely unchanged regardless of which entry path produced the rows.
+ * `delimiter: ''` asks PapaParse to auto-detect tab vs. comma per its own
+ * standard heuristic — deliberately not a bespoke parser.
+ */
+export function parseCsvText(text: string): ParsedCsv {
+  const result = Papa.parse<Record<string, string>>(text.trim(), {
+    header: true,
+    skipEmptyLines: true,
+    delimiter: '',
+    transformHeader: (h) => h.trim(),
+    transform: (value) => value.trim(),
+  });
+  return { headers: result.meta.fields ?? [], rows: result.data };
+}
+
 /** Case-insensitive/trimmed header matching. Returns the labels of any required columns missing from the CSV. */
 export function validateHeaders(headers: string[], columns: ColumnSpec[]): string[] {
   const normalized = new Set(headers.map((h) => h.toLowerCase().trim()));
@@ -62,6 +82,18 @@ export function downloadCsvTemplate(filename: string, columns: ColumnSpec[], sam
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+const TRUE_VALUES = new Set(['true', 'yes', '1']);
+const FALSE_VALUES = new Set(['false', 'no', '0', '']);
+
+/** Feature 016 CSV coverage expansion — a shared true/false/blank parser for the several new optional boolean columns (isFeatured, isExhibitor, ...). Blank means "not specified" (ok, defaults handled by the caller); anything else unrecognized is reported as `ok: false` so callers can surface a validation error rather than silently guessing. */
+export function parseFlexibleBoolean(value: string): { ok: true; value: boolean | null } | { ok: false } {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === '') return { ok: true, value: null };
+  if (TRUE_VALUES.has(normalized)) return { ok: true, value: true };
+  if (FALSE_VALUES.has(normalized)) return { ok: true, value: false };
+  return { ok: false };
 }
 
 /** Parses a date/time string leniently (accepts "YYYY-MM-DD HH:mm" as well as ISO "YYYY-MM-DDTHH:mm"). Returns null if unparseable. */

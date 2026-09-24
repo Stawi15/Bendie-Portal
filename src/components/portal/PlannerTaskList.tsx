@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { PlannerTaskClient } from '@/components/portal/PlannerTaskModal';
 
 const STATUS_VALUES: PlannerTaskClient['status'][] = ['Pending', 'In Progress', 'Completed'];
@@ -34,6 +34,8 @@ type PlannerTaskListProps = {
   onDelete: (task: PlannerTaskClient) => void;
   /** Resolves to whether the save actually succeeded — see the draft-clearing note below. */
   onSelfAssigneeUpdate: (task: PlannerTaskClient, patch: { status?: string; remarks?: string }) => Promise<boolean>;
+  /** Feature 016 Data Entry UX pass — manager-only inline status change, fired immediately on selection (no draft/Save step, unlike the self-assignee control below, since status is the only field this control touches — there is no companion field whose edits it could accidentally co-submit). Resolves to whether it succeeded so the row can revert on failure. */
+  onManagerStatusChange?: (task: PlannerTaskClient, status: PlannerTaskClient['status']) => Promise<boolean>;
   onAdd?: () => void;
 };
 
@@ -46,8 +48,30 @@ type SelfAssigneeDraft = { status: PlannerTaskClient['status']; remarks: string 
  * control are both driven exclusively by server-derived capability/task
  * data — never a client-side inference (T034/T035).
  */
-export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busyTaskId, onEdit, onDelete, onSelfAssigneeUpdate, onAdd }: PlannerTaskListProps) {
+export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busyTaskId, onEdit, onDelete, onSelfAssigneeUpdate, onManagerStatusChange, onAdd }: PlannerTaskListProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Optimistic-with-rollback local override for the inline manager status
+  // control only (item 14: immediate saving state, revert on failure) — never
+  // consulted for anything else; `tasks` (server data) remains authoritative
+  // the moment a fresh load() response arrives and clears this per-row entry.
+  const [statusOverride, setStatusOverride] = useState<Record<number, PlannerTaskClient['status']>>({});
+  // Drop any override once the server's own value (from the next `load()`,
+  // triggered by every mutation this list's parent performs) already agrees
+  // with it — keeps this purely a transient "saving..." bridge, never a
+  // second, independently-drifting source of truth.
+  useEffect(() => {
+    setStatusOverride((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const t of tasks) {
+        if (next[t.taskId] === t.status) {
+          delete next[t.taskId];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [tasks]);
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   // Manual-acceptance corrective fix — self-assignee status/remarks edits are
@@ -124,7 +148,7 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
           </p>
           {tasks.length === 0 && canManage && (
             <>
-              <p className="text-on-surface-variant/70 text-xs mt-1">Bulk CSV import isn&apos;t available for Tasks — add tasks one at a time here.</p>
+              <p className="text-on-surface-variant/70 text-xs mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
               {onAdd && (
                 <div className="mt-4">
                   <button className="btn-primary" onClick={onAdd}>
@@ -167,6 +191,25 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
                           value={getDraft(t).status}
                           disabled={isBusy}
                           onChange={(e) => updateDraft(t, { status: e.target.value as PlannerTaskClient['status'] })}
+                        >
+                          {STATUS_VALUES.map((s) => (
+                            <option key={s} value={s}>
+                              {s}
+                            </option>
+                          ))}
+                        </select>
+                      ) : canManage && onManagerStatusChange ? (
+                        <select
+                          className="input !w-auto !py-1 text-xs"
+                          value={statusOverride[t.taskId] ?? t.status}
+                          disabled={isBusy}
+                          onChange={async (e) => {
+                            const next = e.target.value as PlannerTaskClient['status'];
+                            const previous = statusOverride[t.taskId] ?? t.status;
+                            setStatusOverride((prev) => ({ ...prev, [t.taskId]: next }));
+                            const succeeded = await onManagerStatusChange(t, next);
+                            if (!succeeded) setStatusOverride((prev) => ({ ...prev, [t.taskId]: previous }));
+                          }}
                         >
                           {STATUS_VALUES.map((s) => (
                             <option key={s} value={s}>

@@ -18,7 +18,8 @@ export type PlannerTaskClient = {
   assignedProfileName: string | null;
 };
 
-export type AssignableStaffMemberClient = { profileId: string; name: string };
+/** `email` (Feature 016 CSV coverage expansion) is carried through purely for CSV assignee matching — this modal's own dropdown never renders it. */
+export type AssignableStaffMemberClient = { profileId: string; name: string; email: string | null };
 
 export type PlannerTaskFormValues = {
   task: string;
@@ -90,7 +91,7 @@ export function PlannerTaskModal({ open, task, assignableStaff, submitting, serv
   // touch assignment doesn't silently clear it, labeled distinctly.
   const assigneeOptions = [...assignableStaff];
   if (task?.assignedProfileId && !assignableStaff.some((s) => s.profileId === task.assignedProfileId)) {
-    assigneeOptions.push({ profileId: task.assignedProfileId, name: `${task.assignedProfileName ?? 'Unknown staff member'} (no longer active)` });
+    assigneeOptions.push({ profileId: task.assignedProfileId, name: `${task.assignedProfileName ?? 'Unknown staff member'} (no longer active)`, email: null });
   }
 
   const fieldError = (field: string) => (serverError && serverError.category === field ? serverError.message : null);

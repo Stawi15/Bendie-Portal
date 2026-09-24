@@ -10,7 +10,60 @@ import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
 import { moveItem } from '@/lib/reorder';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import { getField, parseFlexibleBoolean, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+
+/**
+ * Feature 016 CSV coverage expansion. Hero/gallery images are deliberately
+ * excluded from this CSV (documented limitation): unlike the other four
+ * modules' single flat `image_url` column, an activity's images live in a
+ * separate `activity_images` child table with a hero/gallery split, and
+ * bringing that relational shape into a flat CSV row would meaningfully
+ * complicate the format for a secondary field. Use the Asset Picker in the
+ * activity's own edit form to add images after import.
+ */
+type ActivityCsvRow = { title: string; description: string | null; location: string | null; rating: number | null; is_featured: boolean };
+
+const ACTIVITY_CSV_COLUMNS: ColumnSpec[] = [
+  { key: 'title', label: 'Title', required: true },
+  { key: 'description', label: 'Description' },
+  { key: 'location', label: 'Location' },
+  { key: 'rating', label: 'Rating (0-5)' },
+  { key: 'isFeatured', label: 'Featured (true/false)' },
+];
+
+const ACTIVITY_CSV_SAMPLES: Record<string, string>[] = [
+  { title: 'Sunrise Yoga', description: 'Guided yoga session overlooking the lake', location: 'Poolside Deck', rating: '4.5', isFeatured: 'true' },
+  { title: 'Evening Bonfire', description: 'Casual networking around the fire pit', location: 'Main Lawn', rating: '', isFeatured: 'false' },
+];
+
+function parseActivityCsvRow(raw: Record<string, string>, rowIndex: number): RowResult<ActivityCsvRow> {
+  const errors: string[] = [];
+  const title = getField(raw, 'title');
+  if (!title) errors.push('title is required');
+
+  const ratingRaw = getField(raw, 'rating');
+  let rating: number | null = null;
+  if (ratingRaw) {
+    const parsed = parseFloat(ratingRaw);
+    if (isNaN(parsed) || parsed < 0 || parsed > 5) errors.push('rating must be a number between 0 and 5');
+    else rating = parsed;
+  }
+
+  const featuredRaw = parseFlexibleBoolean(getField(raw, 'isFeatured'));
+  if (!featuredRaw.ok) errors.push('isFeatured must be true or false');
+
+  const data: ActivityCsvRow = {
+    title,
+    description: getField(raw, 'description') || null,
+    location: getField(raw, 'location') || null,
+    rating,
+    is_featured: featuredRaw.ok ? featuredRaw.value ?? false : false,
+  };
+
+  return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
+}
 
 type Activity = {
   id: string;
@@ -59,6 +112,7 @@ export default function ActivitiesPage() {
   const [originalImageIds, setOriginalImageIds] = useState<Set<string>>(new Set());
   const [pickerTarget, setPickerTarget] = useState<string | null>(null); // 'hero' or a gallery row's key
   const [saving, setSaving] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -76,6 +130,19 @@ export default function ActivitiesPage() {
   const openAdd = () => {
     setEditing(null);
     setForm({ ...EMPTY_FORM, display_order: activities.length.toString() });
+    setHeroImage(EMPTY_HERO);
+    setGalleryImages([]);
+    setOriginalImageIds(new Set());
+    setShowForm(true);
+  };
+
+  /** Feature 016 Data Entry UX pass — opens a NEW, unsaved, prefilled record; never writes to the database until the user presses Save (item 7). Images are deliberately never copied — they're separate rows tied to a specific activity_id, and system-generated state (id, slug, display_order) is never carried over either. */
+  const openDuplicate = (a: Activity) => {
+    setEditing(null);
+    setForm({
+      title: `${a.title} (Copy)`, description: a.description ?? '', location: a.location ?? '',
+      rating: a.rating != null ? a.rating.toString() : '', is_featured: a.is_featured, display_order: activities.length.toString(),
+    });
     setHeroImage(EMPTY_HERO);
     setGalleryImages([]);
     setOriginalImageIds(new Set());
@@ -131,7 +198,7 @@ export default function ActivitiesPage() {
     else setGalleryUrl(pickerTarget, url);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (keepOpen = false) => {
     if (!form.title) { toast.error('Title is required'); return; }
     setSaving(true);
 
@@ -199,7 +266,21 @@ export default function ActivitiesPage() {
     }
 
     toast.success(editing ? 'Activity updated' : 'Activity added');
-    setShowForm(false);
+    // Feature 016 Data Entry UX pass — "Save & Add Another" (create-only, never
+    // reachable while editing, matching PlannerTaskModal's own gating).
+    // Retains `location` — the field most likely to be identical across a
+    // batch of activities entered back-to-back (e.g. several sessions at the
+    // same venue) — and clears everything title/description/rating/featured-
+    // specific, plus any hero/gallery image state, since those are
+    // per-activity by nature.
+    if (keepOpen && !editing) {
+      setForm({ ...EMPTY_FORM, location: form.location, display_order: (activities.length + 1).toString() });
+      setHeroImage(EMPTY_HERO);
+      setGalleryImages([]);
+      setOriginalImageIds(new Set());
+    } else {
+      setShowForm(false);
+    }
     fetchData();
     setSaving(false);
   };
@@ -217,13 +298,28 @@ export default function ActivitiesPage() {
     else fetchData();
   };
 
+  const importActivityRow = async (row: ActivityCsvRow) => {
+    const { error } = await supabase.from('activities').insert({
+      ...row,
+      event_id: eventId,
+      slug: row.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      display_order: activities.length,
+    });
+    return { error: error?.message };
+  };
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <SectionHeader sectionKey="activities" desc={`${activities.length} activit${activities.length !== 1 ? 'ies' : 'y'}`} />
-        <button onClick={openAdd} className="btn-primary flex-shrink-0">
-          <span className="material-symbols-outlined text-[18px]">add</span> Add Activity
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+          </button>
+          <button onClick={openAdd} className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add</span> Add Activity
+          </button>
+        </div>
       </div>
 
       {/* Form modal */}
@@ -324,8 +420,13 @@ export default function ActivitiesPage() {
             )}
           </div>
 
-          <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
-            <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Activity'}</button>
+          <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
+            <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Activity'}</button>
+            {!editing && (
+              <button onClick={() => handleSave(true)} disabled={saving} className="btn-secondary">
+                {saving ? 'Saving...' : 'Save & Add Another'}
+              </button>
+            )}
             <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
           </div>
       </FormModal>
@@ -345,7 +446,8 @@ export default function ActivitiesPage() {
       ) : activities.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">bolt</p>
-          <p className="text-on-surface-variant">No activities yet. Add the first one.</p>
+          <p className="text-on-surface-variant">No activities yet.</p>
+          <p className="text-on-surface-variant/70 text-sm mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -376,6 +478,9 @@ export default function ActivitiesPage() {
                   <span className="hidden sm:inline">Edit</span>
                   <span className="material-symbols-outlined text-[16px] sm:hidden">edit</span>
                 </button>
+                <button onClick={(e) => { e.stopPropagation(); openDuplicate(a); }} title="Duplicate" className="text-sm text-on-surface-variant hover:text-primary font-medium px-2 py-1 rounded-lg hover:bg-primary/5 transition">
+                  <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                </button>
                 <button onClick={(e) => { e.stopPropagation(); handleDelete(a.id, a.title); }} title="Delete" className="text-sm text-error hover:opacity-80 font-medium px-2 py-1 rounded-lg hover:bg-error/5 transition">
                   <span className="hidden sm:inline">Delete</span>
                   <span className="material-symbols-outlined text-[16px] sm:hidden">delete</span>
@@ -385,6 +490,18 @@ export default function ActivitiesPage() {
           ))}
         </div>
       )}
+
+      <CsvImportModal<ActivityCsvRow>
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onImported={fetchData}
+        title="Import Activities"
+        templateFilename="activities-template.csv"
+        columns={ACTIVITY_CSV_COLUMNS}
+        sampleRows={ACTIVITY_CSV_SAMPLES}
+        parseRow={parseActivityCsvRow}
+        importRow={importActivityRow}
+      />
     </div>
   );
 }

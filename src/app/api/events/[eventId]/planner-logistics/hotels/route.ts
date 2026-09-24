@@ -5,7 +5,6 @@ import { cookies } from 'next/headers';
 import { requireEventWorkspaceAccess, isProductAvailableForEvent, canAdministerPlannerPermissions } from '@/lib/eventAuth';
 import { resolveProvisioningPhase } from '@/lib/plannerOverview';
 import {
-  resolveCallerPlannerIdentity,
   resolveLogisticsCapability,
   listHotelBookings,
   createHotelBooking,
@@ -43,7 +42,10 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
-  const { data: profile } = await authClient.from('profiles').select('global_role, current_organization_id').eq('id', user.id).maybeSingle();
+  // Feature 016 performance pass — also select `planner_profile_id` here so the
+  // separate `resolveCallerPlannerIdentity` round trip below (which queried
+  // this exact same row by the same id) can be eliminated entirely.
+  const { data: profile } = await authClient.from('profiles').select('global_role, current_organization_id, planner_profile_id').eq('id', user.id).maybeSingle();
 
   const isPlatformAdmin = profile?.global_role === 'admin';
   let selectedOrganizationId: string | null = null;
@@ -114,7 +116,7 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
   const plannerEventId = activeLink.planner_event_id as number;
 
   const canAdminister = await canAdministerPlannerPermissions(eventId, user.id, authClient);
-  const plannerProfileId = await resolveCallerPlannerIdentity(authClient, user.id);
+  const plannerProfileId = profile?.planner_profile_id ?? null;
 
   let capability: ResolvedLogisticsCapability;
   if (canAdminister) {

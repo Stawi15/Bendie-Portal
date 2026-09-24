@@ -16,6 +16,8 @@ import { PlannerAssignPassengerModal, type VehicleOption } from '@/components/po
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useLatestRequest, isAbortError } from '@/lib/useLatestRequest';
+import Link from 'next/link';
+import { hasActiveTravelJourney, completeTravelJourney } from '@/lib/travelReturnContext';
 
 /** Shared by Flights and Hotels CSV import: email (preferred) or exact full-name match against the already-loaded event roster. Zero or 2+ matches is never guessed. */
 function resolveParticipantForCsv(roster: ParticipantOption[], identifier: string): { status: 'matched'; participant: ParticipantOption } | { status: 'not_found' } | { status: 'ambiguous' } {
@@ -160,6 +162,17 @@ export default function PlannerLogisticsPage() {
   const confirm = useConfirm();
   const [state, setState] = useState<PageState>({ kind: 'loading' });
   const [subTab, setSubTabState] = useState<SubTab>(() => VIEW_TO_SUBTAB[searchParams.get('view') ?? ''] ?? 'flights');
+
+  // Part B — Both-Product Travel Journey guidance (Feature 016). Read once on
+  // mount, not reactive to further sessionStorage changes — this page is the
+  // journey's destination, not something that needs to notice the flag being
+  // set from elsewhere mid-session.
+  const [hasReturnContext, setHasReturnContext] = useState(false);
+  useEffect(() => { setHasReturnContext(hasActiveTravelJourney(eventId)); }, [eventId]);
+  const handleReturnToAttendeeTravel = () => {
+    completeTravelJourney(eventId);
+    router.push(`/portal/events/${eventId}/attendee-travel`);
+  };
 
   const setSubTab = useCallback(
     (next: SubTab) => {
@@ -1000,6 +1013,25 @@ export default function PlannerLogisticsPage() {
           </div>
         )}
       </div>
+
+      {/* Part B — Both-Product Travel Journey guidance (Feature 016). Only
+          rendered when the user actually arrived via the guided flow from
+          Bendie Attendee Travel — never on an ordinary visit to this page. */}
+      {hasReturnContext && (
+        <div className="mt-4 bg-primary/5 border border-primary/20 rounded-2xl p-3 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-on-surface">
+            You&apos;re setting up travel before continuing in Bendie.
+            {participantTotal === 0 && (
+              <>
+                {' '}No participants yet? <Link href={`/portal/events/${eventId}/planner-people`} className="text-primary hover:opacity-80 font-medium">Add one from Bendie Attendees</Link> first.
+              </>
+            )}
+          </p>
+          <button onClick={handleReturnToAttendeeTravel} className="btn-primary text-xs py-1.5 flex-shrink-0">
+            Return to Attendee Travel
+          </button>
+        </div>
+      )}
 
       {participantTotal > 0 && (
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
