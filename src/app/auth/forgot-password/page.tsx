@@ -59,7 +59,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           <Link
-            href="/auth/reset-password"
+            href={`/auth/reset-password?email=${encodeURIComponent(email)}`}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition mb-4 block text-center"
           >
             Enter Recovery Code
