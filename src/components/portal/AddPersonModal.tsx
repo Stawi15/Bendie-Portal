@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { Avatar } from '@/components/portal/Avatar';
 import { ORG_ROLE_LABELS } from '@/lib/portalLabels';
+import { friendlyError } from '@/lib/userFacingError';
 
 type ProfileResult = {
   id: string;
@@ -85,7 +86,7 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
       if (error.code === '23505') {
         toast.error(`${profile.full_name ?? profile.email} is already in this organisation`);
       } else {
-        toast.error(error.message);
+        toast.error(friendlyError(error));
       }
       return;
     }

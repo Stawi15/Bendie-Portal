@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import type { Database } from '@/types/database';
+import { friendlyError } from '@/lib/userFacingError';
 
 type Organization = Database['public']['Tables']['organizations']['Row'];
 
@@ -64,7 +65,7 @@ export function CreateOrganizationModal({ open, onClose, onCreated }: CreateOrga
 
     if (error) {
       if (error.code === '23505') toast.error('That slug is already taken — try a different one.');
-      else toast.error(error.message);
+      else toast.error(friendlyError(error));
       return;
     }
 

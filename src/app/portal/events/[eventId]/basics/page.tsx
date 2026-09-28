@@ -3,9 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { useEvent } from '@/contexts/EventContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
-import { EVENTS_SELECT_COLUMNS } from '@/lib/eventColumns';
+import { EVENTS_SELECT_COLUMNS, type EventRow } from '@/lib/eventColumns';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useSaveStatus } from '@/lib/useSaveStatus';
+import { SaveStatus } from '@/components/portal/SaveStatus';
 
 type BasicsForm = {
   name: string;
@@ -49,13 +53,22 @@ function toLocalDatetime(iso: string | null) {
 
 export default function BasicsPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  // Keep the shared event (Dashboard readiness, nav) in step with what was just saved — no refetch.
+  const { patchCurrentEvent } = useEvent();
   const [form, setForm] = useState<BasicsForm>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Feature 016: truthful Unsaved → Saving… → Saved / Couldn't save indicator.
+  const saveStatus = useSaveStatus(form, !loading);
 
   useEffect(() => {
     if (!eventId) return;
-    supabase.from('events').select(EVENTS_SELECT_COLUMNS).eq('id', eventId).single().then(({ data, error }) => {
+    // Feature 016 (main-tab performance pass): cancelled when the user leaves; an aborted
+    // load never toasts or writes state. (Deliberately still reads the row rather than
+    // reusing EventContext: other tabs save event columns without patching the context.)
+    const controller = new AbortController();
+    supabase.from('events').select(EVENTS_SELECT_COLUMNS).eq('id', eventId).abortSignal(controller.signal).single().then(({ data, error }) => {
+      if (controller.signal.aborted) return;
       if (error) { toast.error('Failed to load event'); }
       else if (data) {
         setForm({
@@ -76,6 +89,7 @@ export default function BasicsPage() {
       }
       setLoading(false);
     });
+    return () => controller.abort();
   }, [eventId]);
 
   const set = (field: keyof BasicsForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -94,7 +108,8 @@ export default function BasicsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('events').update({
+    saveStatus.start();
+    const payload = {
       name: form.name,
       slug: form.slug || null,
       description: form.description || null,
@@ -108,10 +123,11 @@ export default function BasicsPage() {
       interests_enabled: form.interests_enabled,
       in_house: form.in_house,
       disabled_menu_items: form.disabled_menu_items,
-    }).eq('id', eventId);
+    };
+    const { error } = await supabase.from('events').update(payload).eq('id', eventId);
 
-    if (error) { toast.error(error.message); }
-    else { toast.success('Basics saved'); }
+    if (error) { toast.error(friendlyError(error)); saveStatus.fail(); }
+    else { toast.success('Basics saved'); saveStatus.succeed(); patchCurrentEvent(eventId, payload as Partial<EventRow>); } // the DB just accepted these values
     setSaving(false);
   };
 
@@ -223,10 +239,11 @@ export default function BasicsPage() {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-outline-variant">
+        <div className="pt-2 border-t border-outline-variant flex flex-wrap items-center gap-3">
           <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
+          <SaveStatus dirty={saveStatus.dirty} phase={saveStatus.phase} onRetry={handleSave} />
         </div>
       </div>
     </div>

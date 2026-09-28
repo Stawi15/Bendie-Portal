@@ -14,6 +14,7 @@ import {
 } from '@/components/portal/PlannerTaskModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
+import { useLatestRequest, isAbortError } from '@/lib/useLatestRequest';
 
 /**
  * Feature 016 CSV coverage expansion. Mirrors `planner-logistics/page.tsx`'s
@@ -118,11 +119,16 @@ export default function PlannerTasksPage() {
     };
   }, []);
 
+  // Feature 016 (main-tab performance pass): cancel a superseded/abandoned load so it
+  // stops holding a same-origin connection after the user moves to another tab.
+  const startRequest = useLatestRequest();
+
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    const signal = startRequest();
     setState({ kind: 'loading' });
     try {
-      const res = await fetch(`/api/events/${eventId}/planner-tasks`);
+      const res = await fetch(`/api/events/${eventId}/planner-tasks`, { signal });
       if (requestIdRef.current !== requestId) return;
       if (!res.ok) {
         setState({ kind: 'denied' });
@@ -143,10 +149,11 @@ export default function PlannerTasksPage() {
       });
     } catch (err) {
       if (requestIdRef.current !== requestId) return;
+      if (isAbortError(err)) return; // navigation/supersession — never an error
       console.error('Failed to load Planner Tasks', err);
       setState({ kind: 'configuring', status: 'backend_error' });
     }
-  }, [eventId]);
+  }, [eventId, startRequest]);
 
   useEffect(() => {
     load();
@@ -449,7 +456,7 @@ export default function PlannerTasksPage() {
       </div>
 
       <PlannerTaskModal
-        key={modalResetKey}
+        key={`task-modal-${modalResetKey}`}
         open={modalOpen}
         task={editingTask}
         assignableStaff={assignableStaff}

@@ -7,6 +7,7 @@ import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type Game = {
   id: string;
@@ -80,11 +81,11 @@ export default function GamesPage() {
     const payload = { title: gameForm.title, description: gameForm.description || null, type: gameForm.type, image_url: gameForm.image_url || null, background_color: gameForm.background_color || null, is_active: gameForm.is_active };
     if (editingGame) {
       const { error } = await supabase.from('games').update(payload).eq('id', editingGame.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Game updated'); setShowGameForm(false); setEditingGame(null); fetchGames(); }
     } else {
       const { data, error } = await supabase.from('games').insert({ ...payload, event_id: eventId }).select().single();
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Game created'); setShowGameForm(false); setGameForm(EMPTY_GAME); fetchGames(); if (data) setSelectedGame(data); }
     }
     setSaving(false);
@@ -93,7 +94,7 @@ export default function GamesPage() {
   const handleDeleteGame = async (id: string, title: string) => {
     if (!(await confirm({ message: `Delete game "${title}" and all its questions?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('games').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); if (selectedGame?.id === id) setSelectedGame(null); fetchGames(); }
   };
 
@@ -108,10 +109,10 @@ export default function GamesPage() {
     const payload = { question: qForm.question, category: qForm.category || null, correct_answer: qForm.correct_answer || null, answer_options: parsedOptions, points: parseInt(qForm.points) || 10 };
     if (editingQuestion) {
       const { error } = await supabase.from('game_questions').update(payload).eq('id', editingQuestion.id);
-      if (error) toast.error(error.message); else { toast.success('Question updated'); setShowQForm(false); setEditingQuestion(null); fetchQuestions(selectedGame.id); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Question updated'); setShowQForm(false); setEditingQuestion(null); fetchQuestions(selectedGame.id); }
     } else {
       const { error } = await supabase.from('game_questions').insert({ ...payload, game_id: selectedGame.id, display_order: questions.length });
-      if (error) toast.error(error.message); else { toast.success('Question added'); setShowQForm(false); setQForm(EMPTY_Q); fetchQuestions(selectedGame.id); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Question added'); setShowQForm(false); setQForm(EMPTY_Q); fetchQuestions(selectedGame.id); }
     }
     setSaving(false);
   };
@@ -119,7 +120,7 @@ export default function GamesPage() {
   const handleDeleteQuestion = async (id: string) => {
     if (!(await confirm({ message: 'Delete this question?', confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('game_questions').delete().eq('id', id);
-    if (error) toast.error(error.message); else { toast.success('Deleted'); if (selectedGame) fetchQuestions(selectedGame.id); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); if (selectedGame) fetchQuestions(selectedGame.id); }
   };
 
   return (

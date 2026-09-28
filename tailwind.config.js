@@ -8,6 +8,13 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        // Feature 016: app-shell only (portal layout, OrgSideNav, TopHeader menu button).
+        // Hover-capable desktops get the hover-expand sidebar rail; touch devices —
+        // including ≥1024px tablets — keep the off-canvas drawer + menu button.
+        // Must match the media query on `.sidebar-panel` in globals.css.
+        desk: { raw: '(min-width: 1024px) and (hover: hover) and (pointer: fine)' },
+      },
       colors: {
         gray: {
           50: '#f9fafb',

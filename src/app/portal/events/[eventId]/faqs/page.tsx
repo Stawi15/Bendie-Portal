@@ -9,6 +9,7 @@ import { SectionHeader } from '@/components/portal/SectionHeader';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type FAQ = {
   id: string;
@@ -125,11 +126,11 @@ export default function FAQsPage() {
 
     if (editing) {
       const { error } = await supabase.from('faqs').update(payload).eq('id', editing.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('FAQ updated'); setShowForm(false); fetchData(); }
     } else {
       const { error } = await supabase.from('faqs').insert({ ...payload, event_id: eventId });
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('FAQ added'); setShowForm(false); fetchData(); }
     }
     setSaving(false);
@@ -138,7 +139,7 @@ export default function FAQsPage() {
   const handleDelete = async (id: string, question: string) => {
     if (!(await confirm({ message: `Delete this FAQ?\n"${question}"`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('faqs').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 

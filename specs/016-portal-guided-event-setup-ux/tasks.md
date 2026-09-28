@@ -384,3 +384,206 @@
 - [x] T280 Live, read-only `EXPLAIN ANALYZE` verification against both real databases (Portal and Planner) for the exact queries in the optimized chain — genuine measured evidence, not estimated.
 - [ ] T281 Browser verification of the colour picker (visual selection, contrast warning, reset) and of normal/rapid/return navigation timing — not performed; no browser-automation tool available in this environment.
 - [ ] T282 Full authenticated end-to-end HTTP timing of a Planner page's complete request chain — not performed, for the reason recorded in T271.
+
+## Continuation pass 14 — Visual Event Theme Designer (from real user testing)
+
+### Audit
+
+- [x] T283 Traced every theme field's real consumer in the Bendie attendee app (Evently-App `origin/main` @ 2fe8f1f; local `edwin-prod` identical; local `production` branch confirmed stale, 2026-08-13). Mapping recorded in spec.md pass 14.
+- [x] T284 Found that the Portal's old defaults (`#3B82F6/#1D4ED8/#DBEAFE`) never match what the app shows for a null theme (`#00ADE4/#FFFFFF/#002345`), and that the old field hints claimed behaviour the app doesn't have (hover states, tertiary badges/tints). Both corrected.
+- [x] T285 Confirmed the app's `onPrimary` auto-contrast applies only to the Agenda date chip, the chat send button and the notifications header. The menu icon, badge text and button text use Secondary directly. The preview mirrors this split exactly.
+
+### Build
+
+- [x] T286 `src/lib/eventTheme.ts`: field metadata with plain-language names and descriptions taken from the audit, app default theme, app theme presets, quick colours, `normalizeHex` (accepts 3-digit), `contrastRatio`, `onPrimaryColour` (exact mirror of the app), `getReadabilityWarnings`, `effectiveTheme`.
+- [x] T287 `src/components/portal/EventThemePreview.tsx`: phone-sized, props-only preview (Home + Agenda screens, bottom menu) with per-element `Target`s for highlighting and click-to-select, plus a hover/focus caption.
+- [x] T288 `src/components/portal/ThemeDesignerModal.tsx`: local draft plus per-field HEX text state; the whole control is the native picker hit area; quick colours; Bendie theme presets; contextual warnings; Reset to Bendie default; Undo changes; Cancel/X with a discard confirmation only when something changed; Apply with saving state, duplicate-submit guard, and an inline error that keeps the modal and draft on failure.
+- [x] T289 `theme/page.tsx` rewritten as a summary (preview + three explained swatches + Customize/Create button); the save path is unchanged (`supabase.from('events').update(...)`).
+- [x] T290 `context/ui-registry.md` updated: the ColorField entry is replaced by the Theme Designer pattern.
+
+### Verification
+
+- [x] T291 `npm run type-check` clean.
+- [x] T292 `npm run lint`: identical 30-warning baseline, none in the new or changed files.
+- [x] T293 `npm run build` (production) clean; no dev server was running, so the `.next` cache couldn't be corrupted.
+- [x] T294 Pure-logic checks (compiled `eventTheme.ts`, run with Node), 14/14 passing: `#0057B8` accepted, `0057b8` normalised, `#0af` expanded, `#BLUE12` / empty / 7-character input rejected, `onPrimary` for the default and a light yellow, warning sets for the default/light-primary/dark-secondary/light-tertiary themes, and `effectiveTheme` null and mixed fallback.
+- [x] T295 Static check: the only network call reachable from the designer is `onApply` (grep across both new components). No request happens per colour change.
+- [ ] T296 Browser verification (picker opening from the swatch and from "Choose colour", preset clicks, HEX↔picker sync, highlighting, click-to-edit, Cancel/discard, Apply/reopen, save failure, desktop/tablet/mobile layouts): **not performed**. No browser-automation tool is available in this environment. This is the key item for the upcoming user-testing round.
+- [ ] T297 Live Apply against a real event: not performed (no authenticated session in this environment). The save call itself is byte-for-byte the pre-existing update shape.
+
+## Continuation pass 15 — Theme Preview Polish, Collapsible Sidebar & Speakers Terminology
+
+### A. Theme preview
+
+- [x] T298 Audited the header against the app (`home.tsx` / `IndexStyles.ts`): the pill is bell + settings (not chat + bell); icons are 20pt; the badge is 16pt; and there's no heading above the Speakers/Presenters tabs. The preview was corrected to match.
+- [x] T299 One icon scale (`ICON`), with the before → after changes: menu circle 36→32px, menu glyph 18→16px, header glyphs 15→14px (the app's 20pt ×0.7) in 24px slots (the old pill had no slots and heavier `px-2 py-1.5 shadow-md`), badge 15→13px with 7px text anchored in the bell slot, `shadow-md`→`shadow-sm` on the menu and pill.
+- [x] T300 Bottom menu moved to `grid-cols-5` equal slots; the active glyph is filled; sizes unchanged (15px / 8px).
+- [x] T301 The badge became a highlight-only `Target` (a `<span>`) so no 13px click target exists; the menu button and pill stay clickable.
+
+### B. Sidebar
+
+- [x] T302 Architecture traced: a single `OrgSideNav` with 7 flat items plus Help/Logout, no nested product/event children. Simple collapse, no flyouts.
+- [x] T303 CSS-driven collapse (`html[data-sidebar='collapsed']`, lg+ only), 280↔72px, 200ms width transition; the content column widens via `flex-1`.
+- [x] T304 Toggle with icon swap, 40px target, CSS tooltip, `aria-label` and `aria-expanded`; items with a permanent `aria-label`, `aria-current`, and hover/focus-visible tooltips.
+- [x] T305 localStorage preference (`bendie.portal.sidebarCollapsed`) applied pre-paint by the inline script in `app/layout.tsx`; storage failures are caught.
+- [x] T306 No remount or refetch by construction: toggle state is local to `OrgSideNav`, and the layout and providers are untouched.
+- [x] T307 Mobile/tablet (<lg): the drawer is unchanged; collapse rules are scoped to `min-width: 1024px`.
+
+### C. Speakers terminology
+
+- [x] T308 Every "facilitator" occurrence classified: user-facing copy renamed; internal identifiers, table, columns, route and section key retained; membership role, agenda speaker-type and breakout "Facilitator Name" retained as distinct concepts (see spec pass 15).
+- [x] T309 CSV: new template headers `speaker_group` / `speakers`, with parsers still accepting `facilitator_group` / `facilitator` / `speaker`; template file renamed to `speakers-template.csv`.
+- [x] T310 Post-change sweep of quoted strings: the only remaining user-visible "Facilitator" strings are the retained role / speaker-type / breakout labels and one explanatory tooltip on the Members "Add to Speakers" action.
+
+### Verification
+
+- [x] T311 `npm run type-check` clean.
+- [x] T312 `npm run lint`: identical 30-warning baseline.
+- [x] T313 `npm run build`: clean (all 30 static pages), run in an isolated scratch copy with placeholder env values so the running dev server's `.next` wasn't touched.
+- [x] T314 Dev-server smoke check: the running server serves the pre-paint sidebar script in the page head; the theme route responds (307 to login when unauthenticated).
+- [ ] T315 Browser verification (preview header at 240/272px, collapse/expand, tooltips, restore on refresh, no refetch while toggling, mobile drawer, the Speakers copy on every surface, old-template CSV import): **not performed**; no browser-automation tool in this environment. (The sidebar parts are superseded by pass 16.)
+
+## Continuation pass 16 — Agenda Preview Proportions & Hover-Expand Sidebar
+
+### A. Preview
+
+- [x] T316 Root cause found: two viewport-dependent frame sizes with different aspect ratios; Agenda-specific dense sizing; heavy Material Symbols status glyphs; the solid ring highlight reading as a double border (see spec pass 16).
+- [x] T317 Shared `PHONE` frame (256×540, radius 36, border 7, status 26, nav 48) plus uniform `--phone-scale` scaling; breakpoint widths removed.
+- [x] T318 Status bar: inline SVG signal 14×10, wifi 13×10, battery 20×10 (was 11px Material Symbols glyphs); time 9→10px; `px-4`→`px-5`, 2px→4px icon gaps; fixed 26px row.
+- [x] T319 Agenda: header title 13→14px with an 18px line and `mb-4`; subtitle plain 10px text (not a control in the app); date chips as equal grid thirds, 32px high, 10px text; cards `p-2`→`px-2.5 py-2`, title 10→11px, accent 4→3px; audience pill 16px high, borderless.
+- [x] T320 Shared bottom menu at a fixed 48px, 40px slots, active bubble 40×40; only the active slot differs between screens.
+- [x] T321 Mapping highlight changed to a dashed amber outline; caption updated.
+
+### B. Sidebar
+
+- [x] T322 Removed the pass-15 arrow toggle, CSS tooltips, `html[data-sidebar]` rules, the pre-paint script, `suppressHydrationWarning`, and `src/lib/sidebarPreference.ts`.
+- [x] T323 72px rail plus an absolutely positioned `.sidebar-panel` that expands to 280px over the content on `:hover` / `:has(:focus-visible)`; 120ms expand delay, 250ms collapse delay; labels fade after the width.
+- [x] T324 Fixed icon geometry on a 36px centre line in both states; `aria-label` + `aria-current` kept.
+- [x] T325 New `desk` screen (hover-capable desktops only) applied to the app shell; touch tablets and phones use the drawer and menu button.
+
+### Verification
+
+- [x] T326 `type-check` clean; `lint` at the identical 30-warning baseline.
+- [x] T327 `next build` clean (30/30 pages) in an isolated scratch copy with placeholder env values; the copy was removed and the real `node_modules` confirmed intact.
+- [x] T328 The running dev server's compiled CSS contains `desk\:flex`, `desk\:hidden`, `desk\:w-[72px]`, `desk\:flex-1` inside `(hover: hover) and (pointer: fine)`.
+- [ ] T329 Browser verification (Home/Agenda frame parity, status bar, Agenda layout, modal fit at short viewports, hover expand/collapse without flicker, no content shift, keyboard expand, touch-tablet drawer, the stress navigation sequence, no requests on hover): **not performed**; no browser-automation tool in this environment.
+
+## Continuation pass 17 — Guided Event Creation, Module Selection & Non-AI User-Test Feedback
+
+- [x] T330 Audited all 23 non-AI user-test items against the current Portal (matrix in spec.md pass 17). AI document import recorded as deferred/out of scope and not implemented.
+- [x] T331 Flight terminology: Attendee Travel shows "Departure time" (hint: attendees see "Boarding Time") and "Arrival / travel time"; list shows "Departs …". The `boarding_time` column is kept. The Planner flight UI and CSV already used Departure/Arrival.
+- [x] T332 Guided creation stepper (Basics → Products [if both entitled] → Modules → Get ready), with Back/Continue and the opening prompt. Feature 004 create logic is unchanged.
+- [x] T333 On-device draft (localStorage per org): survives Back/Next, closing and reload; "Save & exit", resume banner, "Discard draft"; cleared on success. No network between steps.
+- [x] T334 Module catalogue (`eventModules.ts`): categories, plain-language descriptions, product filtering, always-included core modules, sanitiser.
+- [x] T335 Migration `event_portal_setup_modules.sql` applied live: nullable `text[]`; SELECT/UPDATE granted to `authenticated` only; no RLS change.
+- [x] T336 Create route stores sanitised modules as the caller after the RPC; `modulesSaved` flag; failure never fails creation.
+- [x] T337 Event tab bar and Dashboard follow module choices (display only, after the access check); NULL = all (legacy events unchanged).
+- [x] T338 "Manage modules" in the event header; hiding shows a "nothing is deleted" note; RLS-denied save detected via zero returned rows; context patched in memory (`patchCurrentEvent`).
+- [x] T339 Land in the new event's workspace after creation.
+- [x] T340 Brown removed from the theme quick colours (still pickable).
+- [x] T341 Image library audited: org-filtered queries and org-prefixed storage paths. No regression, no change.
+- [x] T342 Plain-language section descriptions (Production, Logistics incl. ground transport, Vendors, Checklist, Tasks, Expo, Excursions, Networking, Activities, Attendee Travel); guided Speakers empty state.
+- [x] T343 `type-check` clean; `lint` at the 30-warning baseline; `next build` clean (isolated copy).
+- [x] T344 12/12 module-logic checks; live rolled-back RLS/grant check (admin 1 row, unrelated user 0, anon no SELECT); dev-server smoke (307s, create 401 without a session).
+- [ ] T345 Browser walkthrough of the acceptance journeys (first-time Both user, Back test, old event, Manage modules enable/disable/re-enable, Bendie-only, Planner-only, flight terminology): **not performed**; no browser-automation tool in this environment, and a real authenticated creation wasn't run against the live organisation.
+- [ ] T346 Deferred: server-side drafts; mirroring module choices into the attendee app's `disabled_menu_items` (a product decision); guided empty states on the remaining Bendie pages; bulk actions; AI document import (separate future work).
+
+## Continuation pass 18 — Event Workspace Navigation Hierarchy & Previous/Next
+
+- [x] T347 Traced the real hierarchy (areas → pages → product → order) and the old flat-order Next; confirmed it disagreed with the area row on Both events.
+- [x] T348 Level 1 "Event areas": flat underline links (non-linear, no numbers), overflow chevrons kept, mobile `<select>`, subtle Planner divider.
+- [x] T349 Level 2 area context + numbered stepper for 2+ visible pages ("Step X of N", previous/current/upcoming, no checkmarks); single-page areas context-only; Overview hub as plain links.
+- [x] T350 One canonical journey (`groupedVisibleSections` minus Overview) shared by the area row, stepper and Previous/Next; route-derived; product-, permission- and module-aware.
+- [x] T351 Previous/Next in-flow footer with real destination names and area-aware labels; hidden on the Dashboard; Planner Overview → first Planner page.
+- [x] T352 Area order fix: Overview first, all-shared areas last (Planner-only no longer starts with Operations).
+- [x] T353 Removed dead child-row scroll state; `EVENT_GROUP_DESCRIPTIONS` / `OVERVIEW_GROUP` added to the section metadata.
+- [x] T354 `type-check` clean; `lint` at the 30-warning baseline; `next build` clean (isolated copy); Node model of the journey across Both/Bendie-only/Planner-only, module selection and a restricted user.
+- [ ] T355 Browser verification (all groups, first/middle/last and cross-area steps, direct area jumps, mobile select, rapid switching): **not performed**; no browser-automation tool in this environment.
+- [ ] T356 Deferred: a global unsaved-changes guard for inline single-record forms (Basics/Hero/Terminology) — no existing dirty-state infrastructure outside modals.
+
+## Continuation pass 19 — Reliability, Saving, Validation & Import Clarity
+
+- [x] T357 Findings matrix (spec pass 19). Navigation hierarchy preserved; AI import deferred; multi-sheet XLSX investigated only.
+- [x] T358 Password reset: link support (PKCE `?code=`, `token_hash`, implicit) + code flow kept; invalid/expired/different-browser states; tokens stripped after the client reads them; sign-out + `/auth/login?reset=success` banner.
+- [x] T359 Middleware no longer redirects signed-in admins away from `/auth/reset-password`; AuthContext routes a `PASSWORD_RECOVERY` session that landed elsewhere (Site-URL fallback) to the reset page.
+- [x] T360 Forgot password: idle/sending/sent/error, field-level email check, neutral non-enumerating confirmation, link-or-code guidance.
+- [x] T361 `authErrorMessage` on login/signup/forgot/reset; `friendlyError` applied to 79 raw error toasts in 30 files.
+- [x] T362 Field-level validation: create-event Basics (name, end date) and Speakers (name, email); input preserved on failure (verified).
+- [x] T363 Dashboard readiness: Required (name+dates, ≥1 attendee) / Recommended (Hero, Agenda, Emergency, chosen modules) / Optional; ✓ only on verifiable required items; percentage removed; area cards say "have content".
+- [x] T364 `DismissibleTip` (Got it / Show help, localStorage) used for "What's a CSV file?"; "Skip for now" on the create-event Modules step (creates with no module preference).
+- [x] T365 CSV modal: "Import from spreadsheet" lead, Required/Optional column labels, paste guidance, header-mismatch detail, Ready/Needs-attention preview with full issue list and spreadsheet row numbers, honest complete/partial/none result with duplicate-safe retry guidance, readable row errors; concurrency 5 unchanged.
+- [x] T366 "Journey time" (was "Arrival / travel time"); column `travel_time` unchanged; no travel CSV exists.
+- [x] T367 `useSaveStatus` + `SaveStatus` (Unsaved → Saving… → Saved / Couldn't save + Try again) on Basics, Hero & Branding, Terminology; `beforeunload` while dirty.
+- [x] T368 Create-event draft: user+org-scoped key, `savedAt`, 30-day expiry, explicit Continue/Discard prompt, "Draft saved on this device — not created yet" status; cleared on success/discard.
+- [x] T369 Terminology: Speakers re-verified; Attendees & Access description clarified; Members "Onboarding" column explained.
+- [x] T370 `type-check` clean; `lint` 28 warnings (down from 30); `next build` 30/30 (isolated copy); message-mapping unit checks 12/12, 0 leaks; auth route smoke tests.
+- [ ] T371 Manual/browser verification: password-reset journeys A–H with real email; refresh and leave/return draft recovery; save-status failure path; CSV partial import (10 valid / 2 invalid); Dismiss/Show help; Manage modules hide/re-enable in the UI. **Not performed**; no browser or email access in this environment.
+- [ ] T372 Deferred: cross-device drafts; a global in-app unsaved-changes guard; field-level validation on the remaining forms; multi-sheet XLSX import (see spec investigation); AI document import.
+
+## Continuation pass 20 — Global Create Path & Product Environment Identity
+
+- [x] T373 Traced all create entry points; confirmed header "Create" → `/portal/events` redirect → "+ New Event" (two clicks + a page load), shown even to users who can't create.
+- [x] T374 `CreateEventProvider`: one `CreateEventModal` mount, one permission check per organisation, `openCreateEvent(productHint)`, local list updates via subscription; current-org scoped; closes on organisation switch.
+- [x] T375 Header "+ New Event" (icon-only below `sm`, accessible name kept, hidden without create permission) opens the guided flow directly with the current product as a changeable hint.
+- [x] T376 Events page, Events empty state, Home empty state and Home Quick Actions all route to the same flow; their duplicate modal mounts and permission effects were removed.
+- [x] T377 `productPresentation.ts` centralises Portal product-context styling (Bendie `primary`, Planner orange).
+- [x] T378 Header environment (3px accent strip, faint tint, accent border) derived from the route-based product; organisation-global pages neutral.
+- [x] T379 Switcher selected state: accent text, ring, dot shape cue, `aria-pressed`; mobile menu accent + `aria-current` + accessible current-product label.
+- [x] T380 Active event-area underline and area heading use the product accent; mixed/shared areas follow the current view context; stepper and action buttons unchanged.
+- [x] T381 `type-check` clean; `lint` 28 warnings / 0 errors; `next build` 30/30; new classes confirmed in the served CSS.
+- [ ] T382 Browser verification (header/page/empty-state create paths, cancel, completion; Bendie/Planner/Both environments; direct refresh; rapid switching; narrow layout): **not performed**; no browser-automation tool in this environment.
+
+## Continuation pass 21 — Product Identity Refinement, Navigation Glass & Sidebar Active State
+
+- [x] T383 Root causes: lavender `surface-container-low` search/switcher on tinted headers; unequal strip weights; the selected segment changed weight and the dot changed width; the sidebar active state stacked four indicators.
+- [x] T384 Role-based product tokens with an identical recipe for Bendie (primary) and Planner (orange); `NEUTRAL_PRESENTATION` for controls.
+- [x] T385 Switcher: neutral translucent track (`h-10`), white elevated selected segment + accent text/ring + dot, constant geometry (fixed dot slot, constant weight), `aria-pressed` kept.
+- [x] T386 Search (desktop + mobile) and organisation selector/label: identical neutral surface, `h-10`, `rounded-xl`; product accent only on focus.
+- [x] T387 Header environment rebalanced: 2px strip at 60%, 3.5% tint, 20% border, identical for both products.
+- [x] T388 `.glass-surface` (solid 85% fallback; 60% + 12px blur under `@supports`) on the Event Areas row and the current-area stepper; overflow and chevrons preserved.
+- [x] T389 Stepper current/previous steps use the area's product accent; numbering, connectors and "Step X of Y" unchanged.
+- [x] T390 Sidebar: rounded tile (collapsed) / inset rounded row (expanded), neutral hover, inset focus ring, left bar removed, product-neutral.
+- [x] T391 No hard-coded product colours remain in the environment components (the Planner divider uses the central accent).
+- [x] T392 `type-check` clean; `lint` 28 warnings / 0 errors; `next build` 30/30; compiled CSS verified (fallback + `@supports` blur + all classes).
+- [ ] T393 Browser verification (Bendie/Planner/Both visuals, switch stability, rapid switching, sidebar collapsed/expanded/hover/focus, glass fallback, narrow widths): **not performed**; no browser-automation tool in this environment.
+- [x] T394 Pass 21 correction: removed the glass containers around the Event Areas row and the current-area section (restored the flat `border-b` divider, `-mb-px` underline links and `pt-4 pb-3` section); deleted the unused `.glass-surface` CSS; kept all product-accent, switcher, search, header and sidebar refinements. `type-check` clean; `lint` 28 warnings / 0 errors.
+
+
+## Continuation pass 22 — Portal-Wide Performance & Loading Optimization
+
+- [x] T395 Source-traced request inventory for every organisation, Bendie, Planner and auth route (plan pass 22); root causes classified and prioritised (spec pass 22).
+- [x] T396 `/planner-capabilities`: one authorization chain for all six module capabilities (was six chains); exact per-module precedence and error isolation; EventLayout makes 1 request instead of 6.
+- [x] T397 AuthContext: stable `user` object + profile across `TOKEN_REFRESHED` for the same user (stops the organisation/events reload cascade on every token refresh and cross-tab broadcast); a different user or `USER_UPDATED` still refreshes.
+- [x] T398 `/planner-logistics/overview`: Logistics initial load in one request (was 4 chains); participants gated by the People route's own rule; old routes kept for mutations.
+- [x] T399 Layout availability/capability effect keyed on the event id (Manage modules and same-event refresh no longer blank the nav or re-run authorization).
+- [x] T400 Verified already good: paginated Activity Logs, limited header feed, batched Teams/stats, content-only loading boundaries, existing `useLatestRequest` coverage.
+- [x] T401 `type-check` clean; `lint` 28 / 0 errors; `next build` 30/30; unauthenticated smoke tests of the new routes (401).
+- [ ] T402 Measured timings and browser stress tests (Bendie/Planner rapid navigation, cross-product switching, return navigation): **not performed**; no browser or authenticated session in this environment.
+- [ ] T403 Deferred: Dashboard Planner readiness as one counts-only endpoint (8 chains → 1); the events-list stats counting RPC (fixes the silent 1,000-row cap); People pagination; the ~21 item-mutation routes' duplicate `profiles` read (pass 13 T266 follow-up).
+
+
+## Continuation pass 23 — Main Event Tab Navigation Performance & Stability
+
+- [x] T404 Traced main-tab navigation (area link → landing page → effects → requests). Found fast routing starved by uncancelled same-origin Planner requests (Dashboard ×8 chains; Tasks/Vendors/Checklist/Planner Overview) plus stale error toasts from unmounted Bendie pages.
+- [x] T405 `/planner-readiness` counts-only endpoint (one chain, per-module view gating, viewer-scoped Checklist, no row data); Dashboard 8 requests → 1, cancelled on leave.
+- [x] T406 `src/lib/plannerModuleAccess.ts` shared chain + capability resolution; `/planner-capabilities` refactored onto it (identical responses).
+- [x] T407 Cancellation on the Planner Tasks/Vendors/Checklist/Overview pages and the Bendie Basics/Speakers/News/Gallery/Emergency landing pages; the Dashboard counts are abortable. Aborts never toast, write state or redirect.
+- [x] T408 Event Areas vertical scrollbar: removed the `-mb-px` overflow cause and added `overflow-y-hidden` on the one scroll div; horizontal overflow retained.
+- [x] T409 `type-check` clean; `lint` 28 / 0 errors; `next build` 30/30; 401 smoke tests on the aggregate routes.
+- [ ] T410 Browser stress runs (forward, reverse, cross-product; Dashboard/Participants/Logistics/Production/Attendees under rapid switching) and measured timings: **not performed**; no browser or authenticated session in this environment.
+- [ ] T411 Deferred: the events-list counting RPC (silent 1,000-row cap); People pagination; the duplicate `profiles` read in ~21 item-mutation routes; cancellation on the remaining non-landing Bendie child pages (low impact: direct Supabase over HTTP/2, single reads).
+
+
+## Final error pass — code-review fixes (all 10 findings)
+
+- [x] T412 Dashboard readiness no longer goes stale. The Basics, Hero, Terminology and Theme saves now call `patchCurrentEvent` with exactly what was saved (after success only; no refetch).
+- [x] T413 Module preference is per product. Adds `configured:bendie` / `configured:planner` markers (same array, no schema change), so a product added after creation shows all its modules until they're chosen, while "none chosen" is still honoured. Manage modules starts from what the nav actually shows. 10/10 logic checks.
+- [x] T414 The reset page accepts a link only if **that link's** exchange succeeded (`auth.initialize()` result), not merely because a session exists (auth-js keeps an existing session when a URL login fails). The `?recovery=1` hand-off requires a one-time flag set by AuthContext.
+- [x] T415 AuthContext records the user as loaded only after the profile genuinely loads, so a failed profile fetch is retried on the next auth event.
+- [x] T416 Create event: a continued draft's product choice survives the entitlement check resolving after "Continue setup" (ref applied when the check completes).
+- [x] T417 `authErrorMessage`: reset-link copy only for Supabase's reset-specific codes and phrases, plus a proper invalid-email message. Ordinary sign-in and sign-up errors no longer show reset text.
+- [x] T418 The Theme Designer shows `friendlyError` text inline (never the raw DB message), with no duplicate toast.
+- [x] T419 CSV: flagged rows are shown as "Row N — first value", with a note that blank lines are skipped (the parser's `skipEmptyLines` can shift numbering).
+- [x] T420 `/api/events/create`: the module write checks affected rows (`.select('id')`), so an RLS-filtered no-op reports `modulesSaved: false`.
+- [x] T421 `/planner-logistics/overview` uses the shared `resolvePlannerEventAccess` (the duplicate chain was removed); the flights route's Logistics rules and error codes are kept exactly.
+- [x] T422 `type-check` clean; `lint` 28 / 0 errors; `next build` 30/30; signed-out smoke tests (Planner aggregates 401; auth pages 200).

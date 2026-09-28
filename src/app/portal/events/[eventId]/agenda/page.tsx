@@ -10,6 +10,7 @@ import { getField, parseFlexibleDate, type ColumnSpec, type RowResult } from '@/
 import { moveItem } from '@/lib/reorder';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type Session = {
   id: string;
@@ -132,7 +133,8 @@ const AGENDA_CSV_COLUMNS: ColumnSpec[] = [
   { key: 'location', label: 'Location' },
   { key: 'block_type', label: 'Block Type' },
   { key: 'audience', label: 'Audience' },
-  { key: 'facilitator', label: 'Facilitator(s) (name or email; semicolon-separated for multiple)' },
+  // Template header is "speakers"; the parser still accepts "speaker" and the pre-rename "facilitator" header.
+  { key: 'speakers', label: 'Speaker(s) (name or email; semicolon-separated for multiple)' },
   { key: 'accent_color', label: 'Accent Color' },
   { key: 'description', label: 'Description' },
 ];
@@ -145,7 +147,7 @@ const AGENDA_CSV_SAMPLES: Record<string, string>[] = [
     location: 'Main Hall',
     block_type: 'session',
     audience: 'everyone',
-    facilitator: 'Jane Smith; John Doe',
+    speakers: 'Jane Smith; John Doe',
     accent_color: '#3B82F6',
     description: 'Welcome address and event overview.',
   },
@@ -156,7 +158,7 @@ const AGENDA_CSV_SAMPLES: Record<string, string>[] = [
     location: 'Dining Tent',
     block_type: 'meal',
     audience: 'everyone',
-    facilitator: '',
+    speakers: '',
     accent_color: '',
     description: '',
   },
@@ -331,12 +333,12 @@ export default function AgendaPage() {
 
     if (editing) {
       const { error } = await supabase.from('agenda_sessions').update(payload).eq('id', editing.id);
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error(friendlyError(error)); setSaving(false); return; }
     } else {
       const { data, error } = await supabase.from('agenda_sessions').insert({
         ...payload, event_id: eventId, display_order: sessions.length,
       }).select().single();
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error(friendlyError(error)); setSaving(false); return; }
       sessionId = data.id;
     }
 
@@ -370,7 +372,7 @@ export default function AgendaPage() {
   const handleDelete = async (id: string, title: string) => {
     if (!(await confirm({ message: `Delete "${title}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('agenda_sessions').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 
@@ -400,7 +402,7 @@ export default function AgendaPage() {
     }
 
     const facilitatorIds: string[] = [];
-    const facilitatorRaw = getField(raw, 'facilitator');
+    const facilitatorRaw = getField(raw, 'speakers') || getField(raw, 'speaker') || getField(raw, 'facilitator');
     if (facilitatorRaw) {
       const names = facilitatorRaw.split(';').map((n) => n.trim()).filter(Boolean);
       for (const name of names) {
@@ -409,7 +411,7 @@ export default function AgendaPage() {
             (f.full_name ?? '').toLowerCase() === name.toLowerCase() ||
             (f.email ?? '').toLowerCase() === name.toLowerCase()
         );
-        if (!match) errors.push(`Facilitator "${name}" not found — add them first`);
+        if (!match) errors.push(`Speaker "${name}" not found — add them on the Speakers tab first`);
         else if (!facilitatorIds.includes(match.id)) facilitatorIds.push(match.id);
       }
     }
@@ -743,7 +745,7 @@ function SpeakersPanel({
             const fac = facilitators.find(f => f.id === sp.facilitator_id);
             return (
               <div key={sp.key} className="flex items-center gap-3 bg-surface-container-low rounded-xl p-3">
-                <span className="text-sm font-medium text-on-surface flex-1 min-w-0 truncate">{fac?.full_name ?? 'Unknown facilitator'}</span>
+                <span className="text-sm font-medium text-on-surface flex-1 min-w-0 truncate">{fac?.full_name ?? 'Unknown speaker'}</span>
                 <select className="input text-xs w-auto py-1" value={sp.speaker_type} onChange={e => onChangeType(sp.key, e.target.value)}>
                   {SPEAKER_TYPES.map(t => <option key={t} value={t}>{SPEAKER_TYPE_LABELS[t]}</option>)}
                 </select>
@@ -765,7 +767,7 @@ function SpeakersPanel({
       )}
       <div className="flex flex-wrap items-end gap-2">
         <div className="flex-1 min-w-[160px]">
-          <label className="label text-xs">Facilitator</label>
+          <label className="label text-xs">Speaker</label>
           <select className="input text-sm" value={addFid} onChange={e => setAddFid(e.target.value)}>
             <option value="">— Select —</option>
             {availableFacilitators.map(f => <option key={f.id} value={f.id}>{f.full_name}</option>)}
@@ -780,7 +782,7 @@ function SpeakersPanel({
         <button
           type="button"
           onClick={() => {
-            if (!addFid) { toast.error('Select a facilitator'); return; }
+            if (!addFid) { toast.error('Select a speaker'); return; }
             onAdd(addFid, addType);
             setAddFid('');
             setAddType('speaker');

@@ -265,30 +265,27 @@ export default function PlannerLogisticsPage() {
     const signal = startRequest();
     setState({ kind: 'loading' });
     try {
-      const [flightsRes, hotelsRes, movementsRes, peopleRes] = await Promise.all([
-        fetch(`/api/events/${eventId}/planner-logistics/flights`, { signal }),
-        fetch(`/api/events/${eventId}/planner-logistics/hotels`, { signal }),
-        fetch(`/api/events/${eventId}/planner-logistics/ground-transport/movements`, { signal }),
-        fetch(`/api/events/${eventId}/planner-people`, { signal }),
-      ]);
+      // Feature 016 (performance pass): one request instead of four. /overview runs the
+      // Portal + Planner authorization chain ONCE (it used to run four times in parallel)
+      // and returns flights, hotels, movements and — only if the caller may view People —
+      // participants. Same outcomes as before: auth failure → denied, a provisioning/backend
+      // status → configuring, participants unavailable → empty participant list.
+      const res = await fetch(`/api/events/${eventId}/planner-logistics/overview`, { signal });
       if (requestIdRef.current !== requestId) return;
 
-      if (!flightsRes.ok || !hotelsRes.ok || !movementsRes.ok) {
+      if (!res.ok) {
         setState({ kind: 'denied' });
         return;
       }
-      const flightsData = await flightsRes.json();
-      const hotelsData = await hotelsRes.json();
-      const movementsData = await movementsRes.json();
+      const data = await res.json();
       if (requestIdRef.current !== requestId) return;
 
-      if (flightsData.status) {
-        setState({ kind: 'configuring', status: flightsData.status });
+      if (data.status) {
+        setState({ kind: 'configuring', status: data.status });
         return;
       }
 
-      const peopleData = peopleRes.ok ? await peopleRes.json() : null;
-      const participants: ParticipantOption[] = (peopleData?.participants ?? []).map((p: { id: number; fullName: string; email: string | null }) => ({
+      const participants: ParticipantOption[] = (data.participants ?? []).map((p: { id: number; fullName: string; email: string | null }) => ({
         id: p.id,
         name: p.fullName,
         email: p.email,
@@ -296,10 +293,10 @@ export default function PlannerLogisticsPage() {
 
       setState({
         kind: 'loaded',
-        capability: flightsData.capability,
-        flights: flightsData.flights ?? [],
-        bookings: hotelsData.bookings ?? [],
-        movements: movementsData.movements ?? [],
+        capability: data.capability,
+        flights: data.flights ?? [],
+        bookings: data.bookings ?? [],
+        movements: data.movements ?? [],
         participants,
       });
     } catch (err) {
@@ -1128,7 +1125,7 @@ export default function PlannerLogisticsPage() {
       )}
 
       <PlannerFlightModal
-        key={flightModalResetKey}
+        key={`flight-modal-${flightModalResetKey}`}
         open={flightModalOpen}
         editing={editingFlight}
         participants={participants}
@@ -1139,7 +1136,7 @@ export default function PlannerLogisticsPage() {
         presetParticipantId={lastFlightParticipantId}
       />
       <PlannerHotelModal
-        key={hotelModalResetKey}
+        key={`hotel-modal-${hotelModalResetKey}`}
         open={hotelModalOpen}
         editing={editingBooking}
         participants={participants}

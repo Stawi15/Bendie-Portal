@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import toast from 'react-hot-toast';
 import { Avatar } from '@/components/portal/Avatar';
 import { FormModal } from '@/components/portal/FormModal';
+import { friendlyError } from '@/lib/userFacingError';
 
 export type ProfileFormValues = {
   full_name: string;
@@ -54,7 +55,7 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved }: Ed
       .eq('id', userId);
     setSaving(false);
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success('Profile updated');
     onSaved();
     onClose();

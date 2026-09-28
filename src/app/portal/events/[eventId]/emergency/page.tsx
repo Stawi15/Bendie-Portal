@@ -7,6 +7,8 @@ import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useLatestRequest } from '@/lib/useLatestRequest';
 
 type EmergencyContact = {
   id: string;
@@ -57,11 +59,17 @@ export default function EmergencyPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'contacts' | 'images'>('contacts');
 
+  // Feature 016 (main-tab performance pass): cancel this load when the user leaves the
+  // tab (or reloads it); an aborted load never toasts or writes state.
+  const startRequest = useLatestRequest();
+
   const fetchData = async () => {
+    const signal = startRequest();
     const [cRes, iRes] = await Promise.all([
-      supabase.from('emergency_contacts').select('id,name,phone,type,description,location,image_url,display_order').eq('event_id', eventId).order('display_order'),
-      supabase.from('emergency_images').select('id,image_url,caption,display_order').eq('event_id', eventId).order('display_order'),
+      supabase.from('emergency_contacts').select('id,name,phone,type,description,location,image_url,display_order').eq('event_id', eventId).order('display_order').abortSignal(signal),
+      supabase.from('emergency_images').select('id,image_url,caption,display_order').eq('event_id', eventId).order('display_order').abortSignal(signal),
     ]);
+    if (signal.aborted) return;
     if (cRes.error) toast.error('Failed to load contacts');
     else setContacts(cRes.data ?? []);
     setImages(iRes.data ?? []);
@@ -87,10 +95,10 @@ export default function EmergencyPage() {
     const payload = { name: contactForm.name.trim(), phone: contactForm.phone.trim(), type: contactForm.type, description: contactForm.description || null, location: contactForm.location || null, image_url: contactForm.image_url || null, display_order: parseInt(contactForm.display_order) || 0 };
     if (editingContact) {
       const { error } = await supabase.from('emergency_contacts').update(payload).eq('id', editingContact.id);
-      if (error) toast.error(error.message); else { toast.success('Updated'); setShowContactForm(false); fetchData(); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Updated'); setShowContactForm(false); fetchData(); }
     } else {
       const { error } = await supabase.from('emergency_contacts').insert({ ...payload, event_id: eventId });
-      if (error) toast.error(error.message); else { toast.success('Contact added'); setShowContactForm(false); setContactForm(EMPTY_CONTACT); fetchData(); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Contact added'); setShowContactForm(false); setContactForm(EMPTY_CONTACT); fetchData(); }
     }
     setSaving(false);
   };
@@ -98,21 +106,21 @@ export default function EmergencyPage() {
   const handleDeleteContact = async (id: string, name: string) => {
     if (!(await confirm({ message: `Delete "${name}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('emergency_contacts').delete().eq('id', id);
-    if (error) toast.error(error.message); else { toast.success('Deleted'); fetchData(); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); fetchData(); }
   };
 
   const handleSaveImage = async () => {
     if (!imageForm.image_url.trim()) { toast.error('Image URL is required'); return; }
     setSaving(true);
     const { error } = await supabase.from('emergency_images').insert({ event_id: eventId, image_url: imageForm.image_url.trim(), caption: imageForm.caption || null, display_order: parseInt(imageForm.display_order) || images.length });
-    if (error) toast.error(error.message); else { toast.success('Image added'); setShowImageForm(false); setImageForm(EMPTY_IMAGE); fetchData(); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Image added'); setShowImageForm(false); setImageForm(EMPTY_IMAGE); fetchData(); }
     setSaving(false);
   };
 
   const handleDeleteImage = async (id: string) => {
     if (!(await confirm({ message: 'Delete this image?', confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('emergency_images').delete().eq('id', id);
-    if (error) toast.error(error.message); else { toast.success('Deleted'); fetchData(); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); fetchData(); }
   };
 
   return (

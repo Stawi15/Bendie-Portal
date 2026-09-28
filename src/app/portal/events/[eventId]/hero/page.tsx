@@ -3,10 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { useEvent } from '@/contexts/EventContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
 import { ImageField } from '@/components/portal/ImageField';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useSaveStatus } from '@/lib/useSaveStatus';
+import { SaveStatus } from '@/components/portal/SaveStatus';
 
 type HeroForm = {
   hero_title: string;
@@ -26,10 +30,14 @@ const EMPTY: HeroForm = {
 
 export default function HeroPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  // Keep the shared event (Dashboard readiness, nav) in step with what was just saved — no refetch.
+  const { patchCurrentEvent } = useEvent();
   const [form, setForm] = useState<HeroForm>(EMPTY);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Feature 016: truthful Unsaved → Saving… → Saved / Couldn't save indicator.
+  const saveStatus = useSaveStatus(form, !loading);
   const [pickerField, setPickerField] = useState<keyof HeroForm | null>(null);
 
   useEffect(() => {
@@ -56,7 +64,8 @@ export default function HeroPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('events').update({
+    saveStatus.start();
+    const payload = {
       hero_title: form.hero_title || null,
       hero_description: form.hero_description || null,
       hero_image_url: form.hero_image_url || null,
@@ -64,9 +73,10 @@ export default function HeroPage() {
       profile_banner_image_url: form.profile_banner_image_url || null,
       gallery_background: form.gallery_background || null,
       gallery_external_url: form.gallery_external_url || null,
-    }).eq('id', eventId);
-    if (error) toast.error(error.message);
-    else toast.success('Hero & Branding saved');
+    };
+    const { error } = await supabase.from('events').update(payload).eq('id', eventId);
+    if (error) { toast.error(friendlyError(error)); saveStatus.fail(); }
+    else { toast.success('Hero & Branding saved'); saveStatus.succeed(); patchCurrentEvent(eventId, payload); }
     setSaving(false);
   };
 
@@ -102,10 +112,11 @@ export default function HeroPage() {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-outline-variant">
+        <div className="pt-2 border-t border-outline-variant flex flex-wrap items-center gap-3">
           <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
+          <SaveStatus dirty={saveStatus.dirty} phase={saveStatus.phase} onRetry={handleSave} />
         </div>
       </div>
 

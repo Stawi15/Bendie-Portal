@@ -6,7 +6,6 @@ import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/lib/supabaseClient';
 import { useOrgEvents } from '@/lib/useOrgEvents';
 import { useOrgPeople } from '@/lib/useOrgPeople';
-import { isOrgAdmin } from '@/lib/portalAuth';
 import { formatAuditAction } from '@/lib/portalLabels';
 import { deriveEventLifecycle } from '@/lib/eventLifecycle';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
@@ -17,12 +16,10 @@ import { NextMilestoneCard } from '@/components/portal/NextMilestoneCard';
 import { NeedsAttentionCard, type AttentionItem } from '@/components/portal/NeedsAttentionCard';
 import { RecentActivityCard, type ActivityEntry } from '@/components/portal/RecentActivityCard';
 import { QuickActionsCard } from '@/components/portal/QuickActionsCard';
-import { CreateEventModal } from '@/components/portal/CreateEventModal';
+import { useCreateEvent } from '@/contexts/CreateEventContext';
 import { AddPersonModal } from '@/components/portal/AddPersonModal';
-import type { EventRow } from '@/lib/eventColumns';
 import type { ProductKey } from '@/lib/productNavigation';
 
-type Event = EventRow;
 
 const ACTIVITY_DOT_CLASSES = ['bg-primary', 'bg-secondary', 'bg-surface-container-high'];
 
@@ -34,12 +31,8 @@ const ACTIVITY_DOT_CLASSES = ['bg-primary', 'bg-secondary', 'bg-surface-containe
  * organization's unfiltered event set (FR-032/FR-033/FR-056).
  */
 export function OrganizationHome({ product }: { product: ProductKey }) {
-  const { profile, isGlobalAdmin } = useAuth();
+  const { profile } = useAuth();
   const { organizationId, organization, loading: orgLoading, error: orgError } = useOrganization();
-  // Event creation is restricted to platform admins and organization owner/admin
-  // (Feature 003 / /speckit.analyze finding F3) -- events_insert_creator RLS
-  // enforces this authoritatively; this only controls whether triggers are shown.
-  const [canCreateEvent, setCanCreateEvent] = useState(false);
   const { events, loading: eventsLoading, statsMap, addEvent } = useOrgEvents(organizationId, orgLoading, product);
   const {
     people: peoplePreview,
@@ -59,26 +52,10 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
   const [activityEntries, setActivityEntries] = useState<ActivityEntry[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
-  const [createEventOpen, setCreateEventOpen] = useState(false);
+  // Feature 016 (create-path pass): the canonical creation flow + permission check live in CreateEventProvider.
+  const { canCreateEvent, openCreateEvent, subscribeEventCreated } = useCreateEvent();
+  useEffect(() => subscribeEventCreated(addEvent), [subscribeEventCreated, addEvent]);
   const [addPersonOpen, setAddPersonOpen] = useState(false);
-
-  useEffect(() => {
-    if (isGlobalAdmin) {
-      setCanCreateEvent(true);
-      return;
-    }
-    if (!organizationId) {
-      setCanCreateEvent(false);
-      return;
-    }
-    let cancelled = false;
-    isOrgAdmin(organizationId).then((allowed) => {
-      if (!cancelled) setCanCreateEvent(allowed);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isGlobalAdmin, organizationId]);
 
   // Shared speakers across this product's events (organization-global metrics
   // that are genuinely unrelated to product filtering, like peopleTotal above,
@@ -186,7 +163,7 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
           iconClass: 'text-secondary',
           bgClass: 'bg-secondary/5 border-secondary/10',
           title: 'Speaker Gaps',
-          subtitle: `${gapCount} agenda session${gapCount === 1 ? '' : 's'} with no facilitator assigned`,
+          subtitle: `${gapCount} agenda session${gapCount === 1 ? '' : 's'} with no speaker assigned`,
         });
       }
 
@@ -269,11 +246,6 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
   const greetingName = (profile?.full_name ?? profile?.email ?? '').split(' ')[0] || 'there';
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-
-  const handleEventCreated = (event: Event) => {
-    addEvent(event);
-    setCreateEventOpen(false);
-  };
 
   const handlePersonAdded = () => {
     refetchPeople();
@@ -366,7 +338,7 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
             events={events}
             statsMap={statsMap}
             loading={eventsLoading}
-            onCreateEvent={canCreateEvent ? () => setCreateEventOpen(true) : undefined}
+            onCreateEvent={canCreateEvent ? () => openCreateEvent(product) : undefined}
             product={product}
           />
           <OrgPeoplePanel people={peoplePreview} loading={peopleLoading} onAddPerson={() => setAddPersonOpen(true)} />
@@ -382,21 +354,12 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
           <NeedsAttentionCard items={attentionItems} loading={attentionLoading} />
           <RecentActivityCard entries={activityEntries} loading={activityLoading} />
           <QuickActionsCard
-            onCreateEvent={canCreateEvent ? () => setCreateEventOpen(true) : undefined}
+            onCreateEvent={canCreateEvent ? () => openCreateEvent(product) : undefined}
             onAddPerson={() => setAddPersonOpen(true)}
           />
         </div>
       </div>
 
-      {organizationId && canCreateEvent && (
-        <CreateEventModal
-          open={createEventOpen}
-          organizationId={organizationId}
-          onClose={() => setCreateEventOpen(false)}
-          onCreated={handleEventCreated}
-          initialProduct={product}
-        />
-      )}
       {organizationId && (
         <AddPersonModal
           open={addPersonOpen}

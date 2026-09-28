@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { authErrorMessage } from '@/lib/authMessages';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function SignupPage() {
@@ -74,7 +75,7 @@ export default function SignupPage() {
         if (authError.message.includes('already registered')) {
           toast.error('Email already registered');
         } else {
-          toast.error(authError.message);
+          toast.error(authErrorMessage(authError, 'We couldn’t create your account. Please try again.'));
         }
         return;
       }

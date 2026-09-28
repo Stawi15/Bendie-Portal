@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { useLatestRequest, isAbortError } from '@/lib/useLatestRequest';
 
 /**
  * Feature 005 — Planner Overview. Read-only. Fetches
@@ -61,11 +62,16 @@ export default function PlannerOverviewPage() {
   // once more on unmount, so a response arriving after either event can never win.
   const requestIdRef = useRef(0);
 
+  // Feature 016 (main-tab performance pass): cancel a superseded/abandoned load so it
+  // stops holding a same-origin connection after the user moves to another tab.
+  const startRequest = useLatestRequest();
+
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    const signal = startRequest();
     setState({ kind: 'loading' });
     try {
-      const res = await fetch(`/api/events/${eventId}/planner-overview`);
+      const res = await fetch(`/api/events/${eventId}/planner-overview`, { signal });
       if (requestIdRef.current !== requestId) return; // superseded — discard
       if (!res.ok) {
         setState({ kind: 'denied' });
@@ -76,10 +82,11 @@ export default function PlannerOverviewPage() {
       setState({ kind: 'loaded', status: data.status, event: data.event, sessionSummary: data.sessionSummary });
     } catch (err) {
       if (requestIdRef.current !== requestId) return; // superseded — discard
+      if (isAbortError(err)) return; // navigation/supersession — never an error
       console.error('Failed to load Planner Overview', err);
       setState({ kind: 'loaded', status: 'backend_error' });
     }
-  }, [eventId]);
+  }, [eventId, startRequest]);
 
   useEffect(() => {
     load();

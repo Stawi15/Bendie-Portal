@@ -36,6 +36,12 @@ export interface EventContextType {
    */
   clearCurrentEvent: () => void;
   refreshEvent: () => Promise<void>;
+  /**
+   * Feature 016 — merge an already-persisted change into `currentEvent` in
+   * memory (no fetch, no loading flip, no remount). Only applies when the
+   * patch's event is still the current one.
+   */
+  patchCurrentEvent: (eventId: string, patch: Partial<Event>) => void;
 }
 
 export const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -355,6 +361,10 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentEventId, nextEventGeneration]);
 
+  const patchCurrentEvent = useCallback((eventId: string, patch: Partial<Event>) => {
+    setCurrentEvent((prev) => (prev && prev.id === eventId ? { ...prev, ...patch } : prev));
+  }, []);
+
   return (
     <EventContext.Provider
       value={{
@@ -368,6 +378,7 @@ export const EventProvider = ({ children }: { children: ReactNode }) => {
         setCurrentEvent: handleSetCurrentEvent,
         clearCurrentEvent: handleClearCurrentEvent,
         refreshEvent,
+        patchCurrentEvent,
       }}
     >
       {children}

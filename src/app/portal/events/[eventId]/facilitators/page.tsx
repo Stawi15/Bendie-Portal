@@ -10,6 +10,8 @@ import { FormModal } from '@/components/portal/FormModal';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useLatestRequest } from '@/lib/useLatestRequest';
 
 const ROLE_TYPES = ['speaker', 'presenter'] as const;
 const ROLE_TYPE_LABELS: Record<string, string> = { speaker: 'Speaker', presenter: 'Presenter' };
@@ -33,7 +35,8 @@ const FACILITATOR_CSV_COLUMNS: ColumnSpec[] = [
   { key: 'email', label: 'Email' },
   { key: 'job_title', label: 'Job Title' },
   { key: 'organization', label: 'Organization' },
-  { key: 'facilitator_group', label: 'Facilitator Group' },
+  // Template header is "speaker_group"; the parser still accepts the old "facilitator_group" header (pre-rename templates).
+  { key: 'speaker_group', label: 'Speaker Group' },
   { key: 'role_type', label: 'Role Type (speaker, presenter)' },
   { key: 'linkedin_url', label: 'LinkedIn URL' },
   { key: 'expertise', label: 'Expertise' },
@@ -47,7 +50,7 @@ const FACILITATOR_CSV_SAMPLES: Record<string, string>[] = [
     email: 'jane@example.com',
     job_title: 'Head of Product',
     organization: 'TechCorp',
-    facilitator_group: 'Keynote Speakers',
+    speaker_group: 'Keynote Speakers',
     role_type: 'speaker',
     linkedin_url: 'https://linkedin.com/in/janesmith',
     expertise: 'AI, Machine Learning',
@@ -57,9 +60,9 @@ const FACILITATOR_CSV_SAMPLES: Record<string, string>[] = [
   {
     full_name: 'David Otieno',
     email: 'david@example.com',
-    job_title: 'Workshop Facilitator',
+    job_title: 'Workshop Lead',
     organization: 'Bendie',
-    facilitator_group: 'Breakout Sessions',
+    speaker_group: 'Breakout Sessions',
     role_type: 'presenter',
     linkedin_url: '',
     expertise: 'Team Building',
@@ -85,7 +88,7 @@ function parseFacilitatorCsvRow(raw: Record<string, string>, rowIndex: number): 
     email: getField(raw, 'email') || null,
     job_title: getField(raw, 'job_title') || null,
     organization: getField(raw, 'organization') || null,
-    facilitator_group: getField(raw, 'facilitator_group') || null,
+    facilitator_group: getField(raw, 'speaker_group') || getField(raw, 'facilitator_group') || null,
     role_type,
     linkedin_url: getField(raw, 'linkedin_url') || null,
     expertise: getField(raw, 'expertise') || null,
@@ -126,28 +129,41 @@ export default function FacilitatorsPage() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [csvOpen, setCsvOpen] = useState(false);
+  // Feature 016 (reliability pass): field-level validation shown next to the field.
+  const [fieldErrors, setFieldErrors] = useState<{ full_name?: string; email?: string }>({});
+
+  // Feature 016 (main-tab performance pass): cancel this load when the user leaves the
+  // tab (or reloads it); an aborted load never toasts or writes state.
+  const startRequest = useLatestRequest();
 
   const fetch = async () => {
+    const signal = startRequest();
     const { data, error } = await supabase
       .from('facilitators')
       .select('id,full_name,email,job_title,organization,bio,avatar_url,facilitator_group,role_type,linkedin_url,expertise,display_order,claim_status')
       .eq('event_id', eventId)
-      .order('display_order');
-    if (error) toast.error('Failed to load facilitators');
+      .order('display_order')
+      .abortSignal(signal);
+    if (signal.aborted) return;
+    if (error) toast.error('Failed to load speakers');
     else setFacilitators(data ?? []);
     setLoading(false);
   };
 
   useEffect(() => { if (eventId) fetch(); }, [eventId]);
 
-  const openAdd = () => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); };
-  const openEdit = (f: Facilitator) => { setEditing(f); setForm({ full_name: f.full_name ?? '', email: f.email ?? '', job_title: f.job_title ?? '', organization: f.organization ?? '', bio: f.bio ?? '', avatar_url: f.avatar_url ?? '', facilitator_group: f.facilitator_group ?? '', role_type: f.role_type ?? 'speaker', linkedin_url: f.linkedin_url ?? '', expertise: f.expertise ?? '' }); setShowForm(true); };
+  const openAdd = () => { setEditing(null); setForm(EMPTY_FORM); setFieldErrors({}); setShowForm(true); };
+  const openEdit = (f: Facilitator) => { setEditing(f); setFieldErrors({}); setForm({ full_name: f.full_name ?? '', email: f.email ?? '', job_title: f.job_title ?? '', organization: f.organization ?? '', bio: f.bio ?? '', avatar_url: f.avatar_url ?? '', facilitator_group: f.facilitator_group ?? '', role_type: f.role_type ?? 'speaker', linkedin_url: f.linkedin_url ?? '', expertise: f.expertise ?? '' }); setShowForm(true); };
 
   const set = (field: keyof FacilitatorForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }));
 
   const handleSave = async () => {
-    if (!form.full_name) { toast.error('Name is required'); return; }
+    const errors: { full_name?: string; email?: string } = {};
+    if (!form.full_name?.trim()) errors.full_name = 'Enter the speaker’s name.';
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address, for example name@company.com — or leave it empty.';
+    setFieldErrors(errors);
+    if (errors.full_name || errors.email) return;
     setSaving(true);
 
     if (editing) {
@@ -158,8 +174,9 @@ export default function FacilitatorsPage() {
         role_type: form.role_type || 'speaker', linkedin_url: form.linkedin_url || null,
         expertise: form.expertise || null,
       }).eq('id', editing.id);
-      if (error) toast.error(error.message);
-      else { toast.success('Facilitator updated'); setShowForm(false); fetch(); }
+      // On failure the form stays open with everything the user typed.
+      if (error) toast.error(friendlyError(error, 'We couldn’t save this speaker. Check the fields and try again.'));
+      else { toast.success('Speaker updated'); setShowForm(false); fetch(); }
     } else {
       const { error } = await supabase.from('facilitators').insert({
         event_id: eventId, full_name: form.full_name, email: form.email || null,
@@ -170,17 +187,17 @@ export default function FacilitatorsPage() {
         expertise: form.expertise || null,
         display_order: facilitators.length,
       });
-      if (error) toast.error(error.message);
-      else { toast.success('Facilitator added'); setShowForm(false); fetch(); }
+      if (error) toast.error(friendlyError(error, 'We couldn’t add this speaker. Check the fields and try again.'));
+      else { toast.success('Speaker added'); setShowForm(false); fetch(); }
     }
     setSaving(false);
   };
 
   const handleDelete = async (id: string, name: string | null) => {
-    if (!(await confirm({ message: `Delete "${name}"?`, confirmLabel: 'Delete', destructive: true }))) return;
+    if (!(await confirm({ title: 'Remove speaker?', message: `Remove "${name}" from this event's speakers?`, confirmLabel: 'Remove', destructive: true }))) return;
     const { error } = await supabase.from('facilitators').delete().eq('id', id);
-    if (error) toast.error(error.message);
-    else { toast.success('Deleted'); fetch(); }
+    if (error) toast.error(friendlyError(error));
+    else { toast.success('Speaker removed'); fetch(); }
   };
 
   const importFacilitatorRow = async (row: FacilitatorCsvRow) => {
@@ -211,28 +228,45 @@ export default function FacilitatorsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <SectionHeader
           sectionKey="facilitators"
-          desc={`${facilitators.length} facilitator${facilitators.length !== 1 ? 's' : ''} for this event`}
+          desc={`${facilitators.length} speaker${facilitators.length !== 1 ? 's' : ''} for this event`}
         />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
             <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
           </button>
           <button onClick={openAdd} className="btn-primary">
-            <span className="material-symbols-outlined text-[18px]">add</span> Add Facilitator
+            <span className="material-symbols-outlined text-[18px]">add</span> Add Speaker
           </button>
         </div>
       </div>
 
       {/* Form modal */}
-      <FormModal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Facilitator' : 'New Facilitator'}>
+      <FormModal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Speaker' : 'New Speaker'}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Full Name *</label>
-              <input className="input" value={form.full_name ?? ''} onChange={set('full_name')} placeholder="Jane Smith" />
+              <input
+                className={`input ${fieldErrors.full_name ? 'border-error' : ''}`}
+                value={form.full_name ?? ''}
+                onChange={(e) => { set('full_name')(e); if (fieldErrors.full_name) setFieldErrors((p) => ({ ...p, full_name: undefined })); }}
+                placeholder="Jane Smith"
+                aria-invalid={!!fieldErrors.full_name}
+                aria-describedby={fieldErrors.full_name ? 'speaker-name-error' : undefined}
+              />
+              {fieldErrors.full_name && <p id="speaker-name-error" className="text-xs text-error mt-1">{fieldErrors.full_name}</p>}
             </div>
             <div>
               <label className="label">Email</label>
-              <input className="input" type="email" value={form.email ?? ''} onChange={set('email')} placeholder="jane@example.com" />
+              <input
+                className={`input ${fieldErrors.email ? 'border-error' : ''}`}
+                type="email"
+                value={form.email ?? ''}
+                onChange={(e) => { set('email')(e); if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined })); }}
+                placeholder="jane@example.com"
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'speaker-email-error' : undefined}
+              />
+              {fieldErrors.email && <p id="speaker-email-error" className="text-xs text-error mt-1">{fieldErrors.email}</p>}
             </div>
             <div>
               <label className="label">Job Title</label>
@@ -243,7 +277,7 @@ export default function FacilitatorsPage() {
               <input className="input" value={form.organization ?? ''} onChange={set('organization')} placeholder="TechCorp" />
             </div>
             <div>
-              <label className="label">Facilitator Group</label>
+              <label className="label">Speaker Group</label>
               <input className="input" value={form.facilitator_group ?? ''} onChange={set('facilitator_group')} placeholder="Keynote Speakers" />
             </div>
             <div>
@@ -276,7 +310,7 @@ export default function FacilitatorsPage() {
             </div>
           </div>
           <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
-            <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? 'Saving...' : (editing ? 'Update' : 'Add Facilitator')}</button>
+            <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? 'Saving...' : (editing ? 'Update' : 'Add Speaker')}</button>
             <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
           </div>
       </FormModal>
@@ -300,12 +334,23 @@ export default function FacilitatorsPage() {
       ) : facilitators.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">mic</p>
-          <p className="text-on-surface-variant">No facilitators yet. Add your first one.</p>
+          <p className="font-medium text-on-surface">No speakers have been added yet</p>
+          <p className="text-sm text-on-surface-variant mt-1 max-w-md mx-auto px-4">
+            Add the people speaking or presenting at your event — attendees browse them on the Home screen. Have a list already? Import it or paste it straight from a spreadsheet.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            <button onClick={openAdd} className="btn-primary">
+              <span className="material-symbols-outlined text-[18px]">add</span> Add Speaker
+            </button>
+            <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+              <span className="material-symbols-outlined text-[18px]">upload_file</span> Import or paste
+            </button>
+          </div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">search</p>
-          <p className="text-on-surface-variant">No facilitators match your search.</p>
+          <p className="text-on-surface-variant">No speakers match your search.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -339,8 +384,8 @@ export default function FacilitatorsPage() {
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
         onImported={fetch}
-        title="Import Facilitators"
-        templateFilename="facilitators-template.csv"
+        title="Import Speakers"
+        templateFilename="speakers-template.csv"
         columns={FACILITATOR_CSV_COLUMNS}
         sampleRows={FACILITATOR_CSV_SAMPLES}
         parseRow={parseFacilitatorCsvRow}

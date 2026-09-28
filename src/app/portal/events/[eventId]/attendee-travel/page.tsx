@@ -11,6 +11,7 @@ import { FormModal } from '@/components/portal/FormModal';
 import { isProductAvailableForEvent } from '@/lib/eventAuth';
 import { markTravelJourneyStarted, consumeTravelJourneyReturnFlag } from '@/lib/travelReturnContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type Member = {
   user_id: string;
@@ -177,13 +178,13 @@ export default function AttendeeTravelPage() {
 
     if (editing) {
       const { error } = await supabase.from('attendee_travel_details').update(payload).eq('id', editing.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Updated'); setShowForm(false); fetchDetails(selected.user_id); }
     } else {
       const { error } = await supabase.from('attendee_travel_details').insert({
         ...payload, user_id: selected.user_id, event_id: eventId,
       });
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Added'); setShowForm(false); fetchDetails(selected.user_id); }
     }
     setSaving(false);
@@ -193,7 +194,7 @@ export default function AttendeeTravelPage() {
     if (!selected) return;
     if (!(await confirm({ message: 'Delete this travel entry?', confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('attendee_travel_details').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchDetails(selected.user_id); }
   };
 
@@ -332,8 +333,8 @@ export default function AttendeeTravelPage() {
                         </div>
                         <div className="text-xs text-on-surface-variant mt-1 space-y-0.5">
                           {routeSummary(d) && <p>{routeSummary(d)}</p>}
-                          {(d.date || d.boarding_time) && <p>{[d.date, d.boarding_time].filter(Boolean).join(' · ')}</p>}
-                          {d.travel_time && <p>Duration: {d.travel_time}</p>}
+                          {(d.date || d.boarding_time) && <p>{d.boarding_time ? 'Departs ' : ''}{[d.date, d.boarding_time].filter(Boolean).join(' · ')}</p>}
+                          {d.travel_time && <p>{d.type === 'other' ? 'Time' : 'Journey time'}: {d.travel_time}</p>}
                           {(d.pickup_vehicle || d.pickup_location) && <p>{[d.pickup_vehicle, d.pickup_location].filter(Boolean).join(' · ')}</p>}
                         </div>
                       </div>
@@ -370,8 +371,12 @@ export default function AttendeeTravelPage() {
             <input className="input" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} placeholder="e.g. 12 Sep 2026" />
           </div>
           <div>
-            <label className="label">Boarding Time</label>
+            {/* Feature 016 (user testing): "Departure", not "Boarding". The column stays `boarding_time`
+                (attendee-app contract) — it already holds the departure time; Pull from Planner fills it
+                from Planner's departure time. The attendee app labels it "Boarding Time". */}
+            <label className="label">Departure time</label>
             <input className="input" value={form.boarding_time} onChange={e => setForm(p => ({ ...p, boarding_time: e.target.value }))} placeholder="e.g. 14:30" />
+            <p className="hint mt-1">Attendees see this as &ldquo;Boarding Time&rdquo; in the app.</p>
           </div>
           <div className="sm:col-span-2">
             <label className="label">Route</label>
@@ -387,8 +392,13 @@ export default function AttendeeTravelPage() {
             <input className="input" value={form.destination} onChange={e => setForm(p => ({ ...p, destination: e.target.value }))} placeholder="New York (JFK)" />
           </div>
           <div>
-            <label className="label">Travel Time</label>
-            <input className="input" value={form.travel_time} onChange={e => setForm(p => ({ ...p, travel_time: e.target.value }))} placeholder="e.g. 8h 20m" />
+            {/* Feature 016 (reliability pass): `travel_time` is free text the attendee app shows
+                under a generic "Time:" label — a time range or a duration (the app also reads it as
+                `time_range`; Pull from Planner stores a hotel's stay dates here). Not a departure or
+                arrival field, so it's named for what it holds. */}
+            <label className="label">Journey time</label>
+            <input className="input" value={form.travel_time} onChange={e => setForm(p => ({ ...p, travel_time: e.target.value }))} placeholder="e.g. 14:30 – 22:50, or 8h 20m" />
+            <p className="hint mt-1">Optional. The time range or length of the journey — attendees see it as &ldquo;Time&rdquo;.</p>
           </div>
           <div />
           <div>

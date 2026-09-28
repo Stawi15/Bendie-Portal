@@ -6,6 +6,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
+import { authErrorMessage } from '@/lib/authMessages';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,6 +15,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Feature 016: confirmation after a successful password reset (/auth/reset-password → here).
+  const [justReset, setJustReset] = useState(false);
+  useEffect(() => {
+    setJustReset(new URLSearchParams(window.location.search).get('reset') === 'success');
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -38,20 +44,8 @@ export default function LoginPage() {
       });
 
       if (error) {
-        console.error('Supabase Auth Error:', error);
-        
-        // Handle various error messages
-        if (error.message.includes('Invalid login credentials')) {
-          toast.error('Invalid email or password');
-        } else if (error.message.includes('Email not confirmed')) {
-          toast.error('Please verify your email before signing in');
-        } else if (error.message.includes('400')) {
-          toast.error('Invalid email or password. Please check your credentials.');
-        } else if (error.message.includes('User not found')) {
-          toast.error('No account found with this email. Please sign up first.');
-        } else {
-          toast.error(error.message || 'Sign in failed. Please try again.');
-        }
+        // Plain-language, non-enumerating messages (Feature 016) — never raw Supabase text.
+        toast.error(authErrorMessage(error, 'Sign in failed. Check your email and password and try again.'));
         return;
       }
 
@@ -60,8 +54,7 @@ export default function LoginPage() {
         router.push('/portal/events');
       }
     } catch (err: any) {
-      console.error('Sign in error:', err);
-      toast.error(err?.message || 'An unexpected error occurred');
+      toast.error(authErrorMessage(err, 'Sign in failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -92,6 +85,13 @@ export default function LoginPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome back</h1>
             <p className="text-gray-600">Sign in to continue</p>
           </div>
+
+          {justReset && (
+            <div role="status" className="mb-6 flex items-start gap-2 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span>
+              Your password has been updated. Sign in with your new password.
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSignIn} className="space-y-6">

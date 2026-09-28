@@ -9,6 +9,7 @@ import { SectionHeader } from '@/components/portal/SectionHeader';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type InterestOption = {
   id: string;
@@ -169,7 +170,7 @@ export default function NetworkingPage() {
       is_required: qForm.is_required,
       display_order: groups.length,
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Question added'); setShowAddQ(false); setQForm(EMPTY_Q); fetchData(); }
     setSaving(false);
   };
@@ -189,14 +190,14 @@ export default function NetworkingPage() {
       option_label: optionForm.option_label.trim(),
       display_order: group.options.length,
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Option added'); setAddingOptionFor(null); setOptionForm({ option_key: '', option_label: '' }); fetchData(); }
     setSaving(false);
   };
 
   const handleDeleteOption = async (id: string) => {
     const { error } = await supabase.from('event_interest_options').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 
@@ -204,7 +205,7 @@ export default function NetworkingPage() {
     if (!(await confirm({ message: `Delete all rows for question "${questionKey}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('event_interest_options')
       .delete().eq('event_id', eventId).eq('question_key', questionKey);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Question deleted'); fetchData(); }
   };
 
@@ -213,7 +214,7 @@ export default function NetworkingPage() {
     const { error } = await supabase.from('event_interest_options')
       .update({ is_required: newVal })
       .eq('event_id', eventId).eq('question_key', group.question_key);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else fetchData();
   };
 

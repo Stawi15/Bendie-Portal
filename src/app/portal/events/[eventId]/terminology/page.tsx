@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { useEvent } from '@/contexts/EventContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useSaveStatus } from '@/lib/useSaveStatus';
+import { SaveStatus } from '@/components/portal/SaveStatus';
 
 type TerminologyForm = {
   facilitator_label_singular: string;
@@ -36,9 +40,13 @@ function Field({ label, hint, value, onChange, placeholder }: { label: string; h
 
 export default function TerminologyPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  // Keep the shared event (Dashboard readiness, nav) in step with what was just saved — no refetch.
+  const { patchCurrentEvent } = useEvent();
   const [form, setForm] = useState<TerminologyForm>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Feature 016: truthful Unsaved → Saving… → Saved / Couldn't save indicator.
+  const saveStatus = useSaveStatus(form, !loading);
 
   useEffect(() => {
     if (!eventId) return;
@@ -63,16 +71,18 @@ export default function TerminologyPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { error } = await supabase.from('events').update({
+    saveStatus.start();
+    const payload = {
       facilitator_label_singular: form.facilitator_label_singular || null,
       facilitator_label_plural: form.facilitator_label_plural || null,
       category_label: form.category_label || null,
       theme_label: form.theme_label || null,
       theme_icon: form.theme_icon || null,
       feedback_form_url: form.feedback_form_url || null,
-    }).eq('id', eventId);
-    if (error) toast.error(error.message);
-    else toast.success('Terminology saved');
+    };
+    const { error } = await supabase.from('events').update(payload).eq('id', eventId);
+    if (error) { toast.error(friendlyError(error)); saveStatus.fail(); }
+    else { toast.success('Terminology saved'); saveStatus.succeed(); patchCurrentEvent(eventId, payload); }
     setSaving(false);
   };
 
@@ -86,10 +96,10 @@ export default function TerminologyPage() {
 
       <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8 space-y-6">
         <div>
-          <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-4">Facilitator Labels</h3>
+          <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-4">Speaker Labels</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Field label="Singular Label" hint='e.g. "Speaker", "Coach", "Mentor"' value={form.facilitator_label_singular} onChange={set('facilitator_label_singular')} placeholder="Facilitator" />
-            <Field label="Plural Label" hint='e.g. "Speakers", "Coaches", "Mentors"' value={form.facilitator_label_plural} onChange={set('facilitator_label_plural')} placeholder="Facilitators" />
+            <Field label="Singular Label" hint='e.g. "Speaker", "Coach", "Mentor"' value={form.facilitator_label_singular} onChange={set('facilitator_label_singular')} placeholder="Speaker" />
+            <Field label="Plural Label" hint='e.g. "Speakers", "Coaches", "Mentors"' value={form.facilitator_label_plural} onChange={set('facilitator_label_plural')} placeholder="Speakers" />
           </div>
         </div>
 
@@ -109,10 +119,11 @@ export default function TerminologyPage() {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-outline-variant">
+        <div className="pt-2 border-t border-outline-variant flex flex-wrap items-center gap-3">
           <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
+          <SaveStatus dirty={saveStatus.dirty} phase={saveStatus.phase} onRetry={handleSave} />
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useConfirm } from '@/contexts/ConfirmContext';
 import { Avatar } from '@/components/portal/Avatar';
 import type { Team } from '@/lib/useTeams';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type MemberRow = {
   user_id: string;
@@ -75,7 +76,7 @@ export function TeamMembersModal({ team, organizationId, onClose, onChanged }: T
     setAddingId(person.user_id);
     const { error } = await supabase.from('team_members').insert({ team_id: team.id, user_id: person.user_id });
     setAddingId(null);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setMembers((prev) => [...prev, person]);
     setCandidates((prev) => prev.filter((p) => p.user_id !== person.user_id));
     onChanged();
@@ -93,7 +94,7 @@ export function TeamMembersModal({ team, organizationId, onClose, onChanged }: T
     setRemovingId(person.user_id);
     const { error } = await supabase.from('team_members').delete().eq('team_id', team.id).eq('user_id', person.user_id);
     setRemovingId(null);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     setMembers((prev) => prev.filter((p) => p.user_id !== person.user_id));
     setCandidates((prev) => [...prev, person]);
     onChanged();

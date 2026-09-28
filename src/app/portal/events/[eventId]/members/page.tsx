@@ -29,6 +29,7 @@ import {
 } from '@/lib/eventTeamProvisioning';
 import { useLatestRequest } from '@/lib/useLatestRequest';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -207,7 +208,7 @@ export default function MembersPage() {
   const changeRole = async (userId: string, newRole: string) => {
     setUpdatingRole(userId);
     const { error } = await supabase.from('event_members').update({ role: newRole }).eq('event_id', eventId).eq('user_id', userId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Role updated'); fetchData(); }
     setUpdatingRole(null);
   };
@@ -222,7 +223,7 @@ export default function MembersPage() {
       .eq('user_id', m.user_id)
       .maybeSingle();
 
-    if (checkError) { toast.error(checkError.message); setMakingFacilitator(null); return; }
+    if (checkError) { toast.error(friendlyError(checkError)); setMakingFacilitator(null); return; }
 
     if (!existing) {
       const { error: insertError } = await supabase.from('facilitators').insert({
@@ -235,7 +236,7 @@ export default function MembersPage() {
         claim_status: 'claimed',
         claimed_at: new Date().toISOString(),
       });
-      if (insertError) { toast.error(insertError.message); setMakingFacilitator(null); return; }
+      if (insertError) { toast.error(friendlyError(insertError)); setMakingFacilitator(null); return; }
     }
 
     const { error: roleError } = await supabase
@@ -244,8 +245,8 @@ export default function MembersPage() {
       .eq('event_id', eventId)
       .eq('user_id', m.user_id);
 
-    if (roleError) toast.error(roleError.message);
-    else { toast.success(`${m.profiles?.full_name ?? 'Person'} is now a facilitator`); fetchData(); }
+    if (roleError) toast.error(friendlyError(roleError));
+    else { toast.success(`${m.profiles?.full_name ?? 'Person'} added to Speakers`); fetchData(); }
     setMakingFacilitator(null);
   };
 
@@ -304,7 +305,7 @@ export default function MembersPage() {
     setRemovingId(m.user_id);
     const { error } = await supabase.from('event_members').delete().eq('event_id', eventId).eq('user_id', m.user_id);
     if (error) {
-      toast.error(error.message);
+      toast.error(friendlyError(error));
       setRemovingId(null);
       return;
     }
@@ -531,7 +532,14 @@ export default function MembersPage() {
                 <th className="text-left px-5 py-3 font-label-md text-label-md text-on-surface-variant">Person</th>
                 <th className="text-left px-5 py-3 font-label-md text-label-md text-on-surface-variant">Event Role</th>
                 <th className="text-left px-5 py-3 font-label-md text-label-md text-on-surface-variant">Bendie Access</th>
-                <th className="text-left px-5 py-3 font-label-md text-label-md text-on-surface-variant">Onboarding</th>
+                <th className="text-left px-5 py-3 font-label-md text-label-md text-on-surface-variant">
+                  {/* Feature 016: explain the term rather than rename it (it's the attendee app's own profile set-up status). */}
+                  <span className="inline-flex items-center gap-1" title="Whether this person has finished setting up their profile in the Bendie app">
+                    Onboarding
+                    <span className="material-symbols-outlined text-[14px] text-on-surface-variant/70" aria-hidden="true">info</span>
+                    <span className="sr-only">(whether this person has finished setting up their profile in the Bendie app)</span>
+                  </span>
+                </th>
                 <th className="text-right px-5 py-3 font-label-md text-label-md text-on-surface-variant">Actions</th>
               </tr>
             </thead>
@@ -593,14 +601,15 @@ export default function MembersPage() {
                     <td className="px-5 py-3 text-right">
                       <div className="flex items-center justify-end gap-2 flex-wrap">
                         {m.role === 'facilitator' || m.role === 'speaker' ? (
-                          <span className="text-xs text-on-surface-variant/70 italic whitespace-nowrap">Already a facilitator</span>
+                          <span className="text-xs text-on-surface-variant/70 italic whitespace-nowrap">Already a speaker</span>
                         ) : (
                           <button
                             onClick={() => makeFacilitator(m)}
+                            title="Adds this person to the event's Speakers list (their event role becomes Facilitator)"
                             disabled={makingFacilitator === m.user_id}
                             className="text-xs text-primary hover:opacity-80 font-medium px-2 py-1 rounded-lg hover:bg-primary/5 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                           >
-                            {makingFacilitator === m.user_id ? 'Adding…' : 'Make Facilitator'}
+                            {makingFacilitator === m.user_id ? 'Adding…' : 'Add to Speakers'}
                           </button>
                         )}
                         <button

@@ -7,6 +7,8 @@ import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useLatestRequest } from '@/lib/useLatestRequest';
 
 type Post = {
   id: string;
@@ -24,12 +26,19 @@ export default function GalleryPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Feature 016 (main-tab performance pass): cancel this load when the user leaves the
+  // tab (or reloads it); an aborted load never toasts or writes state.
+  const startRequest = useLatestRequest();
+
   const fetchData = async () => {
+    const signal = startRequest();
     const { data, error } = await supabase
       .from('posts')
       .select('id,image_url,caption,is_hidden,created_at,profiles!posts_user_id_fkey(full_name,email,avatar_url),post_likes(count)')
       .eq('event_id', eventId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .abortSignal(signal);
+    if (signal.aborted) return;
     if (error) {
       console.error(error);
       toast.error('Failed to load gallery');
@@ -44,7 +53,7 @@ export default function GalleryPage() {
 
   const toggleHidden = async (post: Post) => {
     const { error } = await supabase.from('posts').update({ is_hidden: !post.is_hidden }).eq('id', post.id);
-    if (error) toast.error(error.message); else fetchData();
+    if (error) toast.error(friendlyError(error)); else fetchData();
   };
 
   const handleDelete = async (id: string) => {
@@ -55,7 +64,7 @@ export default function GalleryPage() {
     ]);
     if (likesError || commentsError) { toast.error((likesError ?? commentsError)?.message ?? 'Failed to delete'); return; }
     const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (error) toast.error(error.message); else { toast.success('Deleted'); fetchData(); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); fetchData(); }
   };
 
   const visible = posts.filter(p => !p.is_hidden);

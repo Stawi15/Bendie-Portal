@@ -13,6 +13,7 @@ import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, parseFlexibleBoolean, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 /**
  * Feature 016 CSV coverage expansion. This module represents the Expo
@@ -201,11 +202,11 @@ export default function ExpoDirectoryPage() {
 
     if (editing) {
       const { error } = await supabase.from('expo_spaces').update(payload).eq('id', editing.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Updated'); afterSuccess(); }
     } else {
       const { error } = await supabase.from('expo_spaces').insert({ ...payload, display_order: spaces.length });
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Added'); afterSuccess(); }
     }
     setSaving(false);
@@ -214,7 +215,7 @@ export default function ExpoDirectoryPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!(await confirm({ message: `Delete "${name}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('expo_spaces').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 

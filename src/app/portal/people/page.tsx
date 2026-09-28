@@ -13,6 +13,7 @@ import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { supabase } from '@/lib/supabaseClient';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type PersonCsvRow = {
   rowIndex: number;
@@ -90,7 +91,7 @@ export default function PeoplePage() {
       .eq('user_id', person.userId);
 
     if (orgError) {
-      toast.error(orgError.message);
+      toast.error(friendlyError(orgError));
       setRemovingId(null);
       return;
     }

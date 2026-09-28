@@ -8,6 +8,7 @@ import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type PushNotification = {
   id: string;
@@ -96,7 +97,7 @@ export default function EventNotificationsPage() {
     });
     setSaving(false);
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(form.sendMode === 'now' ? 'Sending now…' : 'Notification scheduled');
     setShowForm(false);
     fetchData();
@@ -105,7 +106,7 @@ export default function EventNotificationsPage() {
   const handleCancel = async (item: PushNotification) => {
     if (!(await confirm({ message: `Cancel "${item.title}"? It will not be sent.`, confirmLabel: 'Cancel Send', destructive: true }))) return;
     const { error } = await supabase.from('event_push_notifications').update({ status: 'canceled' }).eq('id', item.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Canceled'); fetchData(); }
   };
 

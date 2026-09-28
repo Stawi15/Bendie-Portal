@@ -618,3 +618,316 @@ Considered three options: (a) leave it; (b) apply the same small profiles-merge 
 ### Not performed
 
 Browser verification of the colour picker and of normal/rapid/return navigation timing (no browser-automation tool available). Full authenticated end-to-end HTTP timing of a complete Planner request chain (see "Methodology" above for why). The Logistics bundled-endpoint consolidation, the remaining ~21 item-mutation routes' duplicate-profile-query fix, and blanket `useLatestRequest` retrofitting of the ~16 simple Bendie pages were all investigated and are documented as deliberate, reasoned deferrals — not oversights.
+
+## Continuation pass 14 — Visual Event Theme Designer
+
+### Files
+
+- `src/lib/eventTheme.ts` (new): the single place the attendee-app mapping lives (field names, descriptions, defaults, presets, colour maths). Its header comment cites the exact Evently-App files the mapping was traced from, so the next change to either app has one place to update.
+- `src/components/portal/EventThemePreview.tsx` (new): a pure presentational preview driven only by theme props. No fetching, no context.
+- `src/components/portal/ThemeDesignerModal.tsx` (new): the designer. Reuses `FormModal` (the only modal primitive), `useConfirm` (`ConfirmContext`, `z-[100]`, so it sits above the modal) and the existing `.btn-*` / `.input` primitives.
+- `src/app/portal/events/[eventId]/theme/page.tsx` (rewritten): summary + designer mount. Owns loading and the save call, as every content page does.
+
+### Architecture decisions
+
+- **Draft model.** The modal is mounted only while open (`{designerOpen && …}`), so each open starts from the saved theme and Cancel needs no reset logic. It keeps two state records: `draft` (valid colours only, which drive the preview and Apply) and `texts` (raw HEX input, possibly invalid). Invalid typing therefore never breaks the preview or reaches the database, and is never auto-corrected mid-keystroke, matching the pass-13 rule.
+- **Picker trigger.** The native `<input type="color">` is stretched transparently over the whole visible control instead of being called through `showPicker()`. It's the most reliable cross-browser option (clicks land on the real input, so Chrome, Firefox and Safari all open their own picker), stays keyboard-focusable with a real `aria-label`, and adds no dependency. `react-color` stays unused, as before.
+- **Preview fidelity over polish.** Every themed element in the preview matches a style key the audit found. Non-theme colours (page background `#F8FBFC`, black text, border `#E2E8F0`) are copied from the app's fixed palette into `BENDIE_APP_FIXED_COLOURS`. These are attendee-app values, not Portal UI colours, so the "no hardcoded hex in components" rule is met by keeping them in the lib module. The Agenda accent bar is rendered neutral because it's per-session (`agenda_sessions.accent_color`), not part of the theme.
+- **Save semantics.** Apply writes all three columns as explicit HEX (the same shape as before). "Reset to Bendie default" therefore saves the app's current default values explicitly rather than null. Visually the result is identical today; the trade-off is documented under Deferred.
+- **Highlighting.** A static `ring-2 ring-on-surface ring-offset-2 ring-offset-white` (a dark ring with a white gap) stays visible on both the dark hero and light cards. It doesn't animate, and the selected field is also named in text ("Outlined in preview"), so colour isn't the only signal.
+
+### Typecheck/lint/build
+
+`type-check` clean; `lint` at the identical 30-warning baseline; `build` clean.
+
+### Deferred / follow-ups
+
+- Save null for fields left at the app default, so future app-default changes carry through (needs a small UX decision).
+- Real hero image in the preview (would add a column to the existing select, and image loading).
+- Browser and user-testing verification (tasks T296/T297).
+
+## Continuation pass 15 — Theme Preview Polish, Collapsible Sidebar & Speakers Terminology
+
+### Files
+
+- `src/components/portal/EventThemePreview.tsx`: `ICON` scale constants and `FILLED` glyph style; the header rebuilt to match the app (bell + settings pill, badge anchored in the bell slot); tabs without a heading; bottom menu on `grid-cols-5`; non-clickable `Target` renders a `<span>` so it can sit inside a clickable one.
+- `src/lib/sidebarPreference.ts` (new): storage key, the pre-paint inline script string, and read/write helpers.
+- `src/app/layout.tsx`: inline pre-paint script in `<head>`; `suppressHydrationWarning` on `<html>` (the script may add `data-sidebar` before hydration).
+- `src/globals.css`: collapse rules under `@media (min-width: 1024px)` keyed off `html[data-sidebar='collapsed']`; `.sidebar-tooltip-bubble` in `@layer components`.
+- `src/components/portal/OrgSideNav.tsx`: CSS hooks, toggle button, per-item `aria-label`, `aria-current`, tooltips.
+- Terminology: `eventSectionMeta.ts`, `activityPresentation.ts`, `portalLabels.ts` (audit noun only), `dashboard/page.tsx`, `facilitators/page.tsx`, `agenda/page.tsx`, `members/page.tsx`, `terminology/page.tsx`, `OrganizationHome.tsx`.
+
+### Why CSS-driven collapse instead of React state in the layout
+
+`PortalLayout` wraps five context providers. Holding `collapsed` there would re-render all of them on every toggle, and some provider values aren't memoised, which would make consumers re-render and could re-fire effects: the exact class of regression the pass 9–10 performance work removed. Driving the visuals from an `<html>` attribute means a toggle re-renders only `OrgSideNav` (for its aria attributes). The same attribute, set by a pre-paint script, restores the preference with no flash and no hydration mismatch in any React-rendered element. There's no existing tooltip primitive in the codebase, so the tooltips are plain CSS (no JS listeners, no dependency).
+
+### Build verification approach
+
+A dev server (not started by this session) was running on :3000, and building into the same `.next` corrupted it in an earlier pass. So `next build` ran in an isolated scratch copy: sources and configs copied, `node_modules` junction-linked, and **placeholder, non-secret** Supabase environment values (`.env.local` deliberately not copied). The scratch copy was removed afterwards, with the junction removed via `rmdir` so the real `node_modules` was untouched.
+
+### Deferred
+
+- Renaming the `/facilitators` route (would need a redirect; no user-facing benefit, since the URL is rarely seen).
+- A product decision on whether the membership role "Facilitator" should become something like "Session Facilitator". It's out of scope because it's a different concept from the Speakers module.
+- Browser verification.
+
+## Continuation pass 16 — Agenda Preview Proportions & Hover-Expand Sidebar
+
+### Files
+
+- `src/components/portal/EventThemePreview.tsx`: `PHONE` frame constants, a scaler wrapper and a design-size frame (`transform: scale(var(--phone-scale))`); an inline-SVG `StatusBar`; the `ICON` hierarchy; the dashed-outline `HIGHLIGHT`; the rebuilt Agenda screen; the shared fixed-height bottom menu. The file was reformatted with the repo's Prettier config.
+- `src/globals.css`: pass-15 collapse, tooltip and `html[data-sidebar]` rules removed; `.sidebar-panel` hover/focus-expand rules and `.phone-preview-scaler` scale steps added.
+- `tailwind.config.js`: new `desk` screen, used only by the app shell.
+- `src/components/portal/OrgSideNav.tsx`: rail `<aside>` + `.sidebar-panel`; fixed icon geometry; toggle, tooltips, `useState`/`useEffect` and the persistence imports removed.
+- `src/app/portal/layout.tsx`, `src/components/portal/TopHeader.tsx`: `lg:` → `desk:` for the shell's `flex` / `flex-1` and the menu button.
+- `src/app/layout.tsx`: pre-paint script and `suppressHydrationWarning` removed (now identical to before pass 15).
+- `src/lib/sidebarPreference.ts`: **deleted**.
+
+### Decisions
+
+- **Why CSS `:hover` + `transition-delay` rather than JS hover intent:** transition-delay gives real hover intent. A hover shorter than the delay never starts the transition, and a collapse is cancelled if the pointer returns within 250ms. It needs no timers or listeners and causes zero React renders, which directly meets the "no data work, no remount, no global listeners" requirement.
+- **Why overlay instead of push:** reserving only the collapsed width means content geometry is independent of hover. That matters on the productivity-heavy pages (Participants, Logistics, Activities) and inside the Theme Designer.
+- **Why a `desk` screen instead of reusing `lg`:** `lg` is width-only, so a 1024px+ touch tablet would get a hover-only rail it couldn't expand. `desk` adds `hover:hover` and `pointer:fine`. It's used only by the three shell elements, so page-level `lg:` layouts are unaffected.
+- **Persistence removed, not kept:** with "collapsed by default, temporarily expanded on hover/focus" there's no user preference left to store. The old `bendie.portal.sidebarCollapsed` localStorage key may remain in browsers that used pass 15. Nothing reads it, and it's harmless.
+- **Uniform scale:** the frame keeps its design size, and only the wrapper's footprint and the frame's `transform` change, so every internal proportion is preserved at every scale.
+
+### Verification approach
+
+The same isolated scratch-copy `next build` as pass 15, because the dev server was still running. After cleanup, I confirmed in the running dev server's compiled CSS that the `desk:` utilities and the `(hover: hover) and (pointer: fine)` query are emitted.
+
+## Continuation pass 17 — Guided Event Creation & Module Selection
+
+### Files
+
+- New: `src/lib/eventModules.ts` (module catalogue, visibility rule, server-safe sanitiser), `src/components/portal/ModulePicker.tsx`, `src/components/portal/ManageModulesModal.tsx`, `supabase/migrations/event_portal_setup_modules.sql`.
+- `src/components/portal/CreateEventModal.tsx`: rewritten as a stepper. All Feature 004 logic is preserved verbatim (entitlement checks, idempotency key per open, partial-outcome toasts, read-back retry).
+- `src/app/api/events/create/route.ts`: optional `modules` body field, sanitised, written as the caller after the RPC. The response adds `modulesSaved`; a failure never fails creation.
+- `src/app/portal/events/[eventId]/layout.tsx`: display-only module filter on `visibleSections`, a "Manage modules" button, the modal mount.
+- `src/app/portal/events/[eventId]/dashboard/page.tsx`: progress, area cards and Planner recommendations skip hidden modules.
+- `src/contexts/EventContext.tsx`: new stable `patchCurrentEvent` (in-memory merge; no fetch, no loading flip).
+- `src/lib/eventColumns.ts`, `src/types/database.ts`: the new column.
+- `OrganizationEventsList.tsx`, `OrganizationHome.tsx`: navigate to the new event after creation.
+- `attendee-travel/page.tsx` (flight terminology), `eventTheme.ts` (brown preset removed), `eventSectionMeta.ts` (plain-language descriptions), `facilitators/page.tsx` (guided empty state).
+
+### Decisions
+
+- **Where module choices are written:** in `/api/events/create`, right after `create_event_with_products`, using the caller's own cookie client. The RPC makes the creator an event `admin`, and `is_event_host_or_organizer` includes `admin`, so the existing UPDATE policy allows it. The RPC itself wasn't modified, which avoids touching Feature 004's SECURITY DEFINER idempotency contract. Idempotent replays rewrite the same array.
+- **Why not reuse `disabled_menu_items`:** it's consumed by the attendee app's `menu.tsx`. Module selection is Portal setup scope, not attendee-facing configuration, and must not silently change what attendees see.
+- **Legacy fallback:** `NULL` means "show every available section", so existing events are byte-for-byte unchanged in navigation.
+- **Draft architecture:** a hybrid, limited to the local half. React state between steps plus a localStorage mirror per organisation, written on change: local only, no request per keystroke or checkbox. The server checkpoint is deferred. Nothing server-side exists before "Create event", so there are no orphan or half-provisioned events.
+- **No extra requests:** product availability for the Manage-modules picker reuses the layout's already-resolved `productAvailability`. Module ticking is local. Save is one request, and the result is patched into context in memory.
+
+### Verification
+
+- `type-check` clean; `lint` at the identical 30-warning baseline; `next build` clean (30/30) in an isolated scratch copy (the dev server was running).
+- 12/12 module-logic checks (Node): every module key is a real section with a matching product; Bendie-only/Planner-only filtering; legacy NULL shows all; core sections always shown; the sanitiser drops unknown, duplicate and always-included keys.
+- **Live DB (in a rolled-back transaction):** an event admin's UPDATE of `portal_setup_modules` affects 1 row and reads back; an unrelated user's affects 0 rows; `anon` has no SELECT. After rollback, 0 of 24 events are configured.
+- Dev-server smoke: event routes 307 when unauthenticated; `POST /api/events/create` without a session returns 401 (auth still precedes everything).
+- **Not performed:** browser walkthrough of the stepper, Back/Continue, draft resume, Manage modules, and the Bendie-only/Planner-only/Both journeys. No browser-automation tool is available, and a real authenticated creation wasn't run (it would create a real event in the live organisation).
+
+## Continuation pass 18 — Navigation Hierarchy & Previous/Next
+
+### Files
+
+- `src/app/portal/events/[eventId]/layout.tsx`:
+  - Area row restyled (flat underline links; mobile `<select>`).
+  - Child tab row replaced by the numbered area stepper.
+  - Floating Next replaced by an in-flow Previous/Next footer.
+  - New derived values `journey`, `previousStep`, `nextStep`, `currentGroup`, `groupSteps`, `isSteppedGroup`, `sectionHref`, `journeyLabel` and `groupHref` (the old pill-href logic, extracted verbatim).
+  - Stable group sort (Overview first, all-shared areas last).
+  - Removed the now-unused child-row scroll state (`navRef`, `canScrollLeft`/`Right`, `updateScrollState`, `scrollTabs`, `tabsToShow`).
+- `src/lib/eventSectionMeta.ts`: `EVENT_GROUP_DESCRIPTIONS`, `OVERVIEW_GROUP`.
+
+### Decisions
+
+- **Why exclude Overview from the journey:** it's the product hub (Dashboard / Planner Overview), not a setup step. Including it produced "Previous: Planner Overview" on Basics for Both events.
+- **Page-link product signal:** journey and stepper links carry the target page's own product (`shared` pages inherit the current context), matching the area links' existing corrective fix. So crossing Bendie → Planner via Next can't produce a contradictory `?product=`. Trade-off: a Bendie page reached from Planner context (e.g. Members for staff permissions) now carries `?product=bendie` when you step to a sibling Bendie page, which reflects the page you're actually on.
+- **Footer, not floating:** it's in the layout's flex column below the scroll area, so it can never cover table actions or pagination, and modals (fixed `z-50`) sit above it.
+- **No checkmarks:** the layout has no completion data, and the Dashboard's counts aren't loaded here. Adding them would need new requests and would still only be approximate.
+
+### Verification
+
+`type-check` clean; `lint` at the identical 30-warning baseline; `next build` clean (isolated copy). A Node model of the exact grouping/journey code, run against the real `EVENT_SECTIONS` and module rules, produced:
+- Attendees Step 1/2/3 with the correct Previous/Next;
+- cross-area labels;
+- 2-of-2 Programme with unselected modules;
+- a denied Logistics skipped for a restricted user;
+- correct area order for Planner-only, Bendie-only and Both.
+
+Browser verification wasn't performed.
+
+## Continuation pass 19 — Reliability, Saving, Validation & Import Clarity
+
+### Files
+
+- **New:** `src/lib/userFacingError.ts` (`friendlyError`, `knownErrorMessage`), `src/lib/authMessages.ts` (`authErrorMessage`), `src/lib/useSaveStatus.ts`, `src/components/portal/SaveStatus.tsx`, `src/components/portal/DismissibleTip.tsx`.
+- **Auth:** `src/app/auth/forgot-password/page.tsx` and `src/app/auth/reset-password/page.tsx` (rewritten), `src/app/auth/login/page.tsx` (mapped errors + reset-success banner), `src/app/auth/signup/page.tsx` (mapped error), `src/middleware.ts` (reset-page exemption), `src/contexts/AuthContext.tsx` (`PASSWORD_RECOVERY` fallback).
+- **Errors:** `toast.error(x.message)` → `toast.error(friendlyError(x))` in 30 files (79 sites, mechanical; the import is added per file).
+- **CSV:** `src/components/portal/CsvImportModal.tsx` (copy, Required/Optional columns, spreadsheet row numbers, issue list, honest result states, readable row errors). Parser, `parseRow` contracts and `runWithConcurrency(…, 5, …)` are unchanged.
+- **Drafts:** `src/components/portal/CreateEventModal.tsx` (user+org key, expiry, restore prompt, Skip modules, field-level Basics errors, local-save status).
+- **Saving:** `basics`, `hero` and `terminology` pages (`useSaveStatus` + `SaveStatus`).
+- **Completion:** `dashboard/page.tsx` (readiness model; one extra head-only attendee count inside the existing `Promise.all`).
+- **Travel:** `attendee-travel/page.tsx` ("Journey time").
+- **Terminology:** `eventSectionMeta.ts` (Attendees & Access description), `members/page.tsx` (Onboarding explanation), `facilitators/page.tsx` (field-level validation).
+
+### Decisions
+
+- **Why not one error framework:** a single pure mapper with ~9 well-known classes plus a neutral fallback is enough, and it logs the raw error for developers. Messages that are already human (e.g. an API's own "Participant not found") pass through in CSV results unless they look like raw DB text.
+- **Draft persistence stays in localStorage**, scoped by user and organisation. A draft holds only event basics and choices, no attendee or personal data. There's no request per keystroke, and a server draft model would be new backend scope. Drafts survive logout, because the key is per user, so the same person can resume. Another person on the same browser can never read them.
+- **Save status only where persistence is explicit and single-record**, where it's truthful: Basics, Hero, Terminology. Modals keep explicit Save/Create buttons. The create-event draft says "saved on this device — not created yet", never "Saved".
+- **Dismissal is per browser (localStorage).** It's purely instructional; there's no user-preferences store, and a table for tips isn't justified.
+
+### Verification
+
+- **Source-verified:** everything above.
+- **Runtime-verified:**
+  - type-check clean;
+  - lint at 28 warnings (down from 30), 0 errors;
+  - `next build` 30/30 (isolated copy);
+  - 12/12 message-mapping checks with 0 technical leaks;
+  - dev-server 200s for `/auth/forgot-password`, `/auth/reset-password` (plain, `?code=`, and `?error_code=otp_expired`) and `/auth/login?reset=success`.
+- **Browser-verified:** none.
+- **Manually deferred:** real reset emails (A–H), refresh/leave-return draft recovery, save-status failure paths, CSV partial import.
+
+## Continuation pass 20 — Global Create Path & Product Environment Identity
+
+### Files
+
+- **New:** `src/contexts/CreateEventContext.tsx` (`CreateEventProvider`, `useCreateEvent`) and `src/lib/productPresentation.ts` (`PRODUCT_PRESENTATION`).
+- `src/app/portal/layout.tsx`: mounts `CreateEventProvider`.
+- `src/components/portal/TopHeader.tsx`:
+  - "+ New Event" button replaces the Create link;
+  - product environment strip, tint and border;
+  - stronger selected switcher segment with `aria-pressed` and a dot.
+- `src/components/portal/OrganizationEventsList.tsx`, `OrganizationHome.tsx`: use `useCreateEvent()`. Their own modal mounts, `isOrgAdmin` effects and post-create handlers were removed; they subscribe to add the new row locally.
+- `src/app/portal/events/[eventId]/layout.tsx`: area underline and heading from `PRODUCT_PRESENTATION` via `areaProductFor` (mixed/shared areas follow the current context).
+
+### Requests
+
+- The permission check drops from **one per page-level mount (Events page, Home)** to **one per organisation** in the provider, and the header adds none.
+- Opening the flow itself makes no preliminary request (the modal's own Feature 004 entitlement checks are unchanged).
+- Styling adds zero requests.
+
+### Verification
+
+- `type-check` clean; `lint` 28 warnings (baseline), 0 errors.
+- `next build` 30/30 (isolated copy).
+- The running dev server's compiled CSS contains every new product class (`bg-primary/[0.035]`, `bg-orange-50/70`, `border-primary/25`, `border-orange-300/70`, `ring-primary/40`, `ring-orange-400/60`, `bg-orange-500`, `border-orange-600`).
+- `parseProductFromPathname` confirmed synchronous and null on organisation-global routes.
+- Browser verification wasn't performed.
+
+## Continuation pass 21 — Product Identity Refinement, Glass & Sidebar Polish
+
+### Files
+
+- `src/lib/productPresentation.ts`: role-based tokens (`bar`, `headerTint`, `headerBorder`, `switcherSelected`, `dot`, `accentText`, `areaActive`, `areaHeading`, `stepCurrent`, `stepCurrentSurface`, `stepPrevious`, `focusRing`) plus `NEUTRAL_PRESENTATION` (`controlSurface`, `switcherUnselected`, `focusRing`).
+- `src/components/portal/TopHeader.tsx`:
+  - 2px strip;
+  - neutral organisation button/label, search (desktop + mobile, `h-10`, `rounded-xl`) and switcher track (`h-10`);
+  - constant-geometry segments;
+  - product-accent focus on neutral controls;
+  - the notification dot border is now white (it used the surface colour, which no longer matches the tinted header).
+- `src/app/portal/events/[eventId]/layout.tsx`:
+  - `glass-surface` on the Event Areas row (`-mb-px` removed from area links so the underline sits inside the container) and on the current-area stepper;
+  - product accent on the current/previous step;
+  - the Planner divider label now uses the central accent.
+- `src/components/portal/OrgSideNav.tsx`: rounded active tile/row, neutral hover, no left bar.
+- `src/globals.css`: `.glass-surface` with a solid fallback and an `@supports` blur.
+
+### Performance
+
+Zero requests (all styling is derived from the existing route-based product). Blur is limited to 3 small, non-repeating surfaces (the Event Areas row, the stepper and the switcher track), none of them nested.
+
+### Verification
+
+- `type-check` clean; `lint` 28 warnings (baseline), 0 errors.
+- `next build` 30/30 (isolated copy).
+- The compiled CSS contains `.glass-surface` (solid fallback + `@supports` blur rule), the `theme()` border resolved to `rgba(191,199,210,.55)`, and every new product/neutral class.
+- The environment components contain no hard-coded product colour outside `productPresentation.ts`.
+- Browser verification wasn't performed.
+
+
+## Continuation pass 22 — Portal-Wide Performance & Loading Optimization
+
+### Request matrix (source-confirmed; ~ = server-side sequential round trips)
+
+| Path | Before | After |
+|---|---|---|
+| Enter a Planner/Both event workspace (layout) | 2 product checks + **6 HTTP** capability requests × **~10** each (≈60 server round trips, including 6 duplicate `profiles` reads) | 2 product checks + **1 HTTP** (~10 once, then 6 module pairs in parallel on the Planner DB) |
+| Planner Logistics initial load | **4 HTTP** × ~10 | **1 HTTP** × ~10, then 3–4 parallel list reads |
+| `TOKEN_REFRESHED` (hourly / refocus / other tabs) | profile + organisations/memberships + events list reload | **0** |
+| Save Manage modules / same-event refresh | nav skeleton + 2 + 6 authorization requests | **0** (in-memory patch only) |
+| Tab switch within an event | page data only (layout persists) | unchanged |
+
+### Per-route inventory (source-traced; direct Supabase `from` calls / API `fetch` calls in the file)
+
+- **Organisation:** Overview (OrganizationHome) 4/0; Events (`useOrgEvents` + batched stats) 2 + 5 batched; People 6/1; Teams 1 + 1 rpc (batched members); Assets 1 (`select('*')`, small); Activity Log 2 (paginated 30); Settings 0.
+- **Bendie event pages:** each 1–2 reads on mount (plus CRUD writes). Agenda 11, Activities 12, Excursions 12 and Games 8 include their writes. Dashboard: 1 + a counts `Promise.all` + 8 Planner fetches. Members 7 + 2 rpc (`useLatestRequest`).
+- **Planner pages:** Tasks/Vendors/Checklist/Production/People each **1 chain** on load; Logistics was 4, now 1; Overview 2.
+- **Auth:** login/forgot/reset make no data calls beyond Supabase Auth; `AuthContext` has 1 profile read per real identity change.
+
+### Files
+
+- **New:** `src/app/api/events/[eventId]/planner-capabilities/route.ts` and `src/app/api/events/[eventId]/planner-logistics/overview/route.ts`.
+- `src/app/portal/events/[eventId]/layout.tsx`: one capabilities fetch; effect keyed on the event id.
+- `src/app/portal/events/[eventId]/planner-logistics/page.tsx`: initial load via `/overview`.
+- `src/contexts/AuthContext.tsx`: stable `user`; profile only re-fetched on an identity change or `USER_UPDATED`.
+
+### Security
+
+- No authorization step was removed or cached across requests. Both new routes re-verify the caller from cookies on every call, exactly like the routes they replace.
+- The only reuse is **within one request** (a single `profiles` read, a single chain).
+- The `AuthContext` change keys on the user id, so a different user always refreshes.
+- There's no cross-event or cross-organisation cache, and no new client cache.
+
+### Verification
+
+- `type-check` clean; `lint` 28 warnings (baseline), 0 errors.
+- `next build` 30/30 (isolated copy); both new routes compile.
+- Dev-server smoke tests: both new routes return 401 unauthenticated, like the existing routes.
+- Not measured: timings, authenticated responses, rapid-navigation stress (no browser/session available).
+
+
+## Continuation pass 23 — Main Event Tab Navigation Performance & Stability
+
+### Main-tab landing pages and entry requests (source-confirmed)
+
+Clicking an area routes (a plain `<Link>`, no awaited work) to its first visible page. EventLayout persists across tabs (no re-fetch of event, products or capabilities).
+
+| Area → landing page | Before | After |
+|---|---|---|
+| Overview → Dashboard (Bendie) | ~20 Supabase head-counts + 1 attendee count (not cancelled) + **8** Planner API requests × full chain (not cancelled) | same counts, **cancelled on leave** + **1** readiness request (1 chain, cancelled on leave) |
+| Overview → Planner Overview | 1 API request (not cancelled) | 1, cancelled |
+| Event Setup → Basics | 1 Supabase read (toasts after unmount) | 1, cancelled, no stale toast |
+| Programme → Speakers | 1 Supabase read (toasts after unmount) | 1, cancelled |
+| Attendees → Attendees & Access | 1 read + 1 rpc (already cancelled) | unchanged |
+| Content → News | 1 read (toasts after unmount) | 1, cancelled |
+| Media → Gallery | 1 read (toasts after unmount) | 1, cancelled |
+| Operations → Emergency | 2 parallel reads (toasts after unmount) | 2, cancelled |
+| Participants → Participants | 1 API request, 1 chain (already cancelled) | unchanged |
+| Planning → Tasks | 1 API request, 1 chain (**not cancelled**) | 1, cancelled (Vendors/Checklist too) |
+| Logistics → Logistics | 1 overview request (pass 22, cancelled) | unchanged |
+| Production → Production | 1 API request, 1 chain (already cancelled) | unchanged |
+
+### Other findings
+
+- **No navigation-blocking await** was found in area/step links.
+- **Layout:** since pass 22 the availability/capability effect is keyed on the event id, so tab changes don't re-run it.
+- **EventContext:** not reset by tab changes.
+- **Capability reuse:** pages still call their own authoritative API (server authorization stays authoritative). The layout's client capability state is only used for UI gating.
+- **Prefetch:** Next `<Link>` prefetches route code only (pages are client components whose data loads in effects). No data prefetch was added, to avoid recreating a storm.
+
+### Files
+
+- **New:** `src/lib/plannerModuleAccess.ts`, `src/app/api/events/[eventId]/planner-readiness/route.ts`.
+- **Refactored:** `src/app/api/events/[eventId]/planner-capabilities/route.ts` (uses the shared library; same responses).
+- **Dashboard:** `dashboard/page.tsx` (readiness request + abortable counts; removed the now-unused array-parsing helpers).
+- **Cancellation added:** `planner-tasks`, `planner-vendors`, `planner-checklist`, `planner-overview`, `basics`, `facilitators`, `news`, `gallery`, `emergency` pages.
+- **Scrollbar:** `layout.tsx` (Event Areas row: `-mb-px` removed, `overflow-y-hidden` added).
+
+### Verification
+
+- `type-check` clean; `lint` 28 warnings (baseline), 0 errors.
+- `next build` 30/30 (isolated copy).
+- Signed-out smoke tests: `/planner-readiness`, `/planner-capabilities` and `/planner-logistics/overview` all return 401.
+- **Not performed:** measured timings, and the forward, reverse and cross-product rapid-navigation stress runs (no browser or session).

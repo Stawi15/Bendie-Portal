@@ -13,6 +13,8 @@ import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, parseFlexibleBoolean, parseFlexibleDate, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
+import { useLatestRequest } from '@/lib/useLatestRequest';
 
 /**
  * Feature 016 CSV coverage expansion. `body` is a plain long-text field on
@@ -148,7 +150,12 @@ export default function NewsFeedPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
 
+  // Feature 016 (main-tab performance pass): cancel this load when the user leaves the
+  // tab (or reloads it); an aborted load never toasts or writes state.
+  const startRequest = useLatestRequest();
+
   const fetchData = async () => {
+    const signal = startRequest();
     // Matches the app's own read order — published_at desc, not display_order
     // (display_order exists on this table but schema-reference.md confirms
     // the app never actually reads it for news_items).
@@ -156,7 +163,9 @@ export default function NewsFeedPage() {
       .from('news_items')
       .select('id,event_id,title,summary,body,themes,image_url,is_featured,registration_url,read_time_minutes,published_at')
       .or(`event_id.eq.${eventId},event_id.is.null`)
-      .order('published_at', { ascending: false });
+      .order('published_at', { ascending: false })
+      .abortSignal(signal);
+    if (signal.aborted) return;
     if (error) toast.error('Failed to load news feed');
     else setItems(data ?? []);
     setLoading(false);
@@ -205,11 +214,11 @@ export default function NewsFeedPage() {
 
     if (editing) {
       const { error } = await supabase.from('news_items').update(payload).eq('id', editing.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Article updated'); afterSuccess(); }
     } else {
       const { error } = await supabase.from('news_items').insert(payload);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Article added'); afterSuccess(); }
     }
     setSaving(false);
@@ -218,13 +227,13 @@ export default function NewsFeedPage() {
   const handleDelete = async (id: string, title: string) => {
     if (!(await confirm({ message: `Delete "${title}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('news_items').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 
   const toggleFeatured = async (n: NewsItem) => {
     const { error } = await supabase.from('news_items').update({ is_featured: !n.is_featured }).eq('id', n.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else fetchData();
   };
 

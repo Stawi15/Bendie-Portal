@@ -8,6 +8,7 @@ import { OrganizationProvider } from '@/contexts/OrganizationContext';
 import { ProductProvider } from '@/contexts/ProductContext';
 import { AvailableProductsProvider } from '@/contexts/AvailableProductsContext';
 import { ConfirmProvider } from '@/contexts/ConfirmContext';
+import { CreateEventProvider } from '@/contexts/CreateEventContext';
 import { OrgSideNav } from '@/components/portal/OrgSideNav';
 import { TopHeader } from '@/components/portal/TopHeader';
 
@@ -26,10 +27,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <AvailableProductsProvider>
           <EventProvider>
             <ConfirmProvider>
-              <div className="h-screen overflow-hidden bg-background lg:flex">
+              {/* Feature 016: one canonical event-creation flow for every "New Event" entry point. */}
+              <CreateEventProvider>
+              <div className="h-screen overflow-hidden bg-background desk:flex">
                 <OrgSideNav open={navOpen} onClose={() => setNavOpen(false)} />
 
-                <div className="flex flex-col h-full min-w-0 lg:flex-1">
+                <div className="flex flex-col h-full min-w-0 desk:flex-1">
                   {/* TopHeader reads useSearchParams() (breadcrumb origin-signal fallback,
                       /code-review finding F5) — Next.js requires a Suspense boundary around
                       any such usage so it doesn't force every otherwise-static portal page
@@ -61,6 +64,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
                   }}
                 />
               </div>
+              </CreateEventProvider>
             </ConfirmProvider>
           </EventProvider>
         </AvailableProductsProvider>

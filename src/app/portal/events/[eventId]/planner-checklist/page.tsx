@@ -15,6 +15,7 @@ import {
   type PlannerChecklistCreateValues,
   type PlannerChecklistPresetContext,
 } from '@/components/portal/PlannerChecklistModal';
+import { useLatestRequest, isAbortError } from '@/lib/useLatestRequest';
 
 type ChecklistCsvRow = {
   category: string;
@@ -88,11 +89,16 @@ export default function PlannerChecklistPage() {
     };
   }, []);
 
+  // Feature 016 (main-tab performance pass): cancel a superseded/abandoned load so it
+  // stops holding a same-origin connection after the user moves to another tab.
+  const startRequest = useLatestRequest();
+
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    const signal = startRequest();
     setState({ kind: 'loading' });
     try {
-      const res = await fetch(`/api/events/${eventId}/planner-checklist`);
+      const res = await fetch(`/api/events/${eventId}/planner-checklist`, { signal });
       if (requestIdRef.current !== requestId) return;
       if (!res.ok) {
         setState({ kind: 'denied' });
@@ -107,10 +113,11 @@ export default function PlannerChecklistPage() {
       setState({ kind: 'loaded', capability: data.capability, items: data.items ?? [], eligibleOwners: data.eligibleOwners ?? [] });
     } catch (err) {
       if (requestIdRef.current !== requestId) return;
+      if (isAbortError(err)) return; // navigation/supersession — never an error
       console.error('Failed to load Planner Checklist', err);
       setState({ kind: 'configuring', status: 'backend_error' });
     }
-  }, [eventId]);
+  }, [eventId, startRequest]);
 
   useEffect(() => {
     load();
@@ -398,7 +405,7 @@ export default function PlannerChecklistPage() {
       </div>
 
       <PlannerChecklistModal
-        key={modalResetKey}
+        key={`checklist-modal-${modalResetKey}`}
         open={modalOpen}
         eligibleOwners={eligibleOwners}
         submitting={submitting}

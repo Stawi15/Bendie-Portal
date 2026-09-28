@@ -13,6 +13,7 @@ import { moveItem } from '@/lib/reorder';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, parseFlexibleBoolean, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 /**
  * Feature 016 CSV coverage expansion. Hero/gallery images are deliberately
@@ -216,10 +217,10 @@ export default function ActivitiesPage() {
 
     if (editing) {
       const { error } = await supabase.from('activities').update(payload).eq('id', editing.id);
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error(friendlyError(error)); setSaving(false); return; }
     } else {
       const { data, error } = await supabase.from('activities').insert({ ...payload, event_id: eventId, slug }).select().single();
-      if (error) { toast.error(error.message); setSaving(false); return; }
+      if (error) { toast.error(friendlyError(error)); setSaving(false); return; }
       activityId = data.id;
     }
 
@@ -288,13 +289,13 @@ export default function ActivitiesPage() {
   const handleDelete = async (id: string, title: string) => {
     if (!(await confirm({ message: `Delete "${title}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('activities').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 
   const toggleFeatured = async (a: Activity) => {
     const { error } = await supabase.from('activities').update({ is_featured: !a.is_featured }).eq('id', a.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else fetchData();
   };
 

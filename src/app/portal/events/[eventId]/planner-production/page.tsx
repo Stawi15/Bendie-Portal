@@ -403,7 +403,7 @@ export default function PlannerProductionPage() {
       </div>
 
       <PlannerProductionModal
-        key={modalResetKey}
+        key={`production-modal-${modalResetKey}`}
         open={modalOpen}
         editing={editing}
         parallelOptions={sessions.map((s) => ({ id: s.id, label: s.sessionTitle ?? `Session #${s.id}` }))}

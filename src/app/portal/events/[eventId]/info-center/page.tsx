@@ -9,6 +9,7 @@ import { FormModal } from '@/components/portal/FormModal';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { moveItem } from '@/lib/reorder';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 // ─── Welcome bullets (info_content) ────────────────────────────────────────
 
@@ -56,10 +57,10 @@ function WelcomeBulletsCard({ eventId }: { eventId: string }) {
     setSaving(true);
     if (eventRow) {
       const { error } = await supabase.from('info_content').update({ bullets: cleaned }).eq('id', eventRow.id);
-      if (error) toast.error(error.message); else { toast.success('Welcome message updated'); fetchData(); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Welcome message updated'); fetchData(); }
     } else {
       const { error } = await supabase.from('info_content').insert({ event_id: eventId, bullets: cleaned });
-      if (error) toast.error(error.message); else { toast.success('Event-specific welcome message saved'); fetchData(); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Event-specific welcome message saved'); fetchData(); }
     }
     setSaving(false);
   };
@@ -68,7 +69,7 @@ function WelcomeBulletsCard({ eventId }: { eventId: string }) {
     if (!eventRow) return;
     if (!(await confirm({ message: 'Revert to the global default welcome message? This event\'s custom version will be deleted.', confirmLabel: 'Revert', destructive: true }))) return;
     const { error } = await supabase.from('info_content').delete().eq('id', eventRow.id);
-    if (error) toast.error(error.message); else { toast.success('Reverted to global default'); fetchData(); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Reverted to global default'); fetchData(); }
   };
 
   if (loading) return <div className="h-40 bg-surface-container-low rounded-[20px] animate-pulse mb-6" />;
@@ -194,10 +195,10 @@ export default function InfoCenterPage() {
     };
     if (editing) {
       const { error } = await supabase.from('support_contacts').update(payload).eq('id', editing.id);
-      if (error) toast.error(error.message); else { toast.success('Contact updated'); setShowForm(false); fetchData(); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Contact updated'); setShowForm(false); fetchData(); }
     } else {
       const { error } = await supabase.from('support_contacts').insert({ ...payload, event_id: eventId });
-      if (error) toast.error(error.message); else { toast.success('Contact added'); setShowForm(false); fetchData(); }
+      if (error) toast.error(friendlyError(error)); else { toast.success('Contact added'); setShowForm(false); fetchData(); }
     }
     setSaving(false);
   };
@@ -205,7 +206,7 @@ export default function InfoCenterPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!(await confirm({ message: `Delete "${name}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('support_contacts').delete().eq('id', id);
-    if (error) toast.error(error.message); else { toast.success('Deleted'); fetchData(); }
+    if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); fetchData(); }
   };
 
   return (

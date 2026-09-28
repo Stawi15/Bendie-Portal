@@ -7,6 +7,7 @@ import { useEvent } from '@/contexts/EventContext';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 const BUCKET = 'event-files';
 const SIGNED_URL_TTL = 60 * 60; // 1 hour — long enough for an organizer to open/share a link
@@ -130,7 +131,7 @@ export default function EventFilesPage() {
     const { error } = await supabase.storage.from(BUCKET).remove([`${folderPath}/${name}`]);
     setDeletingName(null);
 
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else {
       toast.success('File deleted');
       setFiles((prev) => prev.filter((f) => f.name !== name));

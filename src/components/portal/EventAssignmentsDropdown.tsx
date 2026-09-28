@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { EVENT_MEMBER_ROLES, addPersonToEvent, type EventMemberRole } from '@/lib/eventTeamProvisioning';
 import { EVENT_MEMBER_ROLE_LABELS } from '@/lib/portalLabels';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type EventOption = { id: string; name: string };
 
@@ -69,7 +70,7 @@ export function EventAssignmentsDropdown({ userId, userEmail, userLabel, organiz
   const remove = async (eventId: string) => {
     setPendingId(eventId);
     const { error } = await supabase.from('event_members').delete().eq('event_id', eventId).eq('user_id', userId);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else {
       setAssigned((prev) => prev.filter((id) => id !== eventId));
       // Feature 008 (research.md R10) — best-effort, fire-and-forget Planner

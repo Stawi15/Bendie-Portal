@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useEvent } from '@/contexts/EventContext';
 import { useProduct } from '@/contexts/ProductContext';
+import { useCreateEvent } from '@/contexts/CreateEventContext';
+import { PRODUCT_PRESENTATION, NEUTRAL_PRESENTATION } from '@/lib/productPresentation';
 import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
 import { useOrgEvents } from '@/lib/useOrgEvents';
 import { useRecentActivity } from '@/lib/useRecentActivity';
@@ -38,6 +40,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
   const entitlement = useProductEntitlement();
   const availableProducts = entitlement.status === 'ready' ? entitlement.available : { bendie: false, planner: false };
   const { currentEventId } = useEvent();
+  const { canCreateEvent, openCreateEvent } = useCreateEvent();
   const [menuOpen, setMenuOpen] = useState(false);
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
   const [productMenuOpen, setProductMenuOpen] = useState(false);
@@ -104,6 +107,12 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
   const activeEventTabKey = switchLocation === 'event-workspace' ? pathname.split('/')[4] : undefined;
   const breadcrumbProduct: ProductKey | null =
     currentProduct ?? resolveEventTabProduct(activeEventTabKey, eventOriginSignal) ?? null;
+  // Feature 016 (product environment identity): derived from the SAME route-based
+  // product the switcher shows — no separate theme state, no request. Null on
+  // organisation-global pages (People/Teams/Settings…), which stay neutral.
+  const productEnv = breadcrumbProduct ? PRODUCT_PRESENTATION[breadcrumbProduct] : null;
+  // Neutral controls (search, organisation label) take the product accent only on focus.
+  const controlFocus = productEnv ? productEnv.focusRing : NEUTRAL_PRESENTATION.focusRing;
 
   const eventMatches = eventSearch.trim()
     ? events
@@ -127,12 +136,18 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 min-h-[72px] bg-surface flex flex-wrap justify-between items-center gap-y-2 px-4 sm:px-gutter py-2 z-30 border-b border-outline-variant">
+    <header
+      className={`sticky top-0 min-h-[72px] flex flex-wrap justify-between items-center gap-y-2 px-4 sm:px-gutter py-2 z-30 border-b transition-colors duration-200 ${
+        productEnv ? `${productEnv.headerTint} ${productEnv.headerBorder}` : 'bg-surface border-outline-variant'
+      }`}
+    >
+      {/* Product environment strip — a thin accent in the current product's colour (absolute: no layout shift). */}
+      {productEnv && <span className={`pointer-events-none absolute inset-x-0 top-0 h-[2px] ${productEnv.bar}`} aria-hidden="true" />}
       <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
           onClick={onOpenNav}
-          className="lg:hidden -ml-1 flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
+          className="desk:hidden -ml-1 flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
           aria-label="Open navigation menu"
         >
           <span className="material-symbols-outlined">menu</span>
@@ -168,7 +183,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
           {organizations.length > 1 ? (
             <button
               onClick={() => setOrgMenuOpen((v) => !v)}
-              className="flex items-center gap-2 pl-3 pr-2 py-2 rounded-xl border border-outline-variant bg-white hover:bg-surface-container-low transition-colors w-full min-w-[240px] max-w-[400px]"
+              className={`flex items-center gap-2 pl-3 pr-2 h-10 rounded-xl hover:bg-white transition-colors w-full min-w-[240px] max-w-[400px] ${NEUTRAL_PRESENTATION.controlSurface}`}
               aria-label="Switch organisation"
             >
               <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">corporate_fare</span>
@@ -176,7 +191,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
               <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">expand_more</span>
             </button>
           ) : (
-            <div className="flex items-center gap-2 pl-3 pr-3 py-2 rounded-xl bg-surface-container-low min-w-[240px] max-w-[400px]" title="Your organisation">
+            <div className={`flex items-center gap-2 pl-3 pr-3 h-10 rounded-xl ${NEUTRAL_PRESENTATION.controlSurface} min-w-[240px] max-w-[400px]`} title="Your organisation">
               <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">corporate_fare</span>
               <span className="font-label-md text-label-md text-on-surface truncate flex-1 min-w-0">{organization?.name ?? '—'}</span>
             </div>
@@ -238,18 +253,25 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
           <>
             <span className="h-6 w-px bg-outline-variant flex-shrink-0 hidden sm:block" aria-hidden="true" />
             {availableProducts.bendie && availableProducts.planner ? (
-              <div className="hidden sm:flex items-center bg-surface-container-low rounded-xl p-1 flex-shrink-0">
-                {(['bendie', 'planner'] as const).map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => handleProductSwitch(key)}
-                    className={`px-3 py-1.5 rounded-lg text-label-sm font-label-sm transition-colors whitespace-nowrap ${
-                      key === breadcrumbProduct ? 'bg-white text-primary panel-shadow font-bold' : 'text-on-surface-variant hover:text-on-surface'
-                    }`}
-                  >
-                    {PRODUCT_LABEL[key]}
-                  </button>
-                ))}
+              <div className={`hidden sm:flex items-center gap-0.5 h-10 rounded-xl p-1 flex-shrink-0 backdrop-blur-sm ${NEUTRAL_PRESENTATION.controlSurface}`} role="group" aria-label="Product">
+                {(['bendie', 'planner'] as const).map((key) => {
+                  const selected = key === breadcrumbProduct;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleProductSwitch(key)}
+                      aria-pressed={selected}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm font-label-sm font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                        selected ? PRODUCT_PRESENTATION[key].switcherSelected : NEUTRAL_PRESENTATION.switcherUnselected
+                      }`}
+                    >
+                      {/* Fixed dot slot on BOTH segments (visible only when selected): a shape cue that
+                          never relies on colour alone, and the control's size never changes between products. */}
+                      <span className={`w-1.5 h-1.5 rounded-full transition-opacity ${PRODUCT_PRESENTATION[key].dot} ${selected ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />
+                      {PRODUCT_LABEL[key]}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0 text-label-sm font-label-sm text-on-surface-variant">
@@ -266,9 +288,9 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                 <button
                   onClick={() => setProductMenuOpen((v) => !v)}
                   className="flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
-                  aria-label="Switch product"
+                  aria-label={breadcrumbProduct ? `Switch product (current: ${PRODUCT_LABEL[breadcrumbProduct]})` : 'Switch product'}
                 >
-                  <span className="material-symbols-outlined">apps</span>
+                  <span className={`material-symbols-outlined ${productEnv ? productEnv.accentText : ''}`}>apps</span>
                 </button>
                 {productMenuOpen && (
                   <>
@@ -279,8 +301,9 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                         <button
                           key={key}
                           onClick={() => handleProductSwitch(key)}
+                          aria-current={key === breadcrumbProduct ? 'true' : undefined}
                           className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 ${
-                            key === breadcrumbProduct ? 'text-primary font-bold' : 'text-on-surface'
+                            key === breadcrumbProduct ? `${PRODUCT_PRESENTATION[key].accentText} font-bold` : 'text-on-surface'
                           }`}
                         >
                           <span className="truncate">{PRODUCT_LABEL[key]}</span>
@@ -305,7 +328,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
             search
           </span>
           <input
-            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-full text-label-md font-label-md focus:ring-2 focus:ring-primary/20"
+            className={`w-full h-10 pl-10 pr-4 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
             placeholder="Search experiences..."
             type="text"
             value={eventSearch}
@@ -356,7 +379,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                 <div className="absolute right-0 mt-2 w-72 max-w-[90vw] bg-white rounded-xl panel-shadow border border-outline-variant p-3 z-20">
                   <input
                     autoFocus
-                    className="w-full px-3 py-2 bg-surface-container-low border-none rounded-full text-label-md font-label-md focus:ring-2 focus:ring-primary/20"
+                    className={`w-full h-10 px-3 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
                     placeholder="Search experiences..."
                     type="text"
                     value={eventSearch}
@@ -400,7 +423,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
             >
               <span className="material-symbols-outlined">notifications</span>
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface" />
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-white" />
               )}
             </button>
             {notifOpen && (
@@ -467,12 +490,22 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
               </>
             )}
           </div>
-          <Link
-            href="/portal/events"
-            className="bg-primary text-white font-label-md text-label-md px-4 sm:px-6 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all whitespace-nowrap"
-          >
-            Create
-          </Link>
+          {/* Feature 016 (create-path pass): was "Create" → /portal/events → "+ New Event".
+              Event is the only global create action (teams live on Teams, organisations in
+              the org switcher), so this starts the one guided flow directly — for the
+              current organisation, pre-selecting the current product as a changeable hint.
+              Shown only to people who can create events (it used to show for everyone). */}
+          {canCreateEvent && (
+            <button
+              type="button"
+              onClick={() => openCreateEvent(breadcrumbProduct)}
+              aria-label="New event"
+              className="bg-primary text-white font-label-md text-label-md px-3 sm:px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all whitespace-nowrap inline-flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">add</span>
+              <span className="hidden sm:inline">New Event</span>
+            </button>
+          )}
         </div>
       </div>
 

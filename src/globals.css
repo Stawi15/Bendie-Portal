@@ -29,6 +29,67 @@ body {
   box-shadow: 0px 4px 20px rgba(22, 32, 51, 0.04);
 }
 
+/* Feature 016 — hover/focus-expand global sidebar. Only on hover-capable
+   desktops (same query as the `desk` screen in tailwind.config.js); touch
+   tablets and phones keep the off-canvas drawer. The layout reserves a 72px
+   rail (OrgSideNav's <aside>); the panel inside it is absolutely positioned
+   and widens OVER the content, so hovering never reflows the page. Pure CSS:
+   no JS listeners, no React state, nothing re-renders on hover.
+   Hover intent via transition-delay: expanding waits 120ms (a pointer that
+   merely crosses the rail never triggers it), collapsing waits 250ms. The
+   hover target is the panel itself, which only grows under the pointer, so
+   the width transition can't fire a spurious mouseleave. */
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .sidebar-panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 72px;
+    overflow: hidden;
+    transition:
+      width 200ms ease 250ms,
+      box-shadow 200ms ease 250ms;
+  }
+  .sidebar-panel:hover,
+  .sidebar-panel:has(:focus-visible) {
+    width: 280px;
+    box-shadow: 8px 0 24px rgba(17, 28, 45, 0.12);
+    transition-delay: 120ms;
+  }
+  .sidebar-panel .sidebar-label {
+    opacity: 0;
+    transition: opacity 120ms ease 250ms;
+  }
+  .sidebar-panel:hover .sidebar-label,
+  .sidebar-panel:has(:focus-visible) .sidebar-label {
+    opacity: 1;
+    transition-delay: 200ms;
+  }
+}
+
+/* Feature 016 — Theme Designer phone preview. The frame is laid out at one
+   fixed design size (EventThemePreview's PHONE constants) and scaled as a
+   whole by --phone-scale, so internal proportions never change per breakpoint. */
+.phone-preview-scaler {
+  --phone-scale: 1;
+}
+@media (max-width: 380px) {
+  .phone-preview-scaler {
+    --phone-scale: 0.86;
+  }
+}
+@media (min-width: 1024px) and (max-height: 820px) {
+  .phone-preview-scaler {
+    --phone-scale: 0.86;
+  }
+}
+@media (min-width: 1024px) and (max-height: 700px) {
+  .phone-preview-scaler {
+    --phone-scale: 0.74;
+  }
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
   height: 6px;

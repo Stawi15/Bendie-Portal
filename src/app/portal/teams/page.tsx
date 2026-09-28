@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { CreateTeamModal } from '@/components/portal/CreateTeamModal';
 import { TeamMembersModal } from '@/components/portal/TeamMembersModal';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 export default function TeamsPage() {
   const { organizationId, loading: orgLoading } = useOrganization();
@@ -47,7 +48,7 @@ export default function TeamsPage() {
     const { error } = await supabase.from('teams').delete().eq('id', team.id);
     setDeletingId(null);
 
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success(`Team "${team.name}" deleted`); refetch(); }
   };
 

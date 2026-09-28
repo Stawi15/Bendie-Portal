@@ -140,8 +140,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated admins away from auth pages
-  if (user && request.nextUrl.pathname.startsWith('/auth')) {
+  // Redirect authenticated admins away from auth pages — except the password-reset
+  // page (Feature 016): a recovery link creates a real session, so without this
+  // exemption an admin resetting their password was bounced to /portal before
+  // they could choose the new password.
+  if (user && request.nextUrl.pathname.startsWith('/auth') && request.nextUrl.pathname !== '/auth/reset-password') {
     const role = await getRole(user.id);
     if (role === 'admin') {
       return redirectTo('/portal');

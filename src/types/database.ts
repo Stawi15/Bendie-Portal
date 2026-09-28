@@ -143,6 +143,8 @@ export interface Database {
           planner_provisioning_attempts: number;
           planner_provisioning_last_attempted_at: string | null;
           planner_provisioning_succeeded_at: string | null;
+          /** Feature 016: Portal-only setup-module preference. NULL = not configured (show all). Display only, never authorization. */
+          portal_setup_modules: string[] | null;
         };
       };
       event_creation_requests: {

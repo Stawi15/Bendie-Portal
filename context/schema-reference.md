@@ -17,6 +17,20 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-09-28 — Feature 016: `events.portal_setup_modules` (Portal-only setup preference)
+
+Migration `supabase/migrations/event_portal_setup_modules.sql` (applied live). Adds one nullable
+`text[]` column: the optional event-setup modules (EVENT_SECTIONS keys, catalogue in
+`src/lib/eventModules.ts`) an organiser chose for this event. `NULL` = never configured, which
+applies to every event created before this date: the Portal shows every available section, exactly
+as before. **Portal display preference only.** It's never used for authorization and never read by
+the attendee app. It is **not** `disabled_menu_items`, which controls the attendee app's menu and is
+untouched. Grants: `SELECT, UPDATE` to `authenticated` only (the table uses column-level grants; `anon`
+has none). No new RLS policy: writes go through the existing `events_update_host_organizer`
+(host/organizer/admin) and global-admin policies. Verified live in a rolled-back transaction: an event
+admin can write it, and an unrelated user's update affects 0 rows. Hiding a module never deletes
+any data.
+
 ### 2026-09-17 — Feature 006 implemented: product-level navigation (Bendie / Bendie Planner) and product-aware event discovery
 
 No schema change. Feature 006 adds an application-layer product axis on top of the existing

@@ -6,6 +6,7 @@ import { useEvent } from '@/contexts/EventContext';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { EVENT_SECTIONS } from '@/lib/eventSectionMeta';
+import { isSectionShownByModules } from '@/lib/eventModules';
 import { SectionIconBadge } from '@/components/portal/SectionIconBadge';
 import { PlannerProvisioningBanner } from '@/components/portal/PlannerProvisioningBanner';
 import type { EventRow } from '@/lib/eventColumns';
@@ -23,7 +24,7 @@ const SECTION_CHECKS: Record<string, SectionCheck> = {
   hero: { kind: 'field', test: (e) => Boolean(e.hero_title && e.hero_image_url) },
   theme: { kind: 'field', test: (e) => Boolean(e.theme_primary) },
   terminology: { kind: 'field', test: (e) => Boolean(e.facilitator_label_singular || e.theme_label) },
-  facilitators: { kind: 'count', table: 'facilitators', noun: 'facilitators', scored: true },
+  facilitators: { kind: 'count', table: 'facilitators', noun: 'speakers', scored: true },
   agenda: { kind: 'count', table: 'agenda_sessions', noun: 'sessions', scored: true },
   'attendee-travel': { kind: 'count', table: 'attendee_travel_details', noun: 'travel entries', scored: false },
   activities: { kind: 'count', table: 'activities', noun: 'activities', scored: true },
@@ -67,7 +68,7 @@ const DASHBOARD_SECTIONS = EVENT_SECTIONS.filter((s) => s.key !== 'dashboard');
  */
 const BENDIE_DASHBOARD_AREAS: { key: string; label: string; desc: string; icon: string; sectionKeys: string[] }[] = [
   { key: 'event-setup', label: 'Event Setup', desc: 'Basics, branding and event terminology', icon: 'tune', sectionKeys: ['basics', 'hero', 'theme', 'terminology'] },
-  { key: 'programme', label: 'Programme', desc: 'Facilitators, agenda, activities and excursions', icon: 'calendar_month', sectionKeys: ['facilitators', 'agenda', 'activities', 'excursions'] },
+  { key: 'programme', label: 'Programme', desc: 'Speakers, agenda, activities and excursions', icon: 'calendar_month', sectionKeys: ['facilitators', 'agenda', 'activities', 'excursions'] },
   { key: 'attendees', label: 'Attendees', desc: 'Members, attendee travel and networking', icon: 'groups', sectionKeys: ['members', 'attendee-travel', 'networking'] },
   {
     key: 'content-media',
@@ -106,14 +107,7 @@ function isPlannerApplicable(event: Event | null): boolean {
   return !!event?.planner_provisioning_status && event.planner_provisioning_status !== 'not_required';
 }
 
-type MinimalPassengerRef = { passengerId: number };
-type MinimalTask = { status: string };
-type MinimalVendorItem = { isOnSite: boolean };
-type MinimalChecklistItem = { isSourced: boolean };
-type MinimalAssignment = { passengerId: number };
-type MinimalVehicle = { assignments?: MinimalAssignment[] };
-type MinimalMovement = { vehicles?: MinimalVehicle[] };
-
+// Planner readiness counts are computed server-side by /planner-readiness (Feature 016 main-tab pass).
 type PlannerCounts = {
   peopleTotal: number | null;
   flightsCovered: number | null;
@@ -142,92 +136,82 @@ const EMPTY_PLANNER_COUNTS: PlannerCounts = {
   productionTotal: null,
 };
 
-/** Reads one array field off a Planner GET response, honestly returning `null` (never `[]`) if the field is missing — distinguishes "this module returned zero records" from "this module's data isn't available to us right now" (denied, still provisioning, or the fetch failed). */
-function extractArray<T>(settled: PromiseSettledResult<unknown>, field: string): T[] | null {
-  if (settled.status !== 'fulfilled') return null;
-  const body = settled.value as Record<string, unknown> | null;
-  const value = body?.[field];
-  return Array.isArray(value) ? (value as T[]) : null;
-}
-
 export default function DashboardPage() {
   const { currentEvent, loading } = useEvent();
   const params = useParams();
   const eventId = params.eventId as string;
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [countsLoading, setCountsLoading] = useState(true);
+  // Feature 016 (reliability pass): the one REQUIRED data check — attendees with access.
+  const [attendeeCount, setAttendeeCount] = useState(0);
   const [plannerCounts, setPlannerCounts] = useState<PlannerCounts>(EMPTY_PLANNER_COUNTS);
   const [plannerCountsLoading, setPlannerCountsLoading] = useState(true);
   const plannerApplicable = isPlannerApplicable(currentEvent);
 
   useEffect(() => {
     if (!eventId) return;
+    // Feature 016 (main-tab performance pass): cancel these ~20 head counts when the
+    // user leaves the Dashboard, instead of letting them run on after navigation.
+    const controller = new AbortController();
     setCountsLoading(true);
-    Promise.all(
-      COUNTED_TABLES.map((table) => {
-        const query = supabase.from(table).select('*', { count: 'exact', head: true });
-        return GLOBAL_CAPABLE_TABLES.has(table)
-          ? query.or(`event_id.eq.${eventId},event_id.is.null`)
-          : query.eq('event_id', eventId);
+    Promise.all([
+      Promise.all(
+        COUNTED_TABLES.map((table) => {
+          const query = supabase.from(table).select('*', { count: 'exact', head: true });
+          return (GLOBAL_CAPABLE_TABLES.has(table)
+            ? query.or(`event_id.eq.${eventId},event_id.is.null`)
+            : query.eq('event_id', eventId)
+          ).abortSignal(controller.signal);
+        })
+      ),
+      // Head-only count, in parallel with the existing counts (no extra round-trip latency).
+      supabase.from('event_members').select('*', { count: 'exact', head: true }).eq('event_id', eventId).eq('role', 'attendee').abortSignal(controller.signal),
+    ])
+      .then(([results, attendees]) => {
+        if (controller.signal.aborted) return; // superseded — never an error, never a state write
+        const next: Record<string, number> = {};
+        COUNTED_TABLES.forEach((table, i) => {
+          next[table] = results[i].count ?? 0;
+        });
+        setCounts(next);
+        setAttendeeCount(attendees.count ?? 0);
+        setCountsLoading(false);
       })
-    ).then((results) => {
-      const next: Record<string, number> = {};
-      COUNTED_TABLES.forEach((table, i) => {
-        next[table] = results[i].count ?? 0;
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        console.error('Dashboard: counts failed', err);
+        setCountsLoading(false);
       });
-      setCounts(next);
-      setCountsLoading(false);
-    });
+    return () => controller.abort();
   }, [eventId]);
 
-  // Portal UX pass (016) — compose the existing per-module GET endpoints
-  // (identical calls each Planner tab already makes) to build a Planner
-  // readiness summary. Every module resolves independently: one module
-  // being unavailable (e.g. denied capability) degrades only that module's
-  // count to "not available," never the whole card.
+  // Feature 016 (main-tab performance pass): ONE counts-only request. This used to be
+  // eight Planner collection requests, each re-running the full Portal + Planner
+  // authorization chain and never cancelled — leaving the Dashboard left them holding
+  // the browser's same-origin connections, so the next tab's navigation queued behind
+  // them. /planner-readiness runs the chain once, counts server-side, and returns
+  // null ("Not available") for any module the user can't view — same as before.
   useEffect(() => {
     if (!eventId || !plannerApplicable) {
       setPlannerCountsLoading(false);
       return;
     }
+    const controller = new AbortController();
     setPlannerCountsLoading(true);
-    const base = `/api/events/${eventId}`;
-    Promise.allSettled([
-      fetch(`${base}/planner-people`).then((r) => r.json()),
-      fetch(`${base}/planner-tasks`).then((r) => r.json()),
-      fetch(`${base}/planner-vendors`).then((r) => r.json()),
-      fetch(`${base}/planner-checklist`).then((r) => r.json()),
-      fetch(`${base}/planner-logistics/flights`).then((r) => r.json()),
-      fetch(`${base}/planner-logistics/hotels`).then((r) => r.json()),
-      fetch(`${base}/planner-logistics/ground-transport/movements`).then((r) => r.json()),
-      fetch(`${base}/planner-production`).then((r) => r.json()),
-    ]).then(([peopleR, tasksR, vendorsR, checklistR, flightsR, hotelsR, movementsR, productionR]) => {
-      const people = extractArray<MinimalPassengerRef>(peopleR, 'participants');
-      const tasks = extractArray<MinimalTask>(tasksR, 'tasks');
-      const vendors = extractArray<MinimalVendorItem>(vendorsR, 'items');
-      const checklist = extractArray<MinimalChecklistItem>(checklistR, 'items');
-      const flights = extractArray<MinimalPassengerRef>(flightsR, 'flights');
-      const hotels = extractArray<MinimalPassengerRef>(hotelsR, 'bookings');
-      const movements = extractArray<MinimalMovement>(movementsR, 'movements');
-      const production = extractArray<unknown>(productionR, 'sessions');
-
-      setPlannerCounts({
-        peopleTotal: people ? people.length : null,
-        flightsCovered: flights ? new Set(flights.map((f) => f.passengerId)).size : null,
-        hotelsCovered: hotels ? new Set(hotels.map((h) => h.passengerId)).size : null,
-        groundTransportAssigned: movements
-          ? new Set(movements.flatMap((m) => (m.vehicles ?? []).flatMap((v) => (v.assignments ?? []).map((a) => a.passengerId)))).size
-          : null,
-        tasksTotal: tasks ? tasks.length : null,
-        tasksOutstanding: tasks ? tasks.filter((t) => t.status !== 'Completed').length : null,
-        checklistTotal: checklist ? checklist.length : null,
-        checklistUnsourced: checklist ? checklist.filter((c) => !c.isSourced).length : null,
-        vendorsTotal: vendors ? vendors.length : null,
-        vendorsNotOnSite: vendors ? vendors.filter((v) => !v.isOnSite).length : null,
-        productionTotal: production ? production.length : null,
+    fetch(`/api/events/${eventId}/planner-readiness`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { counts?: PlannerCounts } | null) => {
+        if (controller.signal.aborted) return;
+        setPlannerCounts(data?.counts ?? EMPTY_PLANNER_COUNTS);
+        setPlannerCountsLoading(false);
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return; // navigation, not failure
+        console.error('Dashboard: planner readiness failed', err);
+        setPlannerCounts(EMPTY_PLANNER_COUNTS);
+        setPlannerCountsLoading(false);
       });
-      setPlannerCountsLoading(false);
-    });
+    return () => controller.abort();
   }, [eventId, plannerApplicable]);
 
   if (loading) {
@@ -238,32 +222,55 @@ export default function DashboardPage() {
     );
   }
 
-  const scoredSections = DASHBOARD_SECTIONS.filter((s) => {
+  // Feature 016 — progress, recommendations and area cards only consider the
+  // modules this event actually uses (events.portal_setup_modules; NULL = all,
+  // unchanged behaviour for older events). Display only — nothing is deleted.
+  const selectedModules = currentEvent?.portal_setup_modules ?? null;
+  const shown = (key: string) => isSectionShownByModules(key, selectedModules);
+  const shownSections = DASHBOARD_SECTIONS.filter((s) => shown(s.key));
+
+  const scoredSections = shownSections.filter((s) => {
     const check = SECTION_CHECKS[s.key];
     return check.kind === 'field' || (check.kind === 'count' && check.scored);
   });
-  const completedCount = currentEvent
-    ? scoredSections.filter((s) => {
-        const check = SECTION_CHECKS[s.key];
-        if (check.kind === 'field') return check.test(currentEvent);
-        if (check.kind === 'count') return (counts[check.table] ?? 0) > 0;
-        return false;
-      }).length
-    : 0;
-  const progressPct = scoredSections.length > 0 ? Math.round((completedCount / scoredSections.length) * 100) : 0;
+  // Feature 016 (reliability pass) — readiness semantics. The old "X of N sections
+  // complete / NN%" counted any section with one record (or two filled fields) as
+  // "complete" and never counted attendees at all. Now:
+  //  - REQUIRED: only what the attendee experience genuinely depends on — the event's
+  //    name and dates, and at least one attendee with access (nobody can use the app
+  //    otherwise). Both are verifiable, so these are the only items shown as done (✓).
+  //  - RECOMMENDED: Hero & Branding (the app's home screen), Agenda and Emergency (always
+  //    in the attendee app menu), plus any modules chosen for this event.
+  //  - OPTIONAL: every other visible section.
+  // Recommended/optional show "Has content" / "Not started" — never "complete".
+  const hasContent = (key: string) => {
+    const check = SECTION_CHECKS[key];
+    if (!check) return false;
+    if (check.kind === 'field') return !!currentEvent && check.test(currentEvent);
+    if (check.kind === 'count') return (counts[check.table] ?? 0) > 0;
+    return false;
+  };
+  const requiredItems = [
+    { key: 'basics', label: 'Event name and dates', why: 'Shown on the event and in the attendee app.', done: !!currentEvent?.name && !!currentEvent?.starts_at },
+    { key: 'members', label: 'At least one attendee with access', why: 'Nobody can use the event app until they have access.', done: attendeeCount > 0 },
+  ];
+  const ALWAYS_RECOMMENDED = ['hero', 'agenda', 'emergency'];
+  const requiredKeys = new Set(requiredItems.map((r) => r.key));
+  const recommendedSections = scoredSections.filter(
+    (s) => !requiredKeys.has(s.key) && (ALWAYS_RECOMMENDED.includes(s.key) || (selectedModules ?? []).includes(s.key))
+  );
+  const optionalSections = scoredSections.filter((s) => !requiredKeys.has(s.key) && !recommendedSections.includes(s));
+  const requiredDone = requiredItems.filter((r) => r.done).length;
+  const recommendedWithContent = recommendedSections.filter((s) => hasContent(s.key)).length;
+  const optionalWithContent = optionalSections.filter((s) => hasContent(s.key)).length;
 
-  // Deterministic "what's next" — the first incomplete scored Bendie
-  // section, in EVENT_SECTIONS' own declared order (Event Setup →
-  // Programme → Attendees → Content → Media → Operations). No cleverness,
-  // no ranking heuristic — just the first gap a manager would hit if they
-  // worked through the sections top to bottom.
+  // "Recommended next": an unmet REQUIRED item first, then a recommended section with no
+  // content yet — never an optional one (no pressure to fill every module).
+  const firstRequired = requiredItems.find((r) => !r.done);
   const nextBendieSection = currentEvent
-    ? scoredSections.find((s) => {
-        const check = SECTION_CHECKS[s.key];
-        if (check.kind === 'field') return !check.test(currentEvent);
-        if (check.kind === 'count') return (counts[check.table] ?? 0) === 0;
-        return false;
-      })
+    ? firstRequired
+      ? { key: firstRequired.key, label: firstRequired.label, desc: firstRequired.why }
+      : recommendedSections.find((s) => !hasContent(s.key))
     : undefined;
 
   // Same principle for Planner, in the dependency order the current
@@ -273,21 +280,21 @@ export default function DashboardPage() {
   // their own tab order).
   const plannerRecommendation =
     plannerApplicable && !plannerCountsLoading
-      ? plannerCounts.peopleTotal === 0
+      ? plannerCounts.peopleTotal === 0 && shown('planner-people')
         ? { label: 'Add participants', desc: 'Flights, hotels and ground transport all need a participant to attach to first.', href: 'planner-people' }
-        : plannerCounts.peopleTotal !== null && plannerCounts.flightsCovered !== null && plannerCounts.flightsCovered < plannerCounts.peopleTotal
+        : shown('planner-logistics') && plannerCounts.peopleTotal !== null && plannerCounts.flightsCovered !== null && plannerCounts.flightsCovered < plannerCounts.peopleTotal
           ? { label: 'Add flight details', desc: `${plannerCounts.peopleTotal - plannerCounts.flightsCovered} of ${plannerCounts.peopleTotal} participants have no flight on file.`, href: 'planner-logistics' }
-          : plannerCounts.peopleTotal !== null && plannerCounts.hotelsCovered !== null && plannerCounts.hotelsCovered < plannerCounts.peopleTotal
+          : shown('planner-logistics') && plannerCounts.peopleTotal !== null && plannerCounts.hotelsCovered !== null && plannerCounts.hotelsCovered < plannerCounts.peopleTotal
             ? { label: 'Add accommodation', desc: `${plannerCounts.peopleTotal - plannerCounts.hotelsCovered} of ${plannerCounts.peopleTotal} participants have no hotel booking on file.`, href: 'planner-logistics' }
-            : plannerCounts.peopleTotal !== null && plannerCounts.groundTransportAssigned !== null && plannerCounts.groundTransportAssigned < plannerCounts.peopleTotal
+            : shown('planner-logistics') && plannerCounts.peopleTotal !== null && plannerCounts.groundTransportAssigned !== null && plannerCounts.groundTransportAssigned < plannerCounts.peopleTotal
               ? { label: 'Assign ground transport', desc: `${plannerCounts.peopleTotal - plannerCounts.groundTransportAssigned} of ${plannerCounts.peopleTotal} participants aren't on a vehicle yet.`, href: 'planner-logistics' }
-              : plannerCounts.tasksOutstanding !== null && plannerCounts.tasksOutstanding > 0
+              : shown('planner-tasks') && plannerCounts.tasksOutstanding !== null && plannerCounts.tasksOutstanding > 0
                 ? { label: 'Review outstanding tasks', desc: `${plannerCounts.tasksOutstanding} task${plannerCounts.tasksOutstanding === 1 ? '' : 's'} not yet completed.`, href: 'planner-tasks' }
-                : plannerCounts.checklistUnsourced !== null && plannerCounts.checklistUnsourced > 0
+                : shown('planner-checklist') && plannerCounts.checklistUnsourced !== null && plannerCounts.checklistUnsourced > 0
                   ? { label: 'Source checklist items', desc: `${plannerCounts.checklistUnsourced} item${plannerCounts.checklistUnsourced === 1 ? '' : 's'} not yet sourced.`, href: 'planner-checklist' }
-                  : plannerCounts.vendorsNotOnSite !== null && plannerCounts.vendorsNotOnSite > 0
+                  : shown('planner-vendors') && plannerCounts.vendorsNotOnSite !== null && plannerCounts.vendorsNotOnSite > 0
                     ? { label: 'Finish vendor logistics', desc: `${plannerCounts.vendorsNotOnSite} vendor item${plannerCounts.vendorsNotOnSite === 1 ? '' : 's'} not yet on-site.`, href: 'planner-vendors' }
-                    : plannerCounts.productionTotal === 0
+                    : shown('planner-production') && plannerCounts.productionTotal === 0
                       ? { label: 'Build the production schedule', desc: 'No production sessions have been added yet.', href: 'planner-production' }
                       : null
       : null;
@@ -298,7 +305,7 @@ export default function DashboardPage() {
   // of rendered as one card per section.
   const bendieAreaStatuses = BENDIE_DASHBOARD_AREAS.map((area) => {
     const areaSections = area.sectionKeys
-      .map((key) => DASHBOARD_SECTIONS.find((s) => s.key === key))
+      .map((key) => shownSections.find((s) => s.key === key))
       .filter((s): s is (typeof DASHBOARD_SECTIONS)[number] => !!s);
     const scoredInArea = areaSections.filter((s) => {
       const check = SECTION_CHECKS[s.key];
@@ -313,8 +320,8 @@ export default function DashboardPage() {
     const completed = scoredInArea.filter(isComplete).length;
     const firstIncomplete = scoredInArea.find((s) => !isComplete(s));
     const targetKey = (firstIncomplete ?? scoredInArea[0] ?? areaSections[0])?.key ?? area.sectionKeys[0];
-    return { area, completed, total: scoredInArea.length, targetKey };
-  });
+    return { area, completed, total: scoredInArea.length, targetKey, empty: areaSections.length === 0 };
+  }).filter((a) => !a.empty);
 
   // Same treatment for the single "Bendie Planner" area card — reuses the
   // exact same `plannerCounts`/`plannerRecommendation` this page already
@@ -323,13 +330,11 @@ export default function DashboardPage() {
   const plannerModuleFlags = plannerApplicable
     ? [
         plannerCounts.peopleTotal,
-        plannerCounts.flightsCovered,
-        plannerCounts.hotelsCovered,
-        plannerCounts.groundTransportAssigned,
-        plannerCounts.tasksTotal,
-        plannerCounts.vendorsTotal,
-        plannerCounts.checklistTotal,
-        plannerCounts.productionTotal,
+        ...(shown('planner-logistics') ? [plannerCounts.flightsCovered, plannerCounts.hotelsCovered, plannerCounts.groundTransportAssigned] : []),
+        ...(shown('planner-tasks') ? [plannerCounts.tasksTotal] : []),
+        ...(shown('planner-vendors') ? [plannerCounts.vendorsTotal] : []),
+        ...(shown('planner-checklist') ? [plannerCounts.checklistTotal] : []),
+        ...(shown('planner-production') ? [plannerCounts.productionTotal] : []),
       ]
     : [];
   const plannerModulesStarted = plannerModuleFlags.filter((n) => (n ?? 0) > 0).length;
@@ -346,37 +351,79 @@ export default function DashboardPage() {
 
       {currentEvent && <PlannerProvisioningBanner event={currentEvent} />}
 
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
-        <div className="flex items-center justify-between gap-4 mb-3">
+      <section className="bg-white border border-gray-200 rounded-2xl p-5 mb-6" aria-labelledby="readiness-title">
+        <p id="readiness-title" className="font-semibold text-gray-900">Event readiness</p>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Required items are needed before attendees can use the event. Recommended and optional items can be added whenever you&apos;re ready.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
-            <p className="font-semibold text-gray-900">Setup Progress</p>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {countsLoading ? 'Calculating…' : `${completedCount} of ${scoredSections.length} sections complete`}
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
+              Required <span className="font-medium normal-case text-gray-500">· {countsLoading ? '…' : `${requiredDone} of ${requiredItems.length} done`}</span>
             </p>
+            <ul className="mt-2 space-y-2">
+              {requiredItems.map((r) => (
+                <li key={r.key}>
+                  <Link href={`/portal/events/${eventId}/${r.key}`} className="flex items-start gap-2 group">
+                    <span className={`material-symbols-outlined text-[20px] ${countsLoading ? 'text-gray-300' : r.done ? 'text-green-600' : 'text-amber-600'}`} aria-hidden="true">
+                      {r.done ? 'check_circle' : 'radio_button_unchecked'}
+                    </span>
+                    <span className="text-sm">
+                      <span className="font-medium text-gray-900 group-hover:text-blue-700">{r.label}</span>
+                      <span className="sr-only">{r.done ? ' — done' : ' — to do'}</span>
+                      {!r.done && !countsLoading && <span className="block text-xs text-gray-500">{r.why}</span>}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-          <div
-            className={`flex items-center justify-center flex-shrink-0 w-16 h-16 rounded-full font-bold text-xl ${
-              countsLoading
-                ? 'bg-gray-100 text-gray-400'
-                : progressPct >= 80
-                  ? 'bg-green-100 text-green-700'
-                  : progressPct >= 40
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {countsLoading ? '…' : `${progressPct}%`}
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
+              Recommended <span className="font-medium normal-case text-gray-500">· {countsLoading ? '…' : `${recommendedWithContent} of ${recommendedSections.length} have content`}</span>
+            </p>
+            <ul className="mt-2 flex flex-wrap gap-1.5">
+              {recommendedSections.map((s) => {
+                const filled = hasContent(s.key);
+                return (
+                  <li key={s.key}>
+                    <Link
+                      href={`/portal/events/${eventId}/${s.key}`}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ${filled ? 'border-gray-200 text-gray-700' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
+                    >
+                      {s.label}
+                      <span className="text-gray-500">· {countsLoading ? '…' : filled ? 'Has content' : 'Not started'}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-[11px] text-gray-500 mt-2">Attendees see these in the app{selectedModules ? ', or you chose them for this event' : ''}.</p>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
+              Optional <span className="font-medium normal-case text-gray-500">· {countsLoading ? '…' : `${optionalWithContent} of ${optionalSections.length} have content`}</span>
+            </p>
+            <details className="mt-2 group">
+              <summary className="cursor-pointer text-xs font-medium text-blue-700">Show optional sections</summary>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {optionalSections.map((s) => (
+                  <li key={s.key}>
+                    <Link href={`/portal/events/${eventId}/${s.key}`} className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-700">
+                      {s.label}
+                      <span className="text-gray-500">· {countsLoading ? '…' : hasContent(s.key) ? 'Has content' : 'Not started'}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
+            <p className="text-[11px] text-gray-500 mt-2">Skip anything your event doesn&apos;t need.</p>
           </div>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${
-              progressPct >= 80 ? 'bg-green-600' : progressPct >= 40 ? 'bg-amber-500' : 'bg-red-500'
-            }`}
-            style={{ width: countsLoading ? '0%' : `${progressPct}%` }}
-          />
-        </div>
-      </div>
+      </section>
 
       {(nextBendieSection || plannerRecommendation) && (
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 space-y-3">
@@ -430,10 +477,10 @@ export default function DashboardPage() {
                       ? 'bg-gray-100 text-gray-500'
                       : completed >= total
                         ? 'bg-green-100 text-green-700'
-                        : 'bg-amber-100 text-amber-700'
+                        : 'bg-gray-100 text-gray-600'
                 }`}
               >
-                {countsLoading ? '…' : total === 0 ? 'No setup needed' : `${completed} of ${total} complete`}
+                {countsLoading ? '…' : total === 0 ? 'No setup needed' : completed === 0 ? 'Not started' : `${completed} of ${total} have content`}
               </span>
             </div>
           </Link>

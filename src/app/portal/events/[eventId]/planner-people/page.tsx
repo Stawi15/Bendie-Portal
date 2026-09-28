@@ -595,7 +595,7 @@ export default function PlannerPeoplePage() {
       </div>
 
       <PlannerPeopleModal
-        key={modalResetKey}
+        key={`people-modal-${modalResetKey}`}
         open={modalOpen}
         editing={editing}
         submitting={submitting}

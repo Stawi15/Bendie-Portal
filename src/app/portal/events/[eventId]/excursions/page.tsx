@@ -12,6 +12,7 @@ import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 /**
  * Feature 016 CSV coverage expansion. `category` is a human-enterable label,
@@ -152,7 +153,7 @@ export default function ExcursionsPage() {
 
     if (editingCategory) {
       const { error } = await supabase.from('excursion_categories').update(payload).eq('id', editingCategory.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Category updated'); setShowCategoryForm(false); fetchCategories(); }
     } else {
       const { error } = await supabase.from('excursion_categories').insert({
@@ -176,10 +177,10 @@ export default function ExcursionsPage() {
 
     if (count) {
       const { error } = await supabase.from('excursions').delete().eq('category_id', c.id);
-      if (error) { toast.error(error.message); return; }
+      if (error) { toast.error(friendlyError(error)); return; }
     }
     const { error } = await supabase.from('excursion_categories').delete().eq('id', c.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else {
       toast.success('Deleted');
       if (selectedCategory?.id === c.id) setSelectedCategory(null);
@@ -220,13 +221,13 @@ export default function ExcursionsPage() {
 
     if (editingExcursion) {
       const { error } = await supabase.from('excursions').update(payload).eq('id', editingExcursion.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Excursion updated'); afterSuccess(); }
     } else {
       const { error } = await supabase.from('excursions').insert({
         ...payload, category_id: selectedCategory.id, display_order: excursions.length,
       });
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Excursion added'); afterSuccess(); }
     }
     setSaving(false);
@@ -235,7 +236,7 @@ export default function ExcursionsPage() {
   const handleDeleteExcursion = async (id: string, title: string) => {
     if (!(await confirm({ message: `Delete "${title}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('excursions').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); if (selectedCategory) fetchExcursions(selectedCategory.id); }
   };
 

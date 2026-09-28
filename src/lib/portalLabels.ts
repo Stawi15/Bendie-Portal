@@ -37,7 +37,7 @@ export const EVENT_STATUS_PILL_CLASSES: Record<string, string> = {
 };
 
 const AUDIT_TABLE_LABELS: Record<string, string> = {
-  facilitators: 'a facilitator',
+  facilitators: 'a speaker',
   agenda_sessions: 'the agenda',
   events: 'the event',
   emergency_contacts: 'emergency contacts',

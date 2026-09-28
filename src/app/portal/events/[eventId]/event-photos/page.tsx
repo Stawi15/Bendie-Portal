@@ -11,6 +11,7 @@ import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type EventPhoto = {
   id: string;
@@ -83,13 +84,13 @@ export default function EventPhotosPage() {
 
     if (editing) {
       const { error } = await supabase.from('event_photos').update(payload).eq('id', editing.id);
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Photo updated'); setShowForm(false); fetchData(); }
     } else {
       const { error } = await supabase.from('event_photos').insert({
         ...payload, event_id: eventId, uploaded_by: user?.id ?? null,
       });
-      if (error) toast.error(error.message);
+      if (error) toast.error(friendlyError(error));
       else { toast.success('Photo added'); setShowForm(false); fetchData(); }
     }
     setSaving(false);
@@ -98,13 +99,13 @@ export default function EventPhotosPage() {
   const handleDelete = async (id: string) => {
     if (!(await confirm({ message: 'Delete this photo?', confirmLabel: 'Delete', destructive: true }))) return;
     const { error } = await supabase.from('event_photos').delete().eq('id', id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
   };
 
   const toggleFeatured = async (p: EventPhoto) => {
     const { error } = await supabase.from('event_photos').update({ is_featured: !p.is_featured }).eq('id', p.id);
-    if (error) toast.error(error.message);
+    if (error) toast.error(friendlyError(error));
     else fetchData();
   };
 

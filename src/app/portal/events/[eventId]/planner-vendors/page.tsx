@@ -9,6 +9,7 @@ import { PlannerVendorList } from '@/components/portal/PlannerVendorList';
 import { PlannerVendorModal, type PlannerVendorItemClient, type PlannerVendorCreateValues } from '@/components/portal/PlannerVendorModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
+import { useLatestRequest, isAbortError } from '@/lib/useLatestRequest';
 
 type VendorCsvRow = { category: string; description: string; quantityText: string; unit: string; notes: string; sortOrder: string };
 
@@ -87,11 +88,16 @@ export default function PlannerVendorsPage() {
     };
   }, []);
 
+  // Feature 016 (main-tab performance pass): cancel a superseded/abandoned load so it
+  // stops holding a same-origin connection after the user moves to another tab.
+  const startRequest = useLatestRequest();
+
   const load = useCallback(async () => {
     const requestId = ++requestIdRef.current;
+    const signal = startRequest();
     setState({ kind: 'loading' });
     try {
-      const res = await fetch(`/api/events/${eventId}/planner-vendors`);
+      const res = await fetch(`/api/events/${eventId}/planner-vendors`, { signal });
       if (requestIdRef.current !== requestId) return;
       if (!res.ok) {
         setState({ kind: 'denied' });
@@ -106,10 +112,11 @@ export default function PlannerVendorsPage() {
       setState({ kind: 'loaded', capability: data.capability, items: data.items ?? [] });
     } catch (err) {
       if (requestIdRef.current !== requestId) return;
+      if (isAbortError(err)) return; // navigation/supersession — never an error
       console.error('Failed to load Planner Vendors', err);
       setState({ kind: 'configuring', status: 'backend_error' });
     }
-  }, [eventId]);
+  }, [eventId, startRequest]);
 
   useEffect(() => {
     load();
@@ -359,7 +366,7 @@ export default function PlannerVendorsPage() {
         />
       </div>
 
-      <PlannerVendorModal key={modalResetKey} open={modalOpen} submitting={submitting} serverError={modalError} onClose={closeModal} onSubmit={handleCreate} />
+      <PlannerVendorModal key={`vendor-modal-${modalResetKey}`} open={modalOpen} submitting={submitting} serverError={modalError} onClose={closeModal} onSubmit={handleCreate} />
       <CsvImportModal<VendorCsvRow>
         open={csvModalOpen}
         onClose={() => setCsvModalOpen(false)}

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { provisionPlannerEvent } from '@/lib/plannerEventProvisioning';
+import { sanitizeModuleKeys } from '@/lib/eventModules';
 
 /**
  * Product-aware event creation (Feature 004). Replaces the previous direct
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
   const startsAt = typeof body?.startsAt === 'string' && body.startsAt ? body.startsAt : null;
   const endsAt = typeof body?.endsAt === 'string' && body.endsAt ? body.endsAt : null;
   const products = Array.isArray(body?.products) ? body.products.filter((p: unknown) => typeof p === 'string') : [];
+  // Feature 016: optional setup-module preference. Absent (older clients) → left NULL,
+  // i.e. "show every section", exactly as before. Sanitized to known optional keys.
+  const modules = Array.isArray(body?.modules) ? sanitizeModuleKeys(body.modules) : null;
 
   if (!idempotencyKey || !organizationId || !name || products.length === 0) {
     return NextResponse.json({ error: 'invalid_request', message: 'idempotencyKey, organizationId, name, and at least one product are required' }, { status: 400 });
@@ -106,6 +110,24 @@ export async function POST(request: NextRequest) {
   const eventId: string = created.event_id;
   let plannerProvisioningStatus: string = created.planner_provisioning_status;
 
+  // Feature 016: store the chosen setup modules. Written as the CALLER (existing
+  // events UPDATE RLS — the RPC just made them an event admin), never with the
+  // service role; a display preference, so a failure here never fails creation
+  // (the event simply shows every section until modules are set via Manage modules).
+  // Idempotent on retry: re-writing the same array is harmless.
+  let modulesSaved: boolean | undefined;
+  if (modules) {
+    // `.select('id')`: an RLS-filtered UPDATE returns no error, just zero rows — count it as not saved.
+    const { data: updatedRows, error: modulesError } = await authClient
+      .from('events')
+      .update({ portal_setup_modules: modules })
+      .eq('id', eventId)
+      .select('id');
+    modulesSaved = !modulesError && (updatedRows?.length ?? 0) > 0;
+    if (modulesError) console.error('events.portal_setup_modules write failed', modulesError);
+    else if (!modulesSaved) console.error('events.portal_setup_modules write matched no rows (RLS)', { eventId });
+  }
+
   if (plannerProvisioningStatus === 'pending') {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
@@ -124,5 +146,5 @@ export async function POST(request: NextRequest) {
   // 200 ok:true response — creation itself did not fail. The client must
   // render this as "created, Planner setup incomplete, retry available,"
   // never as a creation error.
-  return NextResponse.json({ ok: true, eventId, plannerProvisioningStatus });
+  return NextResponse.json({ ok: true, eventId, plannerProvisioningStatus, modulesSaved });
 }

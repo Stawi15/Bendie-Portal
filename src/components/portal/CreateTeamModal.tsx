@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { friendlyError } from '@/lib/userFacingError';
 
 type CreateTeamModalProps = {
   open: boolean;
@@ -37,7 +38,7 @@ export function CreateTeamModal({ open, organizationId, onClose, onCreated }: Cr
     });
     setSaving(false);
 
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(friendlyError(error)); return; }
     toast.success(`Team "${name.trim()}" created`);
     handleClose();
     onCreated();
