@@ -5,6 +5,8 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
+    // Providers render UI too (ConfirmContext's dialog) — unscanned, their classes were never generated.
+    './src/contexts/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {

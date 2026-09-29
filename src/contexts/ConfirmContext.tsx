@@ -25,7 +25,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const confirm = useCallback<ConfirmFn>((options) => {
     const normalized = typeof options === 'string' ? { message: options } : options;
     return new Promise<boolean>((resolve) => {
-      setPending({ options: normalized, resolve });
+      // A newer request replaces any open one; settle the old one as "cancelled" so its caller never hangs.
+      setPending((prev) => {
+        prev?.resolve(false);
+        return { options: normalized, resolve };
+      });
     });
   }, []);
 

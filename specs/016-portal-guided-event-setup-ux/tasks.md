@@ -587,3 +587,7 @@
 - [x] T420 `/api/events/create`: the module write checks affected rows (`.select('id')`), so an RLS-filtered no-op reports `modulesSaved: false`.
 - [x] T421 `/planner-logistics/overview` uses the shared `resolvePlannerEventAccess` (the duplicate chain was removed); the flights route's Logistics rules and error codes are kept exactly.
 - [x] T422 `type-check` clean; `lint` 28 / 0 errors; `next build` 30/30; signed-out smoke tests (Planner aggregates 401; auth pages 200).
+
+## Bug fix — Theme Designer wouldn't close after changing colours
+
+- [x] T423 Root cause: `tailwind.config.js` `content` didn't scan `src/contexts/`, so the confirm dialog's `z-[100]` was never generated. The "Discard theme changes?" dialog rendered **underneath** the z-50 Theme Designer. Every Cancel/X/backdrop click re-opened an invisible confirm, so the modal could never close. Fix: add `./src/contexts/**` to `content` (generated CSS for `z-[100]`: 0 rules before, 1 after). Hardening: `ConfirmProvider.confirm()` now settles a superseded open request as `false`, so no caller's promise can hang. Affects every confirm raised from inside a modal, not only the theme page. `type-check` clean; lint clean.
