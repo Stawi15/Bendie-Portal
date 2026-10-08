@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { EVENT_SECTIONS } from '@/lib/eventSectionMeta';
 import { isSectionShownByModules } from '@/lib/eventModules';
 import { SectionIconBadge } from '@/components/portal/SectionIconBadge';
+import { SectionHeader } from '@/components/portal/SectionHeader';
 import { PlannerProvisioningBanner } from '@/components/portal/PlannerProvisioningBanner';
 import type { EventRow } from '@/lib/eventColumns';
 
@@ -69,7 +70,7 @@ const DASHBOARD_SECTIONS = EVENT_SECTIONS.filter((s) => s.key !== 'dashboard');
 const BENDIE_DASHBOARD_AREAS: { key: string; label: string; desc: string; icon: string; sectionKeys: string[] }[] = [
   { key: 'event-setup', label: 'Event Setup', desc: 'Basics, branding and event terminology', icon: 'tune', sectionKeys: ['basics', 'hero', 'theme', 'terminology'] },
   { key: 'programme', label: 'Programme', desc: 'Speakers, agenda, activities and excursions', icon: 'calendar_month', sectionKeys: ['facilitators', 'agenda', 'activities', 'excursions'] },
-  { key: 'attendees', label: 'Attendees', desc: 'Members, attendee travel and networking', icon: 'groups', sectionKeys: ['members', 'attendee-travel', 'networking'] },
+  { key: 'attendees', label: 'Attendees', desc: 'Attendees & access, attendee travel and networking', icon: 'groups', sectionKeys: ['members', 'attendee-travel', 'networking'] },
   {
     key: 'content-media',
     label: 'Content & Media',
@@ -217,7 +218,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" role="status" aria-label="Loading" />
       </div>
     );
   }
@@ -342,37 +343,36 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
-          {currentEvent?.name ?? 'Event Dashboard'}
-        </h1>
-        <p className="text-gray-500 mt-1">Select a section to edit event content</p>
+      {/* Feature 016 density pass — the event name is already the workspace title above;
+          this page now uses the standard section header instead of repeating it. */}
+      <div className="mb-4">
+        <SectionHeader sectionKey="dashboard" />
       </div>
 
       {currentEvent && <PlannerProvisioningBanner event={currentEvent} />}
 
-      <section className="bg-white border border-gray-200 rounded-2xl p-5 mb-6" aria-labelledby="readiness-title">
-        <p id="readiness-title" className="font-semibold text-gray-900">Event readiness</p>
-        <p className="text-sm text-gray-500 mt-0.5">
+      <section className="bg-white border border-[#E4EAF0] rounded-[20px] p-4 mb-4" aria-labelledby="readiness-title">
+        <p id="readiness-title" className="font-semibold text-on-surface">Event readiness</p>
+        <p className="text-sm text-on-surface-variant mt-0.5">
           Required items are needed before attendees can use the event. Recommended and optional items can be added whenever you&apos;re ready.
         </p>
 
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="mt-3 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
-              Required <span className="font-medium normal-case text-gray-500">· {countsLoading ? '…' : `${requiredDone} of ${requiredItems.length} done`}</span>
+            <p className="text-xs font-bold uppercase tracking-wide text-on-surface">
+              Required <span className="font-medium normal-case text-on-surface-variant">· {countsLoading ? '…' : `${requiredDone} of ${requiredItems.length} done`}</span>
             </p>
             <ul className="mt-2 space-y-2">
               {requiredItems.map((r) => (
                 <li key={r.key}>
                   <Link href={`/portal/events/${eventId}/${r.key}`} className="flex items-start gap-2 group">
-                    <span className={`material-symbols-outlined text-[20px] ${countsLoading ? 'text-gray-300' : r.done ? 'text-green-600' : 'text-amber-600'}`} aria-hidden="true">
+                    <span className={`material-symbols-outlined text-[20px] ${countsLoading ? 'text-outline-variant' : r.done ? 'text-green-600' : 'text-amber-600'}`} aria-hidden="true">
                       {r.done ? 'check_circle' : 'radio_button_unchecked'}
                     </span>
                     <span className="text-sm">
-                      <span className="font-medium text-gray-900 group-hover:text-blue-700">{r.label}</span>
+                      <span className="font-medium text-on-surface group-hover:text-primary">{r.label}</span>
                       <span className="sr-only">{r.done ? ' — done' : ' — to do'}</span>
-                      {!r.done && !countsLoading && <span className="block text-xs text-gray-500">{r.why}</span>}
+                      {!r.done && !countsLoading && <span className="block text-xs text-on-surface-variant">{r.why}</span>}
                     </span>
                   </Link>
                 </li>
@@ -381,8 +381,8 @@ export default function DashboardPage() {
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
-              Recommended <span className="font-medium normal-case text-gray-500">· {countsLoading ? '…' : `${recommendedWithContent} of ${recommendedSections.length} have content`}</span>
+            <p className="text-xs font-bold uppercase tracking-wide text-on-surface">
+              Recommended <span className="font-medium normal-case text-on-surface-variant">· {countsLoading ? '…' : `${recommendedWithContent} of ${recommendedSections.length} have content`}</span>
             </p>
             <ul className="mt-2 flex flex-wrap gap-1.5">
               {recommendedSections.map((s) => {
@@ -391,53 +391,53 @@ export default function DashboardPage() {
                   <li key={s.key}>
                     <Link
                       href={`/portal/events/${eventId}/${s.key}`}
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ${filled ? 'border-gray-200 text-gray-700' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
+                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs ${filled ? 'border-[#E4EAF0] text-on-surface' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
                     >
                       {s.label}
-                      <span className="text-gray-500">· {countsLoading ? '…' : filled ? 'Has content' : 'Not started'}</span>
+                      <span className="text-on-surface-variant">· {countsLoading ? '…' : filled ? 'Has content' : 'Not started'}</span>
                     </Link>
                   </li>
                 );
               })}
             </ul>
-            <p className="text-[11px] text-gray-500 mt-2">Attendees see these in the app{selectedModules ? ', or you chose them for this event' : ''}.</p>
+            <p className="text-[11px] text-on-surface-variant mt-2">Attendees see these in the app{selectedModules ? ', or you chose them for this event' : ''}.</p>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-700">
-              Optional <span className="font-medium normal-case text-gray-500">· {countsLoading ? '…' : `${optionalWithContent} of ${optionalSections.length} have content`}</span>
+            <p className="text-xs font-bold uppercase tracking-wide text-on-surface">
+              Optional <span className="font-medium normal-case text-on-surface-variant">· {countsLoading ? '…' : `${optionalWithContent} of ${optionalSections.length} have content`}</span>
             </p>
             <details className="mt-2 group">
-              <summary className="cursor-pointer text-xs font-medium text-blue-700">Show optional sections</summary>
+              <summary className="cursor-pointer text-xs font-medium text-primary">Show optional sections</summary>
               <ul className="mt-2 flex flex-wrap gap-1.5">
                 {optionalSections.map((s) => (
                   <li key={s.key}>
-                    <Link href={`/portal/events/${eventId}/${s.key}`} className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-700">
+                    <Link href={`/portal/events/${eventId}/${s.key}`} className="inline-flex items-center gap-1 rounded-full border border-[#E4EAF0] px-2.5 py-1 text-xs text-on-surface">
                       {s.label}
-                      <span className="text-gray-500">· {countsLoading ? '…' : hasContent(s.key) ? 'Has content' : 'Not started'}</span>
+                      <span className="text-on-surface-variant">· {countsLoading ? '…' : hasContent(s.key) ? 'Has content' : 'Not started'}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </details>
-            <p className="text-[11px] text-gray-500 mt-2">Skip anything your event doesn&apos;t need.</p>
+            <p className="text-[11px] text-on-surface-variant mt-2">Skip anything your event doesn&apos;t need.</p>
           </div>
         </div>
       </section>
 
       {(nextBendieSection || plannerRecommendation) && (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-6 space-y-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Recommended next</p>
+        <div className="bg-primary/5 border border-primary/15 rounded-[20px] p-4 mb-4 space-y-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-primary">Recommended next</p>
           {nextBendieSection && (
             <Link
               href={`/portal/events/${eventId}/${nextBendieSection.key}`}
               className="flex items-center justify-between gap-3 group"
             >
               <div>
-                <p className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{nextBendieSection.label}</p>
-                <p className="text-sm text-gray-500">{nextBendieSection.desc}</p>
+                <p className="font-semibold text-on-surface group-hover:text-primary transition-colors">{nextBendieSection.label}</p>
+                <p className="text-sm text-on-surface-variant">{nextBendieSection.desc}</p>
               </div>
-              <span className="material-symbols-outlined text-blue-600">arrow_forward</span>
+              <span className="material-symbols-outlined text-primary">arrow_forward</span>
             </Link>
           )}
           {plannerRecommendation && (
@@ -446,38 +446,38 @@ export default function DashboardPage() {
               className="flex items-center justify-between gap-3 group"
             >
               <div>
-                <p className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
+                <p className="font-semibold text-on-surface group-hover:text-primary transition-colors">
                   {plannerRecommendation.label} <span className="text-orange-600 text-xs font-bold uppercase tracking-wide ml-1">Bendie Planner</span>
                 </p>
-                <p className="text-sm text-gray-500">{plannerRecommendation.desc}</p>
+                <p className="text-sm text-on-surface-variant">{plannerRecommendation.desc}</p>
               </div>
-              <span className="material-symbols-outlined text-blue-600">arrow_forward</span>
+              <span className="material-symbols-outlined text-primary">arrow_forward</span>
             </Link>
           )}
         </div>
       )}
 
       {/* §13/§14 — high-level setup-area cards replace the old one-card-per-section grid (was 22+ cards; now 5, or 6 with Bendie Planner). Each card's target is the first incomplete section in that area (or its first section once complete), reusing the exact same per-section completion truth as the progress bar above. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {bendieAreaStatuses.map(({ area, completed, total, targetKey }) => (
           <Link
             key={area.key}
             href={`/portal/events/${eventId}/${targetKey}`}
-            className="flex items-start gap-4 p-5 bg-white border border-gray-200 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all group"
+            className="flex items-start gap-3 p-4 bg-white border border-[#E4EAF0] rounded-2xl hover:border-primary/40 hover:shadow-md transition-all group"
           >
-            <SectionIconBadge icon={area.icon} bg="bg-blue-50" fg="text-blue-600" />
+            <SectionIconBadge icon={area.icon} bg="bg-primary/10" fg="text-primary" size={36} />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{area.label}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{area.desc}</p>
+              <p className="font-semibold text-on-surface group-hover:text-primary transition-colors">{area.label}</p>
+              <p className="text-sm text-on-surface-variant mt-0.5">{area.desc}</p>
               <span
                 className={`inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${
                   countsLoading
-                    ? 'bg-gray-100 text-gray-400'
+                    ? 'bg-surface-container-low text-on-surface-variant/60'
                     : total === 0
-                      ? 'bg-gray-100 text-gray-500'
+                      ? 'bg-surface-container-low text-on-surface-variant'
                       : completed >= total
                         ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-600'
+                        : 'bg-surface-container-low text-on-surface-variant'
                 }`}
               >
                 {countsLoading ? '…' : total === 0 ? 'No setup needed' : completed === 0 ? 'Not started' : `${completed} of ${total} have content`}
@@ -489,22 +489,22 @@ export default function DashboardPage() {
         {plannerApplicable && (
           <Link
             href={`/portal/events/${eventId}/${plannerRecommendation?.href ?? 'planner-overview'}?product=planner`}
-            className="flex items-start gap-4 p-5 bg-white border border-gray-200 rounded-2xl hover:border-orange-300 hover:shadow-md transition-all group"
+            className="flex items-start gap-3 p-4 bg-white border border-[#E4EAF0] rounded-2xl hover:border-orange-300 hover:shadow-md transition-all group"
           >
-            <SectionIconBadge icon="insights" bg="bg-orange-50" fg="text-orange-600" />
+            <SectionIconBadge icon="insights" bg="bg-orange-50" fg="text-orange-600" size={36} />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 group-hover:text-orange-700 transition-colors">
+              <p className="font-semibold text-on-surface group-hover:text-orange-700 transition-colors">
                 Bendie Planner <span className="text-orange-600 text-[10px] font-bold uppercase tracking-wider ml-1 align-middle">Planner</span>
               </p>
-              <p className="text-sm text-gray-500 mt-0.5">People, logistics and production</p>
+              <p className="text-sm text-on-surface-variant mt-0.5">People, logistics and production</p>
               <span
                 className={`inline-block mt-2 text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${
                   plannerCountsLoading
-                    ? 'bg-gray-100 text-gray-400'
+                    ? 'bg-surface-container-low text-on-surface-variant/60'
                     : plannerModulesKnown === 0
-                      ? 'bg-gray-100 text-gray-500'
+                      ? 'bg-surface-container-low text-on-surface-variant'
                       : plannerModulesStarted === 0
-                        ? 'bg-gray-100 text-gray-500'
+                        ? 'bg-surface-container-low text-on-surface-variant'
                         : plannerModulesStarted >= plannerModulesKnown
                           ? 'bg-green-100 text-green-700'
                           : 'bg-amber-100 text-amber-700'
@@ -525,12 +525,12 @@ export default function DashboardPage() {
 
       {/* §16 — condensed Planner Readiness: a compact list, not a second full card grid. Same underlying `plannerCounts`/links as before, just presented as scannable rows with a single "View Planner details" entry point instead of 8 separate cards. */}
       {plannerApplicable && (
-        <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-5">
+        <div className="mt-4 bg-white border border-[#E4EAF0] rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-bold text-gray-900">Planner Readiness</h2>
+            <h2 className="text-sm font-bold text-on-surface">Planner Readiness</h2>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-50 text-orange-600">Bendie Planner</span>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-outline-variant/40">
             {[
               { href: 'planner-people', label: 'Participants', value: plannerCountsLoading ? '…' : plannerCounts.peopleTotal === null ? 'Not available' : `${plannerCounts.peopleTotal}` },
               {
@@ -592,10 +592,10 @@ export default function DashboardPage() {
               <Link
                 key={row.label}
                 href={`/portal/events/${eventId}/${row.href}?product=planner${'view' in row ? `&view=${row.view}` : ''}`}
-                className="flex items-center justify-between gap-3 py-2 text-sm hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors group"
+                className="flex items-center justify-between gap-3 py-2 text-sm hover:bg-surface-container-low -mx-2 px-2 rounded-lg transition-colors group"
               >
-                <span className="text-gray-700 group-hover:text-orange-700 transition-colors">{row.label}</span>
-                <span className="text-gray-500">{row.value}</span>
+                <span className="text-on-surface group-hover:text-orange-700 transition-colors">{row.label}</span>
+                <span className="text-on-surface-variant">{row.value}</span>
               </Link>
             ))}
           </div>

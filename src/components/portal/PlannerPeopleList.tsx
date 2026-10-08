@@ -32,7 +32,7 @@ type PlannerPeopleListProps = {
 export function PlannerPeopleList({ eventId, participants, canManage, busyId, onEdit, onRemove, addMenu, logisticsById, bendieAttendeeEmails }: PlannerPeopleListProps) {
   if (participants.length === 0) {
     return (
-      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-16 px-6">
+      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-10 px-6">
         <p className="text-on-surface-variant text-sm">No participants yet</p>
         {canManage && addMenu && (
           <>
@@ -49,12 +49,12 @@ export function PlannerPeopleList({ eventId, participants, canManage, busyId, on
       <table className="w-full text-left">
         <thead className="bg-surface-container-low/50">
           <tr>
-            <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant">Name</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Contact</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Logistics</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Passport</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden lg:table-cell">Dietary Requirements</th>
-            {canManage && <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
+            <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant">Name</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Contact</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Logistics</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Passport</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden lg:table-cell">Dietary Requirements</th>
+            {canManage && <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-outline-variant/30">
@@ -63,7 +63,7 @@ export function PlannerPeopleList({ eventId, participants, canManage, busyId, on
             const logistics = logisticsById?.get(p.id);
             return (
               <tr key={p.id} className="hover:bg-surface-container-low/20 transition-colors align-top">
-                <td className="px-4 sm:px-lg py-4">
+                <td className="px-4 sm:px-lg py-2.5">
                   <p className="font-label-md text-label-md text-on-surface">
                     {p.title ? `${p.title} ` : ''}
                     {p.fullName}
@@ -73,42 +73,45 @@ export function PlannerPeopleList({ eventId, participants, canManage, busyId, on
                     <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Bendie Attendee</span>
                   )}
                 </td>
-                <td className="px-6 py-4 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">
+                <td className="px-4 py-2.5 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">
                   {[p.email, p.phone].filter(Boolean).join(' · ') || '—'}
                 </td>
-                <td className="px-6 py-4 text-xs">
+                <td className="px-4 py-2.5 text-xs">
                   {logisticsById === undefined ? (
                     <span className="text-on-surface-variant/50">Loading…</span>
                   ) : (
-                    <div className="space-y-1">
-                      <p className={logistics?.flightsLabel && logistics.flightsLabel !== 'Missing' ? 'text-on-surface' : 'text-on-surface-variant/60'}>
-                        <span className="inline-block w-16 text-on-surface-variant/70">Flights</span>
-                        {logistics?.flightsLabel ?? 'Missing'}
-                      </p>
-                      <p className={logistics?.hotelLabel ? 'text-on-surface' : 'text-on-surface-variant/60'}>
-                        <span className="inline-block w-16 text-on-surface-variant/70">Hotel</span>
-                        {logistics?.hotelLabel ?? 'Missing'}
-                      </p>
-                      <p className={logistics?.transportLabel ? 'text-on-surface' : 'text-on-surface-variant/60'}>
-                        <span className="inline-block w-16 text-on-surface-variant/70">Transport</span>
-                        {logistics?.transportLabel ?? 'Unassigned'}
-                      </p>
-                      <div className="flex gap-2 pt-1">
+                    <div>
+                      {/* Feature 016 density pass — three status chips on one line (was three stacked lines). */}
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { key: 'Flights', value: logistics?.flightsLabel && logistics.flightsLabel !== 'Missing' ? logistics.flightsLabel : null, missing: 'Missing' },
+                          { key: 'Hotel', value: logistics?.hotelLabel ?? null, missing: 'Missing' },
+                          { key: 'Transport', value: logistics?.transportLabel ?? null, missing: 'Unassigned' },
+                        ].map((chip) => (
+                          <span
+                            key={chip.key}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${chip.value ? 'bg-green-50 text-green-800' : 'bg-surface-container-low text-on-surface-variant'}`}
+                          >
+                            <span className="font-semibold">{chip.key}</span> {chip.value ?? chip.missing}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-1 pt-1 -ml-2">
                         <Link
-                          href={`/portal/events/${eventId}/planner-logistics?view=flights&participant=${p.id}`}
-                          className="text-primary hover:opacity-80 text-[11px] font-semibold"
+                          href={`/portal/events/${eventId}/planner-logistics?product=planner&view=flights&participant=${p.id}`}
+                          className="row-action !min-h-[28px] text-[11px]"
                         >
                           Add Flight
                         </Link>
                         <Link
-                          href={`/portal/events/${eventId}/planner-logistics?view=hotels&participant=${p.id}`}
-                          className="text-primary hover:opacity-80 text-[11px] font-semibold"
+                          href={`/portal/events/${eventId}/planner-logistics?product=planner&view=hotels&participant=${p.id}`}
+                          className="row-action !min-h-[28px] text-[11px]"
                         >
                           Add Hotel
                         </Link>
                         <Link
-                          href={`/portal/events/${eventId}/planner-logistics?view=ground-transport`}
-                          className="text-primary hover:opacity-80 text-[11px] font-semibold"
+                          href={`/portal/events/${eventId}/planner-logistics?product=planner&view=ground-transport`}
+                          className="row-action !min-h-[28px] text-[11px]"
                         >
                           Transport
                         </Link>
@@ -116,14 +119,14 @@ export function PlannerPeopleList({ eventId, participants, canManage, busyId, on
                     </div>
                   )}
                 </td>
-                <td className="px-6 py-4 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{p.passport || '—'}</td>
-                <td className="px-6 py-4 hidden lg:table-cell text-body-sm font-body-sm text-on-surface-variant">{p.dietaryRequirements || '—'}</td>
+                <td className="px-4 py-2.5 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{p.passport || '—'}</td>
+                <td className="px-4 py-2.5 hidden lg:table-cell text-body-sm font-body-sm text-on-surface-variant">{p.dietaryRequirements || '—'}</td>
                 {canManage && (
-                  <td className="px-4 sm:px-lg py-4 text-right space-x-2 whitespace-nowrap">
-                    <button className="btn-secondary text-xs py-1.5" onClick={() => onEdit(p)} disabled={isBusy}>
+                  <td className="px-4 sm:px-lg py-2.5 text-right space-x-2 whitespace-nowrap">
+                    <button className="row-action" onClick={() => onEdit(p)} disabled={isBusy}>
                       Edit
                     </button>
-                    <button className="btn-danger text-xs py-1.5" onClick={() => onRemove(p)} disabled={isBusy}>
+                    <button className="row-action-danger" onClick={() => onRemove(p)} disabled={isBusy}>
                       Remove
                     </button>
                   </td>

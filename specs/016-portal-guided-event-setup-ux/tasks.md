@@ -591,3 +591,69 @@
 ## Bug fix — Theme Designer wouldn't close after changing colours
 
 - [x] T423 Root cause: `tailwind.config.js` `content` didn't scan `src/contexts/`, so the confirm dialog's `z-[100]` was never generated. The "Discard theme changes?" dialog rendered **underneath** the z-50 Theme Designer. Every Cancel/X/backdrop click re-opened an invisible confirm, so the modal could never close. Fix: add `./src/contexts/**` to `content` (generated CSS for `z-[100]`: 0 rules before, 1 after). Hardening: `ConfirmProvider.confirm()` now settles a superseded open request as `false`, so no caller's promise can hang. Affects every confirm raised from inside a modal, not only the theme page. `type-check` clean; lint clean.
+
+
+## Continuation pass 24 — Comprehensive UI/UX Simplicity, Density & Organizer Experience Refinement
+
+### Phase 1 — Shared density baseline
+- [x] T424 Audited shared primitives (type scale, spacing tokens, controls, header, sidebar, cards, tables, empty states) and recorded a density token map (plan pass 24).
+- [x] T425 Heading scale reduced (`headline-lg` 32→26, `-md` 24→20, `-sm` 20→18); body sizes unchanged.
+- [x] T426 Spacing tokens tightened (`md` 24→16, `lg` 32→24, `gutter` 24→20, `xl` 48→40).
+- [x] T427 Controls 40→36px (`.input`, `.btn-*`); new `.btn-icon`, `.row-action`, `.row-action-danger`.
+- [x] T428 Header 72→60px, controls `h-9`; settings/account icons gained accessible names.
+- [x] T429 Sidebar spacing tightened (44px items); hover/focus expand and active state unchanged.
+- [x] T430 Repeated-pattern sweep: empty states, config cards, page-header margins, `SectionHeader` (36px icon), list table cells.
+
+### Phase 2 — Event workspace
+- [x] T431 Event header, Event Areas, area context strip, stepper, Previous/Next and content start tightened; order, hierarchy and flat styling unchanged; no vertical-scrollbar regression (`overflow-y-hidden` and link padding kept compatible).
+- [x] T432 Event Dashboard duplicate event-name title replaced by the standard section header; raw gray/blue colours → Portal tokens.
+
+### Phase 3 — Organisation Dashboard
+- [x] T433 Greeting compacted; metric cards ~40% shorter with the same content.
+- [x] T434 Needs Attention: per-item deep links (Emergency page; per-event "Review agenda"), Bendie checks scoped to the Bendie overview, honest Planner-overview message.
+- [x] T435 Readiness consistency: org "Progress %" → "Setup basics — N of 8" with an explanatory tooltip (Events table + Next Milestone). Unification with event readiness deferred.
+- [x] T436 Side cards and org tables tightened; empty Events/Platform-admin columns hidden in the Home preview.
+
+### Phase 4 — Agenda
+- [x] T437 Compact rows (Time · Session · Location · Speaker · ⋯), type badge + 3px accent, shared accessible `RowActionsMenu`.
+- [x] T438 Date rail → horizontal date chips with counts, scrollable on narrow screens; selected day falls back when search removes it.
+- [x] T439 `SectionHeader`, "Add session" primary, "Import spreadsheet" secondary, teaching empty state with both actions.
+- [x] T440 Field-level validation (title/start/end/end-after-start); Save & Add Another (next slot, same length/type/location); "More options" disclosure (auto-open when used).
+- [x] T441 Local-time fix for the edit form and day grouping (also Basics).
+
+### Phase 5 — Bendie content modules
+- [x] T442 "Import CSV" → "Import spreadsheet" on all pages and add menus.
+- [x] T443 Shared `EmptyState`; teaching empty states with actions on Activities, News, FAQs, Expo, Networking; Speakers and Attendees & Access copy tightened.
+- [x] T444 News/Expo/Excursions rows compacted; Expo terminology (exhibitors/sponsors, company name); Speakers claim status humanised.
+
+### Phase 6 — Planner operational surfaces
+- [x] T445 Shared text-link row actions on all Planner lists and Ground Transport; Assign kept as a button.
+- [x] T446 One set of add actions per page (header once records exist; empty state before) for Vendors, Checklist, Production, Tasks; "Add task"; "+" icons; empty-state import on Tasks.
+- [x] T447 Participants logistics column → one line of chips; deep links carry `?product=planner`.
+- [x] T448 Logistics sub-tabs use the Planner accent; summary strip tightened.
+
+### Phase 7 — Forms, validation, saving, errors
+- [x] T449 `FormModal`: discard confirmation on backdrop/✕/Escape after input; dialog semantics; modal search fields excluded; Theme Designer opts out (keeps its own confirm).
+- [x] T450 In-app navigation guard on Basics/Hero/Terminology while unsaved.
+- [x] T451 Field-level validation on Basics (name, end date).
+- [x] T452 Remaining raw backend error toasts → `friendlyError`.
+- [x] T453 Theme Designer density only (padding, gaps, footer); preview, presets, semantics and save behaviour unchanged.
+
+### Phase 8 — Cross-product clarity
+- [x] T454 Source-traced and confirmed: Planner Team & Access unreachable on Planner-only events (Bendie-classified `members` + layout mismatch redirect).
+- [x] T455 `PlannerTeamAccessPanel` on Planner Overview (event team, search, attendee toggle, Manage access → existing permissions modal); gated by existing `can-administer`; Participants link updated.
+- [x] T456 Manage modules ("workspace modules") vs Basics "Attendee app menu" wording cross-referenced; create-event copy aligned.
+- [x] T457 Attendee Travel pull button shown only to platform admins (endpoint's existing rule); others told who can do it.
+
+### Phase 9 — Terminology
+- [x] T458 British UI convention applied to touched labels ("Theme Colours", "Organisation", "Organiser"); Basics "Active" → "Live".
+- [x] T459 "Members"/"Add People" remnants, Terminology/Dashboard descriptions, Settings subtitle, `/` and `/unauthorized` legacy copy, People "Platform Admin" column, Overview "organisation admins".
+- [x] T460 Deliberately kept: "Info Center", facilitator role/speaker-type labels, all internal names, routes and CSV keys.
+
+### Phase 10 — Regression review
+- [x] T461 Responsive review from source: new grids collapse (Agenda rows stack; date chips scroll; metric grid 2→4 columns); no fixed widths added; hit areas ≥28–36px (row actions ≥32px, sidebar 44px).
+- [x] T462 Accessibility review from source: icon actions labelled; overflow menu keyboard-operable (Arrow/Escape/Tab, focus return); dialogs labelled; date chips as tablist; field errors linked with `aria-describedby`.
+- [x] T463 Performance review: one new read (Team & Access panel, gated, aborted on leave); one query reshaped (speaker gaps); aggregate endpoints, cancellation and layout keying untouched.
+- [x] T464 `type-check` clean; `lint` 28 warnings / 0 errors (baseline); `next build` succeeded (isolated copy); Tailwind compile confirms new classes.
+- [ ] T465 Browser/visual verification at 100% zoom on large desktop, laptop, tablet and phone — **not performed**: no browser tooling in this environment and no Portal dev server running (port 3000 serves an unrelated app).
+- [ ] T466 Deferred: org/event readiness unification; bulk selection; Duplicate and Save & Add Another on remaining Bendie forms; table→card mobile layouts; shared table primitive; unsaved guard for the mobile Event-area `<select>`; Escape on the shared confirm dialog; Preview Event (architecture recommended in spec pass 24).

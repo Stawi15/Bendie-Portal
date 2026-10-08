@@ -160,7 +160,7 @@ export default function ExcursionsPage() {
         ...payload, key: toKey(categoryForm.label), display_order: categories.length,
       });
       if (error) {
-        toast.error(error.code === '23505' ? 'A category with this name already exists in this scope' : error.message);
+        toast.error(error.code === '23505' ? 'A category with this name already exists for this event' : friendlyError(error));
       } else {
         toast.success('Category added'); setShowCategoryForm(false); fetchCategories();
       }
@@ -284,11 +284,11 @@ export default function ExcursionsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="excursions" desc={`${categories.length} categor${categories.length !== 1 ? 'ies' : 'y'}`} />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={openAddCategory} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span> New Category
@@ -342,16 +342,16 @@ export default function ExcursionsPage() {
               </div>
 
               {excursions.length === 0 ? (
-                <p className="text-sm text-on-surface-variant/70 italic">No excursions in this category yet. Add one manually, or use Import CSV above to paste rows or upload a file.</p>
+                <p className="text-sm text-on-surface-variant/70 italic">No excursions in this category yet. Add one here, or use Import spreadsheet above to bring in several at once.</p>
               ) : (
                 <div className="space-y-2">
                   {excursions.map(x => (
-                    <div key={x.id} className="flex items-center gap-3 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-4">
+                    <div key={x.id} className="flex items-center gap-3 bg-white border border-[#E4EAF0] rounded-2xl panel-shadow px-4 py-3">
                       {x.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={x.image_url} alt={x.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                        <img src={x.image_url} alt={x.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-14 h-14 rounded-xl bg-surface-container-low flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center flex-shrink-0">
                           <span className="material-symbols-outlined text-on-surface-variant/50">landscape</span>
                         </div>
                       )}

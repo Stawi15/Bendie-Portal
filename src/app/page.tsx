@@ -14,9 +14,9 @@ export default function Home() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Event Content Portal</h1>
+          <h1 className="text-3xl font-bold mb-4">Bendie Studio</h1>
           <p className="text-gray-600 mb-6">
-            Admin panel for managing event content, branding, and settings
+            Manage your organisation’s events, attendee app and event operations.
           </p>
           <Link
             href="/auth/login"

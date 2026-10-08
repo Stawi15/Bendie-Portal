@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { FormModal } from '@/components/portal/FormModal';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
@@ -284,11 +285,11 @@ export default function NetworkingPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="networking" desc="Define the interest questions shown to attendees during onboarding" />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={() => setShowAddQ(true)} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span> Add Question
@@ -344,13 +345,14 @@ export default function NetworkingPage() {
       {loading ? (
         <div className="animate-pulse space-y-4">{[1, 2].map(i => <div key={i} className="h-32 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : groups.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">link</p>
-          <p className="text-on-surface-variant">No networking questions yet.</p>
-          <p className="text-sm text-on-surface-variant/70 mt-1">Add questions to capture attendee interests during onboarding.</p>
-        </div>
+<EmptyState
+          icon="link"
+          title="No networking questions yet"
+          description="Interest questions attendees answer when they join, so the app can suggest people to meet."
+          actions={<><button onClick={() => setShowAddQ(true)} className="btn-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add question</button><button onClick={() => setCsvOpen(true)} className="btn-secondary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet</button></>}
+        />
       ) : filteredGroups.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">search</p>
           <p className="text-on-surface-variant">No questions match your search.</p>
         </div>

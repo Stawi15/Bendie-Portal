@@ -144,7 +144,7 @@ export function PlannerPeopleModal({ open, editing, submitting, serverError, onC
 
       {!editing && tab === 'existing' ? (
         <div className="space-y-3">
-          <input
+          <input data-ignore-dirty
             className="input"
             placeholder="Search by name or email…"
             value={searchQuery}

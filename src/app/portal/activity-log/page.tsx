@@ -97,7 +97,7 @@ export default function OrganizationActivityLogPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface">Activity Log</h1>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">
@@ -132,7 +132,7 @@ export default function OrganizationActivityLogPage() {
       {loading || orgLoading ? (
         <div className="animate-pulse space-y-2">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : entries.length === 0 ? (
-        <div className="text-center py-20 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-12 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">history</p>
           <p className="text-on-surface font-medium">No activity logged yet</p>
           <p className="text-sm text-on-surface-variant mt-1">Creating or deleting teams, team members, and assets will appear here.</p>

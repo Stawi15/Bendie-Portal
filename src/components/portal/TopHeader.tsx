@@ -462,6 +462,8 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
           </div>
           <Link
             href="/portal/settings"
+            aria-label="Organisation settings"
+            title="Organisation settings"
             className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
           >
             <span className="material-symbols-outlined">settings</span>
@@ -471,6 +473,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
             <button
               onClick={() => setMenuOpen((v) => !v)}
               className="flex items-center gap-2 pl-2 pr-1 py-1 hover:bg-surface-container-low rounded-full transition-colors"
+              aria-label="Account menu"
             >
               <Avatar name={profile?.full_name} email={profile?.email} avatarUrl={profile?.avatar_url} size={32} />
               <span className="material-symbols-outlined text-on-surface-variant">expand_more</span>

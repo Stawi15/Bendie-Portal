@@ -204,7 +204,7 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
             <p className="hint mb-3">
               Creates their account — no email is sent. They log into the app directly; access to an
               event is granted the moment you add them to it (use the Events column on the People page
-              or the event&apos;s Members tab).
+              or the event&apos;s Attendees &amp; Access page).
             </p>
             <div className="space-y-3">
               <div>

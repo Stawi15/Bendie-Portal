@@ -802,11 +802,11 @@ export default function EventLayout({ children }: { children: React.ReactNode })
       )}
       {/* Static header — a sibling of the scroll area below, never inside it, so nothing can ever scroll behind or through it. */}
       <div className="flex-shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pb-2">
           <div className="min-w-0">
             <Link
               href="/portal/events"
-              className="flex items-center gap-1 text-xs text-on-surface-variant hover:text-primary mb-1 w-fit"
+              className="flex items-center gap-1 text-xs text-on-surface-variant hover:text-primary mb-0.5 w-fit"
             >
               <span className="material-symbols-outlined text-sm">arrow_back</span> All Events
             </Link>
@@ -851,7 +851,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
           <>
             {/* LEVEL 1 — Event areas: non-linear "jump anywhere" navigation, deliberately flat
                 (plain text + underline, no pills, no numbers) so it doesn't read as a sequence. */}
-            <div className="md:hidden pb-3">
+            <div className="md:hidden pb-2">
               <label htmlFor="event-area-select" className="block text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant mb-1">
                 Event area
               </label>
@@ -909,7 +909,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
                           href={groupHref(sections)}
                           data-active={isActive}
                           aria-current={isActive ? 'true' : undefined}
-                          className={`flex-shrink-0 py-2.5 border-b-2 text-sm whitespace-nowrap transition-colors ${
+                          className={`flex-shrink-0 py-2 border-b-2 text-sm whitespace-nowrap transition-colors ${
                             isActive
                               ? `${PRODUCT_PRESENTATION[areaProductFor(sections)].areaActive} font-semibold`
                               : 'border-transparent text-on-surface-variant hover:text-on-surface'
@@ -941,7 +941,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
             Numbers mark position only — no checkmarks, since the layout has no real
             completion data (visited ≠ complete). */}
         {currentGroup && (
-          <section aria-label={`${currentGroup.group} area`} className="pt-4 pb-3 border-b border-outline-variant">
+          <section aria-label={`${currentGroup.group} area`} className="pt-2.5 pb-2.5 border-b border-outline-variant">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
               <h2 className={`text-xs font-bold uppercase tracking-wider ${PRODUCT_PRESENTATION[areaProductFor(currentGroup.sections)].areaHeading}`}>
                 {currentGroup.group}
@@ -956,7 +956,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
               )}
             </div>
             {isSteppedGroup ? (
-              <nav aria-label={`${currentGroup.group} pages`} className="mt-3">
+              <nav aria-label={`${currentGroup.group} pages`} className="mt-2">
                 <ol className="flex flex-wrap items-center gap-y-2">
                   {groupSteps.map((step, i) => {
                     const state = i < groupStepIndex ? 'previous' : i === groupStepIndex ? 'current' : 'upcoming';
@@ -1001,7 +1001,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
               </nav>
             ) : currentGroup.group === OVERVIEW_GROUP && groupSteps.length > 1 ? (
               // Both events: the Overview hub holds Dashboard + Planner Overview — plain links, not numbered steps.
-              <nav aria-label="Overview pages" className="mt-2 flex gap-4">
+              <nav aria-label="Overview pages" className="mt-1.5 flex gap-4">
                 {groupSteps.map((step) => {
                   const active = step.key === activeSectionKey;
                   return (
@@ -1025,7 +1025,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* The only thing that scrolls — sized to fill the rest of the event shell (see Portal App Shell in ui-registry.md). */}
-      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar pt-lg">
+      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto custom-scrollbar pt-4">
         {productAuthPending ? (
           <div className="space-y-3" aria-busy="true">
             {[1, 2, 3].map((i) => (
@@ -1050,7 +1050,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
           modals (z-50 overlays) sit above it, and it's hidden on the Dashboard,
           which has its own "Recommended next" (§17). */}
       {(previousStep || nextStep) && !productAuthPending && (
-        <nav aria-label="Previous and next page" className="flex-shrink-0 flex items-center gap-3 border-t border-outline-variant pt-3 mt-2">
+        <nav aria-label="Previous and next page" className="flex-shrink-0 flex items-center gap-3 border-t border-outline-variant pt-2.5 mt-1">
           {previousStep && (
             <Link href={sectionHref(previousStep)} className="btn-secondary min-w-0 max-w-[48%]">
               <span className="material-symbols-outlined text-[18px] flex-shrink-0" aria-hidden="true">arrow_back</span>

@@ -271,7 +271,7 @@ export default function MembersPage() {
     const result = (Array.isArray(data) ? data[0] : data) as IssueAccessCodeResult | undefined;
 
     if (error || !result) {
-      toast.error(error?.message ?? 'Failed to generate a new access code');
+      toast.error(friendlyError(error, 'A new access code couldn’t be created — try again.'));
       setResendingCode(null);
       return;
     }
@@ -395,7 +395,7 @@ export default function MembersPage() {
         <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">lock</span>
         <h1 className="font-headline-sm text-headline-sm text-on-surface mb-1">You don&apos;t have access to this page</h1>
         <p className="text-body-md font-body-md text-on-surface-variant max-w-sm">
-          Managing attendees and access requires the host, organizer, or admin role for this event.
+          Managing attendees and access requires the Host, Organiser or Admin role for this event.
         </p>
         <Link href={`/portal/events/${eventId}/dashboard`} className="btn-secondary mt-4">
           Back to Event
@@ -406,7 +406,7 @@ export default function MembersPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="members" desc={`${members.length} ${members.length === 1 ? 'person' : 'people'} on this event`} />
         {productContext && (
           <AddPeopleMenu
@@ -422,7 +422,7 @@ export default function MembersPage() {
 
       {!isGlobalAdmin && (
         <p className="hint mb-4">
-          Creating brand-new accounts (Invite New / Import CSV) is currently a platform-administration function.
+          Creating brand-new accounts (Invite new attendee / Import spreadsheet) is currently a platform-administration function.
           You can still add existing organisation or team members below.
         </p>
       )}
@@ -519,9 +519,12 @@ export default function MembersPage() {
       {loading ? (
         <div className="animate-pulse space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">groups</p>
-          <p className="text-on-surface-variant">{search ? 'No one matches your search.' : 'No one on this event yet.'}</p>
+          <p className="font-medium text-on-surface">{search || roleFilter !== 'all' ? 'No one matches your filters.' : 'No attendees yet'}</p>
+          {!search && roleFilter === 'all' && (
+            <p className="text-sm text-on-surface-variant mt-1 max-w-md mx-auto">Attendees are the people who can use the Bendie app for this event. Use <span className="font-medium">Add Attendees</span> above to add people from your organisation or a team.</p>
+          )}
         </div>
       ) : (
         <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow overflow-hidden">

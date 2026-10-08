@@ -427,15 +427,15 @@ export default function PlannerTasksPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-tasks" />
-        {capability.canManage && (
+        {capability.canManage && tasks.length > 0 && (
           <div className="flex gap-2 flex-shrink-0">
             <button className="btn-secondary" onClick={() => setCsvOpen(true)}>
-              <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+              <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
             </button>
             <button className="btn-primary" onClick={openCreate}>
-              New Task
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add task
             </button>
           </div>
         )}
@@ -452,6 +452,7 @@ export default function PlannerTasksPage() {
           onSelfAssigneeUpdate={handleSelfAssigneeUpdate}
           onManagerStatusChange={handleManagerStatusChange}
           onAdd={openCreate}
+          onImport={() => setCsvOpen(true)}
         />
       </div>
 

@@ -57,7 +57,7 @@ export function AddPeopleMenu({ onFromOrganisation, onFromTeam, onInviteNew, onI
           {item('From organisation', 'group', onFromOrganisation)}
           {item('From team', 'diversity_3', onFromTeam)}
           {canCreateAccounts && item('Invite new attendee', 'person_add', onInviteNew)}
-          {canCreateAccounts && item('Import CSV', 'upload_file', onImportCsv)}
+          {canCreateAccounts && item('Import spreadsheet', 'upload_file', onImportCsv)}
           <div className="my-1 border-t border-outline-variant" />
           {item('Add all organisation people', 'group_add', onAddAll)}
         </div>

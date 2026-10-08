@@ -92,7 +92,7 @@ export default function ActivityLogPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="activity-log" desc="Who did what, and when, for this event" />
         <button onClick={fetchData} className="btn-secondary text-xs py-1.5 flex-shrink-0">
           <span className="material-symbols-outlined text-[16px]">refresh</span> Refresh
@@ -121,7 +121,7 @@ export default function ActivityLogPage() {
       {loading ? (
         <div className="animate-pulse space-y-2">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : entries.length === 0 ? (
-        <div className="text-center py-20 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-12 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">history</p>
           <p className="text-on-surface font-medium">No activity logged yet</p>
           <p className="text-sm text-on-surface-variant mt-1">Changes to event content will appear here once the audit log trigger is set up.</p>

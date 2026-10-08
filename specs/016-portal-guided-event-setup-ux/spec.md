@@ -777,3 +777,59 @@ No uncaught-exception path was found in the traced code. All the touched loads c
 - **Owner:** the inner scroll `<div ref={groupNavRef}>` inside `<nav aria-label="Event areas">` in `EventLayout`.
 - **Cause:** `overflow-x-auto` makes `overflow-y` compute to `auto` (CSS spec), and the area links' `-mb-px` made their content 1px taller than that box. The result was a 1px vertical overflow and the 6px `custom-scrollbar` track.
 - **Fix:** removed `-mb-px` (the cause), which also restores the full 2px active underline, and added `overflow-y-hidden` to that one element. `overflow-x-auto` is unchanged, so horizontal scrolling on narrow screens remains. No other element or visual changed.
+
+
+## Continuation pass 24 — Comprehensive UI/UX Simplicity, Density & Organizer Experience Refinement
+
+**Why:** the Portal's functionality is broad and mostly mature; what remained was that it *felt* heavier than it is. Manual testing found it read better at ~67% browser zoom than at 100%. This pass makes 100% zoom look right by refining the design system itself — **no CSS `zoom`, `transform: scale`, body scaling or browser-zoom manipulation was used.** Baseline: `context/bendie-portal-current-state-audit.md`. Benchmarks (Eventee, Swapcard Studio, Whova) informed principles only — nothing was copied.
+
+**Preserved (unchanged):** global architecture, organisation scoping, Bendie / Planner / Both product model, event workspace hierarchy, Event Areas row (flat, open, same order), numbered child journey and Previous/Next, hover sidebar and its rounded active state, organisation selector, product switcher, Bendie blue / Planner orange identity, neutral global controls, global + New Event, Manage modules architecture, permissions, the separate person models, import infrastructure, provisioning, performance and request-cancellation architecture, Theme Designer concept. No database, RLS, API route or authorization change.
+
+### Density baseline (design-system level)
+- **Type scale (headings only; body sizes unchanged):** `headline-lg` 32→26px, `headline-md` 24→20px, `headline-sm` 20→18px (`headline-xl` 40→34px, mobile 28→24px).
+- **Spacing tokens:** `md` 24→16px, `lg` 32→24px, `gutter` 24→20px, `xl` 48→40px. These drive page gutters, dashboard grids, table cell padding (`px-lg`) and event content start (`pt-lg`).
+- **Controls:** `.input` and `.btn-*` 40→36px tall (text size unchanged); new `.btn-icon` (32px icon action) and `.row-action` / `.row-action-danger` (one secondary row-action weight for Bendie and Planner, ≥32px hit area).
+- **Shell:** header min height 72→60px, controls 40→36px; sidebar items 48→44px, tighter top/bottom gaps; collapse/hover behaviour untouched.
+- **Repeated patterns:** empty states py-16→py-10, configuration cards p-6/8→p-5/6, page headers mb-6→mb-4, `SectionHeader` icon 44→36px, table cells py-4→py-2.5 (lists) / py-5→py-3 (org tables).
+- **Three page families:** *Configuration* (Basics, Hero, Theme, Terminology, Manage modules, Settings) stay guided and roomy; *Content management* (Speakers, Agenda, Activities, Excursions, News, FAQs, Expo, Networking, Gallery) moderate density; *Operational* (Participants, Tasks, Vendors, Checklist, Flights, Hotels, Ground Transport, Production) densest.
+
+### Event workspace
+Event header padding, Event Areas link height, area context strip (heading + description + "Step X of N"), stepper margin and the content start were all tightened; nothing removed or reordered. The event Dashboard no longer repeats the event name as a second, larger title — it uses the standard section header.
+
+### Organisation Dashboard
+Greeting kept, more compact. Metric cards keep icon, number, label and status in roughly half the height (icon beside the number). Side cards (Next Milestone, Needs Attention, Recent Activity, Quick Actions) tightened. **Needs Attention is now actionable:** each emergency-contact gap links to that event's Emergency page; speaker gaps are reported per event (same single query, now returning event ids) with "Review agenda →". These Bendie-content checks only run on the Bendie overview; the Planner overview says Planner readiness is tracked per event instead of flagging Planner-only events with Bendie-only gaps. **Readiness consistency:** the org-level "Progress %" was an 8-check content heuristic unrelated to the event Dashboard's Required/Recommended/Optional readiness; it is now labelled **"Setup basics — N of 8"** with a tooltip listing exactly what is checked (same data, no misleading percentage). Unifying the two models needs per-event module and attendee data and is deferred.
+
+### Agenda
+Record presentation rebuilt; Programme architecture untouched. Compact rows (~60–64px on desktop) with Time · Session (title + small type badge + rooms badge) · Location · Speaker · ⋯ actions, a 3px type-coloured accent instead of a 4px card border, and a shared accessible overflow menu (`RowActionsMenu`: Edit, Delete). Dates moved from a 220px side rail to horizontal chips ("Thu 15 Oct 7") beside the search — same one-day-at-a-time behaviour; the rail had no other function. Standard `SectionHeader` ("N sessions across N days"). Primary action "Add session"; secondary "Import spreadsheet". New: field-level validation (title, start, end, end after start), **Save & Add Another** (next session starts when this one ended, same length, type and location), rarer fields (audience, accent colour, breakout rooms) under **More options** (auto-open when already used). **Bug fix:** the edit form showed UTC wall-clock time while saving interpreted local time, shifting sessions on re-save in non-UTC timezones; now local in both directions (same fix on Basics).
+
+### Content and Planner modules
+- "Import CSV" → **"Import spreadsheet"** on every page and add-menu (the import modal still explains CSV, templates and paste).
+- Teaching empty states via a shared `EmptyState` (what it is, where attendees see it, Add + Import spreadsheet): Agenda, Activities, News, FAQs, Expo, Networking, Speakers (tightened copy), Attendees & Access (no add actions there since adding lives in the header menu).
+- News/Expo/Excursions rows: 48px thumbnails, tighter padding.
+- Expo no longer calls exhibitors "organisations": "Add exhibitor or sponsor", "N exhibitors and sponsors", "Company name".
+- Speakers: raw `claimed`/`unclaimed` → "Profile claimed"/"Not claimed" with an explanation.
+- Planner rows: Edit/Remove use the shared text-link row action instead of bordered + solid red buttons; Ground Transport vehicle/assignment actions likewise (Assign stays a button). Header actions appear once records exist; before that the empty state carries them (Vendors, Checklist, Production, Tasks) — never two sets at once. Tasks "New Task" → "Add task"; Add buttons carry "+".
+- Participants: Logistics column condensed to one line of status chips + deep links (which now carry `?product=planner`).
+- Logistics sub-tabs use the Planner accent; summary strip tightened.
+
+### Planner Team & Access reachability (functional fix)
+Source-traced and confirmed: `members` is Bendie-classified, so on a **Planner-only** event the layout redirected "Manage Team & Access" (Planner Overview) and "Manage them under Team & Access" (Participants) back to Planner Overview — Planner access was unmanageable there. Planner Overview now hosts **Planner Team & Access**: the event's team (non-attendee roles by default, "Include attendees" toggle, search, 25 at a time) with "Manage access" opening the existing Feature 008 permissions modal. Shown only to callers who pass the existing `can-administer` check; routes still re-verify server-side. Participants links there. Attendees & Access keeps its own Team & Access action. No permission semantics changed; Participants and Attendees are not merged.
+
+### Manage modules vs attendee app menu
+Manage modules now says it controls **workspace modules** (what the team manages in the Portal) and points to Basics for the app; Basics' "Hide Menu Items" is now **"Attendee app menu — hide items"** and points back to Manage modules. Create-event copy matches. No model change.
+
+### Forms, saving and errors
+- `FormModal`: closing via backdrop, ✕ or **Escape** after typing asks "Discard your changes?" (Keep editing / Discard); the page's own Cancel stays an explicit discard; search boxes inside modals are ignored; dialog semantics (`role="dialog"`, `aria-modal`, labelled title). Theme Designer keeps its own single confirmation.
+- Basics, Hero & Branding, Terminology: while unsaved, clicking any in-app link (sidebar, areas, steps, Previous/Next) asks "Leave without saving?" first; nothing is intercepted when clean.
+- Field-level validation added on Basics (name, end before start) and Agenda.
+- Remaining raw backend messages (activity images, agenda speaker links, file upload, gallery delete, access code, excursion category, org removal) now use `friendlyError`.
+- Attendee Travel no longer offers "Pull from Bendie Planner" to users the platform-admin-only endpoint always rejects; it says who can do it.
+
+### Terminology
+British UI spelling kept as the convention: "Theme Colours"; Speakers CSV "Organisation"; role-gate copy "Host, Organiser or Admin"; Basics status "Active" → "Live" (matches the status pill). "Members" → "Attendees & access" (Dashboard card), "Attendees & Access page" (Add Person hint), "Add Attendees → From team" (Teams), "Event team sync" (Bendie Planner tab). Terminology and Dashboard section descriptions corrected. Legacy screens: "/" says "Bendie Studio"; `/unauthorized` copy de-staled; metadata description updated. People page: "Portal Access" column → "Platform Admin" with an explanation; Overview "organisation users" → "organisation admins". **Deliberately kept:** "Info Center" (the attendee-app feature name), "Facilitator" event role / "External Facilitator" org role / agenda "Facilitator" speaker type / breakout "Facilitator Name" (distinct concepts), all routes, tables, columns and CSV header keys.
+
+### Preview Event — investigated, deferred
+The only attendee-preview code is `EventThemePreview`, a deliberately schematic phone mock for colours (fixed placeholder content). A truthful event preview would need real attendee-app rendering of event data (agenda, speakers, menu, hidden items); reusing the theme mock would mean fake content, which this pass rules out. Recommended architecture: a read-only preview route in the attendee app (or a shared rendering package) opened in a new tab from the event header next to Manage modules, authorised by an organiser-only short-lived preview token. Not built.
+
+### Not done / deferred
+Unifying org "Setup basics" with event readiness; bulk row selection; Duplicate beyond Activities; Save & Add Another on remaining Bendie forms (Speakers, FAQs, Networking, Info Center, Emergency, Games, Event Photos, Attendee Travel); table→card mobile layouts; a shared table primitive; unsaved-change protection for the area `<select>` on phones (it navigates without a link click); the shared confirm dialog has no Escape handling; browser/visual verification (no browser tooling in this environment — see tasks).

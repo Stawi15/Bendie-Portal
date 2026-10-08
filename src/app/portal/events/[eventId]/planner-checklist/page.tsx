@@ -377,15 +377,15 @@ export default function PlannerChecklistPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-checklist" />
-        {capability.canManage && (
+        {capability.canManage && items.length > 0 && (
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={() => setCsvModalOpen(true)}>
-              Import CSV
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
             </button>
             <button className="btn-primary" onClick={openCreate}>
-              Add Checklist Item
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add checklist item
             </button>
           </div>
         )}

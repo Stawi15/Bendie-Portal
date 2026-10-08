@@ -131,7 +131,7 @@ export function AddPeopleModal({
     <FormModal open={open} onClose={onClose} title={mode === 'organisation' ? 'Add Attendees — From Organisation' : 'Invite New Attendee'} maxWidthClassName="max-w-lg">
       {step === 'select' && mode === 'organisation' && (
         <div className="space-y-3">
-          <input className="input" placeholder="Search organisation people…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input data-ignore-dirty className="input" placeholder="Search organisation people…" value={search} onChange={(e) => setSearch(e.target.value)} />
           {loadingCandidates ? (
             <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-surface-container-low rounded-xl" />)}</div>
           ) : filtered.length === 0 ? (

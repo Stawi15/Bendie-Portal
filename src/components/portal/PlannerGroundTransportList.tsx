@@ -59,7 +59,7 @@ export function PlannerGroundTransportList({
 }: PlannerGroundTransportListProps) {
   if (movements.length === 0) {
     return (
-      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-16 px-6">
+      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-10 px-6">
         <p className="text-on-surface-variant text-sm">No transport movements added to this event yet.</p>
         {canManage && (
           <>
@@ -87,7 +87,7 @@ export function PlannerGroundTransportList({
           <div key={movement.id} className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow p-4 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="font-label-lg text-label-lg text-on-surface">{movement.movementName}</p>
+                <p className="text-sm font-semibold text-on-surface">{movement.movementName}</p>
                 <p className="text-xs text-on-surface-variant mt-0.5">
                   {movement.route} · {movement.movementDate}
                   {movement.pickupTime ? ` · ${movement.pickupTime.slice(0, 5)}` : ''}
@@ -95,13 +95,13 @@ export function PlannerGroundTransportList({
               </div>
               {canManage && (
                 <div className="flex gap-2">
-                  <button className="btn-secondary text-xs py-1.5" onClick={() => onAddVehicle(movement)} disabled={movementBusy}>
+                  <button className="row-action" onClick={() => onAddVehicle(movement)} disabled={movementBusy}>
                     Add Vehicle
                   </button>
-                  <button className="btn-secondary text-xs py-1.5" onClick={() => onEditMovement(movement)} disabled={movementBusy}>
+                  <button className="row-action" onClick={() => onEditMovement(movement)} disabled={movementBusy}>
                     Edit
                   </button>
-                  <button className="btn-danger text-xs py-1.5" onClick={() => onDeleteMovement(movement)} disabled={movementBusy}>
+                  <button className="row-action-danger" onClick={() => onDeleteMovement(movement)} disabled={movementBusy}>
                     Delete
                   </button>
                 </div>
@@ -132,13 +132,13 @@ export function PlannerGroundTransportList({
                         </div>
                         {canManage && (
                           <div className="flex gap-2">
-                            <button className="btn-secondary text-xs py-1" onClick={() => onAssign(vehicle)} disabled={vehicleBusy}>
+                            <button className="btn-secondary text-xs !py-1" onClick={() => onAssign(vehicle)} disabled={vehicleBusy}>
                               Assign
                             </button>
-                            <button className="btn-secondary text-xs py-1" onClick={() => onEditVehicle(vehicle)} disabled={vehicleBusy}>
+                            <button className="row-action" onClick={() => onEditVehicle(vehicle)} disabled={vehicleBusy}>
                               Edit
                             </button>
-                            <button className="btn-danger text-xs py-1" onClick={() => onDeleteVehicle(vehicle)} disabled={vehicleBusy}>
+                            <button className="row-action-danger" onClick={() => onDeleteVehicle(vehicle)} disabled={vehicleBusy}>
                               Delete
                             </button>
                           </div>
@@ -150,17 +150,17 @@ export function PlannerGroundTransportList({
                       ) : (
                         <ul className="mt-2 space-y-1">
                           {vehicle.assignments.map((a) => (
-                            <li key={a.id} className="flex items-center justify-between text-xs bg-surface-container-low/50 rounded-lg px-2 py-1.5">
+                            <li key={a.id} className="flex items-center justify-between text-xs bg-surface-container-low/50 rounded-lg pl-2 pr-1 py-0.5">
                               <span className="text-on-surface">
                                 {a.passengerName}
                                 {a.boarded && <span className="ml-1 text-primary">· Boarded</span>}
                               </span>
                               {canManage && (
                                 <span className="flex gap-1.5">
-                                  <button className="text-primary hover:underline" onClick={() => onMove(a)} disabled={busyId === a.id}>
+                                  <button className="row-action !min-h-[28px]" onClick={() => onMove(a)} disabled={busyId === a.id}>
                                     Move
                                   </button>
-                                  <button className="text-error hover:underline" onClick={() => onUnassign(a)} disabled={busyId === a.id}>
+                                  <button className="row-action-danger !min-h-[28px]" onClick={() => onUnassign(a)} disabled={busyId === a.id}>
                                     Unassign
                                   </button>
                                 </span>

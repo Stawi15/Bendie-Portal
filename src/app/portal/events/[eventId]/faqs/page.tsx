@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { FormModal } from '@/components/portal/FormModal';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import toast from 'react-hot-toast';
@@ -163,14 +164,14 @@ export default function FAQsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader
           sectionKey="faqs"
           desc={`${faqs.length} question${faqs.length !== 1 ? 's' : ''} across ${sections.length} section${sections.length !== 1 ? 's' : ''}`}
         />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={() => openAdd()} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span> Add FAQ
@@ -227,12 +228,14 @@ export default function FAQsPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : faqs.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">help</p>
-          <p className="text-on-surface-variant">No FAQs yet. Add the first one.</p>
-        </div>
+<EmptyState
+          icon="help"
+          title="No FAQs yet"
+          description="Answers to the questions attendees ask most — grouped into sections in the app’s Help screen."
+          actions={<><button onClick={() => openAdd()} className="btn-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add FAQ</button><button onClick={() => setCsvOpen(true)} className="btn-secondary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet</button></>}
+        />
       ) : visibleSections.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">search</p>
           <p className="text-on-surface-variant">No FAQs match your search.</p>
         </div>

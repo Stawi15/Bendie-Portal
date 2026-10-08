@@ -103,7 +103,7 @@ export default function PeoplePage() {
       .eq('user_id', person.userId);
 
     if (eventError) {
-      toast.error(`Removed from organisation, but failed to remove event access: ${eventError.message}`);
+      toast.error(`Removed from the organisation, but their event access couldn’t be removed: ${friendlyError(eventError)}`);
     } else {
       toast.success(`${person.fullName ?? person.email} removed from this organisation`);
     }
@@ -228,7 +228,7 @@ export default function PeoplePage() {
             onClick={() => setCsvOpen(true)}
             className="border border-outline-variant text-on-surface font-label-md text-label-md px-4 py-2.5 rounded-xl hover:bg-surface-container-low transition-all flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button
             onClick={() => setAddOpen(true)}
@@ -251,7 +251,6 @@ export default function PeoplePage() {
       <OrgPeoplePanel
         people={filtered}
         loading={loading}
-        onAddPerson={() => setAddOpen(true)}
         currentUserId={user?.id}
         onToggleAdmin={handleToggleAdmin}
         updatingAdminId={updatingAdminId}

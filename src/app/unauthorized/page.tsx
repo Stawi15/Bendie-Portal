@@ -12,7 +12,7 @@ export default function UnauthorizedPage() {
         <span className="material-symbols-outlined block text-6xl text-gray-400 mb-4">lock</span>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
         <p className="text-gray-600 mb-2">
-          This portal is restricted to global administrators only.
+          Your account doesn’t have access to this part of Bendie Studio.
         </p>
         {profile && (
           <p className="text-sm text-gray-500 mb-6">

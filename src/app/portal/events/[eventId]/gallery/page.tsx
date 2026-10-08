@@ -62,7 +62,7 @@ export default function GalleryPage() {
       supabase.from('post_likes').delete().eq('post_id', id),
       supabase.from('post_comments').delete().eq('post_id', id),
     ]);
-    if (likesError || commentsError) { toast.error((likesError ?? commentsError)?.message ?? 'Failed to delete'); return; }
+    if (likesError || commentsError) { toast.error(friendlyError(likesError ?? commentsError, 'This photo couldn’t be deleted — try again.')); return; }
     const { error } = await supabase.from('posts').delete().eq('id', id);
     if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); fetchData(); }
   };
@@ -72,7 +72,7 @@ export default function GalleryPage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <SectionHeader
           sectionKey="gallery"
           desc={`${posts.length} photo${posts.length !== 1 ? 's' : ''} posted by attendees · ${hidden.length} hidden`}
@@ -82,7 +82,7 @@ export default function GalleryPage() {
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse">{[1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">photo_library</p>
           <p className="text-on-surface-variant">No photos posted by attendees yet.</p>
         </div>

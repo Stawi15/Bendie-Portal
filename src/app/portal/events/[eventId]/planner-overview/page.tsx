@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { PlannerTeamAccessPanel } from '@/components/portal/PlannerTeamAccessPanel';
 import { useLatestRequest, isAbortError } from '@/lib/useLatestRequest';
 
 /**
@@ -193,8 +193,8 @@ export default function PlannerOverviewPage() {
   return (
     <div>
       <SectionHeader sectionKey="planner-overview" />
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 sm:p-6">
           <h2 className="font-headline-sm text-headline-sm text-on-surface mb-3 break-words">{event?.title}</h2>
           {event?.description && (
             <p className="text-body-md font-body-md text-on-surface-variant mb-4 break-words">{event.description}</p>
@@ -227,7 +227,7 @@ export default function PlannerOverviewPage() {
           </dl>
         </div>
 
-        <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8">
+        <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 sm:p-6">
           <h2 className="font-headline-sm text-headline-sm text-on-surface mb-3">Session summary</h2>
           <div className="flex items-baseline gap-2 mb-1">
             <span className="text-headline-lg font-headline-lg text-on-surface">{sessionSummary?.totalSessions ?? 0}</span>
@@ -238,25 +238,19 @@ export default function PlannerOverviewPage() {
           <p className="text-body-sm font-body-sm text-on-surface-variant">Event phase: {sessionSummary?.eventPhase}</p>
         </div>
 
-        <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8 sm:col-span-2">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1">Team & Access</h2>
-              <p className="text-body-sm font-body-sm text-on-surface-variant max-w-md">
-                Bendie Planner access — who can view or manage each module — is granted per person from the event&apos;s Attendees &amp; Access page.
-              </p>
-            </div>
-            {canAdminister && (
-              <Link href={`/portal/events/${eventId}/members`} className="btn-secondary flex-shrink-0">
-                Manage Team & Access
-              </Link>
-            )}
-          </div>
-          {canAdminister === false && (
-            <p className="text-xs text-on-surface-variant/70 mt-2">
-              Granting or changing Planner access requires organisation admin authority — ask your organisation owner/admin if you need a change.
+        <div id="team-access" className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 sm:p-6 sm:col-span-2 scroll-mt-4">
+          <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1">Planner Team &amp; Access</h2>
+          <p className="text-body-sm font-body-sm text-on-surface-variant max-w-2xl mb-3">
+            The people who work inside Bendie Planner for this event, and which modules each of them can view or manage.
+            This is separate from Participants (people whose travel you manage) and from Bendie attendees.
+          </p>
+          {canAdminister ? (
+            <PlannerTeamAccessPanel eventId={eventId} />
+          ) : canAdminister === false ? (
+            <p className="text-xs text-on-surface-variant/80">
+              Granting or changing Planner access requires organisation admin authority — ask your organisation owner or admin if you need a change.
             </p>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

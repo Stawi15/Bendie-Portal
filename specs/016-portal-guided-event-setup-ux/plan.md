@@ -931,3 +931,72 @@ Clicking an area routes (a plain `<Link>`, no awaited work) to its first visible
 - `next build` 30/30 (isolated copy).
 - Signed-out smoke tests: `/planner-readiness`, `/planner-capabilities` and `/planner-logistics/overview` all return 401.
 - **Not performed:** measured timings, and the forward, reverse and cross-product rapid-navigation stress runs (no browser or session).
+
+
+## Continuation pass 24 — Comprehensive UI/UX Simplicity, Density & Organizer Experience Refinement
+
+### Density token map (internal; not a user setting)
+
+| Token / primitive | Compact (operational) | Standard (content) | Comfortable (configuration) |
+|---|---|---|---|
+| Row vertical padding | `py-2.5` table cells | `py-3` rows / cards | form `gap-y-4`, card `p-5 sm:p-6` |
+| Row height target | ~44–56px | ~56–72px (Agenda ~60–64px) | n/a |
+| Section gap | `gap-3` / `mb-4` | `gap-3` / `mb-4` | `space-y-5` |
+| Controls | 36px `.input` / `.btn-*`; `.row-action` 32px | same | same |
+| Empty state | `py-10` | `py-10` | `py-10` |
+
+Global tokens: headings `headline-lg 26/34`, `headline-md 20/28`, `headline-sm 18/26`; body unchanged (`body-md 16`, `body-sm 14`, `label 12–14`). Spacing `md 16`, `lg 24`, `gutter 20`, `xl 40`.
+
+### Before → after (structural, from source)
+
+| Element | Before | After |
+|---|---|---|
+| Header | `min-h-[72px]`, controls `h-10`, gaps 24px | `min-h-[60px]`, `py-1.5`, controls `h-9`, gaps 16px |
+| Sidebar item | `py-3` (48px), header `mb-8`, panel `py-6` | `py-2.5` (44px), `mb-5`, `py-4` |
+| Page gutter (main) | 24px (sm+) | 20px |
+| Inputs / buttons | `py-2.5` (40px), primary `px-6` | `py-2` (36px), primary `px-4` |
+| Page/event title | 32/40px | 26/34px |
+| Section title | 24/32px, 44px icon, `mt-1` desc | 20/28px, 36px icon, `mt-0.5` |
+| Event header block | `pb-4`, area links `py-2.5`, area strip `pt-4 pb-3`, stepper `mt-3`, content `pt-8` (lg) | `pb-2`, `py-2`, `pt-2.5 pb-2.5`, `mt-2`, content `pt-4` |
+| Previous/Next footer | `pt-3 mt-2` | `pt-2.5 mt-1` |
+| Metric card | `p-6`, stacked 40px icon + number (`mb-4`, `mt-4`), ~150px | `px-4 py-3.5`, icon beside number, ~88px |
+| Org greeting | 48px icon box, body-lg, `mb-8` | 36px box, body-md, `mb-4` |
+| Dashboard grids | `gap-6`, `mb-8` | `gap-3/4`, `mb-4/6` |
+| Next Milestone | 128px banner, `p-6` | 96px banner, `p-5` |
+| Org tables | cells `py-4/py-5`, `px-6/px-8` | `py-2.5/py-3`, `px-4/px-6` |
+| Empty states | `py-16` / `py-20` | `py-10` / `py-12` |
+| Config cards | `p-6 sm:p-8` | `p-5 sm:p-6` |
+| Agenda | 220px date rail; cards `p-5`, `text-lg` title, 3-col meta grid (~160px) | date chips; rows `py-2.5` (~60–64px), 5-column grid |
+| Planner rows | cells `px-6 py-4`; bordered + solid red buttons | `px-4 py-2.5`; text-link actions |
+| Participants logistics cell | 3 stacked lines + links (~110px row) | 1 line of chips + links (~64px row) |
+| News / Expo / Excursions rows | `p-4`, 56–64px thumbs | `px-4 py-3`, 48px thumbs |
+| FormModal | `p-6`, title `mb-4` | `p-5`, title `mb-3` |
+
+### Files
+- Tokens/primitives: `tailwind.config.js`, `src/globals.css` (`.input`, `.btn-*`, new `.btn-icon`, `.row-action`, `.row-action-danger`).
+- New components: `RowActionsMenu.tsx` (accessible ⋯ menu), `EmptyState.tsx`, `PlannerTeamAccessPanel.tsx`.
+- Shell: `TopHeader.tsx`, `OrgSideNav.tsx`, `events/[eventId]/layout.tsx`, `SectionHeader.tsx`, `FormModal.tsx`.
+- Dashboard: `OrganizationHome.tsx`, `MetricCard.tsx`, `NeedsAttentionCard.tsx`, `NextMilestoneCard.tsx`, `RecentActivityCard.tsx`, `QuickActionsCard.tsx`, `EventsOverviewPanel.tsx`, `OrgPeoplePanel.tsx`, `eventStats.ts`; event `dashboard/page.tsx`.
+- Agenda: `agenda/page.tsx` (render rebuilt; data/save paths unchanged apart from Save & Add Another and local-time conversion).
+- Modules: activities, excursions, news, expo, faqs, networking, facilitators, members, attendee-travel, basics, hero/terminology (via `useSaveStatus`), theme, planner-overview/people/tasks/vendors/checklist/logistics/production pages; Planner list components; `ThemeDesignerModal.tsx`; `ManageModulesModal.tsx`; `CreateEventModal.tsx`; add menus; modal search fields (`data-ignore-dirty`).
+- Copy: `eventSectionMeta.ts`, `AddPersonModal.tsx`, teams, settings, bendie-planner, `/`, `/unauthorized`, root `layout.tsx` metadata.
+- Mechanical class-pattern sweep (empty-state padding, config card padding, header margins, list table cells) across `src/app/portal/**` and `src/components/portal/*`.
+
+### Decisions
+- Density through tokens and repeated patterns first; page-specific changes only where the record presentation itself was the problem (Agenda, metrics, Participants logistics).
+- Agenda keeps its card-like rows rather than a `<table>`, so the same markup stacks cleanly on phones; overflow ⋯ menu only where no ancestor clips overflow (Planner tables keep visible text actions — they are inside `overflow-x-auto` and Edit/Remove need constant access).
+- Dirty detection in `FormModal` is generic (any input/change since open) so every form is protected without per-page wiring or requests; Cancel remains an explicit discard; known false positive after Save & Add Another on Bendie forms (fields cleared but the modal still counts as touched).
+- Needs Attention deep links only where the destination is unambiguous (one event's Emergency or Agenda page). Event workspace access still decides entry.
+- Org "progress" relabelled rather than replaced: the readiness model can't be computed from the batched org list without new per-event reads.
+
+### Requests
+- **One** new read: `PlannerTeamAccessPanel` selects the event's `event_members` (with profiles) on Planner Overview, only for callers who can administer Planner access; aborted on leave.
+- Org Overview speaker-gap query: same single request; `head: true` count → rows with `event_id` plus the count (needed to group gaps per event).
+- No other request added, removed or re-ordered; `/planner-capabilities`, `/planner-readiness`, `/planner-logistics/overview`, `useLatestRequest`/AbortController usage and EventLayout's id-keyed effect are untouched.
+
+### Verification
+- `type-check` clean after every phase.
+- `lint`: 28 warnings, 0 errors (identical to the pass-23 baseline).
+- `next build` succeeded in an isolated copy (placeholder env, `node_modules` junction removed afterwards; real `node_modules` confirmed intact).
+- Tailwind CLI compile confirms the new classes are generated (`.btn-icon`, `.row-action`, `.row-action-danger`, `min-h-[60px]`, `text-headline-lg` = 26px, Agenda grid template, `!min-h-[28px]`, `scroll-mt-4`); the unused `.btn-icon-danger` was removed.
+- **Not performed:** browser/visual verification at 100% zoom or any viewport, and authenticated smoke tests. No browser tooling is available, and port 3000 on this machine serves an unrelated app (no Portal dev server was running).

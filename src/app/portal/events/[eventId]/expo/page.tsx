@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useEvent } from '@/contexts/EventContext';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { TagInput } from '@/components/portal/TagInput';
@@ -232,14 +233,14 @@ export default function ExpoDirectoryPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <SectionHeader sectionKey="expo" desc={`${spaces.length} organisation${spaces.length !== 1 ? 's' : ''} in the directory`} />
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <SectionHeader sectionKey="expo" desc={`${spaces.length} exhibitor${spaces.length !== 1 ? 's' : ''} and sponsor${spaces.length !== 1 ? 's' : ''} in the directory`} />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={openAdd} className="btn-primary">
-            <span className="material-symbols-outlined text-[18px]">add</span> Add Organisation
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add exhibitor or sponsor
           </button>
         </div>
       </div>
@@ -255,25 +256,26 @@ export default function ExpoDirectoryPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-20 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : spaces.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">storefront</p>
-          <p className="text-on-surface-variant">No exhibitors or sponsors yet.</p>
-          <p className="text-on-surface-variant/70 text-sm mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
-        </div>
+<EmptyState
+          icon="storefront"
+          title="No exhibitors or sponsors yet"
+          description="The companies attendees can browse in the app’s Expo directory, with their offer and contact details."
+          actions={<><button onClick={openAdd} className="btn-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add exhibitor or sponsor</button><button onClick={() => setCsvOpen(true)} className="btn-secondary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet</button></>}
+        />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">search</p>
-          <p className="text-on-surface-variant">No organisations match your search.</p>
+          <p className="text-on-surface-variant">No exhibitors or sponsors match your search.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(s => (
-            <div key={s.id} onClick={() => openEdit(s)} className="flex items-center gap-4 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-4 hover:border-primary/30 transition cursor-pointer">
+            <div key={s.id} onClick={() => openEdit(s)} className="flex items-center gap-4 bg-white border border-[#E4EAF0] rounded-2xl panel-shadow px-4 py-3 hover:border-primary/30 transition cursor-pointer">
               {s.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.image_url} alt={s.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                <img src={s.image_url} alt={s.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
               ) : (
-                <div className="w-14 h-14 rounded-xl bg-surface-container-low flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center flex-shrink-0">
                   <span className="material-symbols-outlined text-on-surface-variant/50">storefront</span>
                 </div>
               )}
@@ -305,10 +307,10 @@ export default function ExpoDirectoryPage() {
       )}
 
       {/* Form modal */}
-      <FormModal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Organisation' : 'New Organisation'}>
+      <FormModal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Exhibitor or Sponsor' : 'New Exhibitor or Sponsor'}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label className="label">Name *</label>
+            <label className="label">Company name *</label>
             <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="TechCorp Solutions" />
           </div>
           <div className="sm:col-span-2">
@@ -366,7 +368,7 @@ export default function ExpoDirectoryPage() {
           </div>
         </div>
         <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
-          <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Organisation'}</button>
+          <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add to directory'}</button>
           {!editing && (
             <button onClick={() => handleSave(true)} disabled={saving} className="btn-secondary">
               {saving ? 'Saving...' : 'Save & Add Another'}

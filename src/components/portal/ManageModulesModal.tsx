@@ -58,7 +58,8 @@ export function ManageModulesModal({ eventId, products, current, onClose, onSave
   return (
     <FormModal open onClose={saving ? () => undefined : onClose} title="Manage modules" maxWidthClassName="max-w-3xl">
       <p className="text-sm text-on-surface-variant mb-4">
-        Choose what appears in this event&apos;s navigation. This only changes what you see while setting up — it doesn&apos;t change access, and hiding a module never deletes its data.
+        <span className="font-medium text-on-surface">Workspace modules</span> — choose what your team manages for this event here in the Portal. It doesn&apos;t change access, and hiding a module never deletes its data.
+        To hide something from attendees in the Bendie app, use <span className="font-medium">Event Setup → Basics → Attendee app menu</span>.
       </p>
       <ModulePicker products={products} selected={selected} onChange={setSelected} previouslySelected={initial} />
       <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-outline-variant">

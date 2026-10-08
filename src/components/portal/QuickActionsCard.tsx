@@ -10,8 +10,8 @@ type QuickActionsCardProps = {
 
 export function QuickActionsCard({ onCreateEvent, onAddPerson }: QuickActionsCardProps) {
   return (
-    <div className="bg-white p-6 rounded-[20px] border border-[#E4EAF0] panel-shadow">
-      <h4 className="font-label-md text-label-md text-on-surface mb-4">Quick Actions</h4>
+    <div className="bg-white p-5 rounded-[20px] border border-[#E4EAF0] panel-shadow">
+      <h4 className="font-label-md text-label-md text-on-surface mb-3">Quick Actions</h4>
       <div className="grid grid-cols-1 gap-2">
         {onCreateEvent && (
           <button

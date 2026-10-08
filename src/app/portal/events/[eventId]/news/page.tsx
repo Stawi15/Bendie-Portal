@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useEvent } from '@/contexts/EventContext';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { TagInput } from '@/components/portal/TagInput';
@@ -244,11 +245,11 @@ export default function NewsFeedPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="news" desc={`${items.length} article${items.length !== 1 ? 's' : ''}`} />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={openAdd} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span> Add Article
@@ -259,20 +260,21 @@ export default function NewsFeedPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-24 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">newspaper</p>
-          <p className="text-on-surface-variant">No articles yet.</p>
-          <p className="text-on-surface-variant/70 text-sm mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
-        </div>
+<EmptyState
+          icon="newspaper"
+          title="No articles yet"
+          description="Announcements and stories attendees read in the app’s News Feed. Featured articles appear at the top."
+          actions={<><button onClick={openAdd} className="btn-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add article</button><button onClick={() => setCsvOpen(true)} className="btn-secondary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet</button></>}
+        />
       ) : (
         <div className="space-y-3">
           {items.map(n => (
-            <div key={n.id} onClick={() => openEdit(n)} className="flex items-center gap-4 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-4 hover:border-primary/30 transition cursor-pointer">
+            <div key={n.id} onClick={() => openEdit(n)} className="flex items-center gap-4 bg-white border border-[#E4EAF0] rounded-2xl panel-shadow px-4 py-3 hover:border-primary/30 transition cursor-pointer">
               {n.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={n.image_url} alt={n.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                <img src={n.image_url} alt={n.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
               ) : (
-                <div className="w-16 h-16 rounded-xl bg-surface-container-low flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-lg bg-surface-container-low flex items-center justify-center flex-shrink-0">
                   <span className="material-symbols-outlined text-on-surface-variant/50">newspaper</span>
                 </div>
               )}

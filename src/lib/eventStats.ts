@@ -5,8 +5,21 @@ type Event = EventRow;
 
 export type EventStats = {
   peopleCount: number;
+  /** Share of the setup-basics checks passed, 0–100 (drives the bar width only). */
   progress: number;
+  /** Feature 016: shown as "N of 8" so the figure is never mistaken for event readiness. */
+  checksPassed: number;
+  checksTotal: number;
 };
+
+/**
+ * Plain-language list of what the organisation-level "setup basics" figure checks.
+ * Deliberately NOT the event Dashboard's Required/Recommended/Optional readiness
+ * (that needs per-event module choices and attendee counts this batched list read
+ * doesn't have) — shown as a tooltip so the two are never confused.
+ */
+export const SETUP_BASICS_DESCRIPTION =
+  'Setup basics: description, location, hero image, theme colour, and at least one speaker, agenda session, emergency contact and FAQ. Open the event for its full readiness.';
 
 const PROGRESS_RELATED_TABLES = ['facilitators', 'agenda_sessions', 'emergency_contacts', 'faqs'] as const;
 
@@ -62,6 +75,8 @@ export async function getEventStatsMap(events: Event[]): Promise<Record<string, 
     stats[event.id] = {
       peopleCount: peopleCounts[event.id] ?? 0,
       progress,
+      checksPassed: checks.filter(Boolean).length,
+      checksTotal: checks.length,
     };
   }
 

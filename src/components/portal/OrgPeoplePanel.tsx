@@ -24,7 +24,8 @@ type EventOption = { id: string; name: string };
 type OrgPeoplePanelProps = {
   people: OrgPersonRow[];
   loading: boolean;
-  onAddPerson: () => void;
+  /** Omit when the page already has its own Add Person action (People page) — one add control per page. */
+  onAddPerson?: () => void;
   currentUserId?: string | null;
   onToggleAdmin?: (userId: string, newRole: 'admin' | 'attendee') => void;
   updatingAdminId?: string | null;
@@ -50,14 +51,16 @@ export function OrgPeoplePanel({
 }: OrgPeoplePanelProps) {
   return (
     <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow">
-      <div className="px-4 sm:px-lg py-6 border-b border-outline-variant flex justify-between items-center">
+      <div className="px-4 sm:px-lg py-4 border-b border-outline-variant flex justify-between items-center">
         <h4 className="font-headline-sm text-headline-sm">Organisation People</h4>
+        {onAddPerson && (
         <button
           onClick={onAddPerson}
           className="flex items-center gap-2 text-primary font-label-sm text-label-sm hover:opacity-80"
         >
           <span className="material-symbols-outlined text-[18px]">add</span> Add Person
         </button>
+        )}
       </div>
 
       {loading ? (
@@ -67,7 +70,7 @@ export function OrgPeoplePanel({
           ))}
         </div>
       ) : people.length === 0 ? (
-        <div className="text-center py-16 px-6">
+        <div className="text-center py-10 px-6">
           <p className="text-on-surface-variant text-sm">No one in this organisation yet.</p>
         </div>
       ) : (
@@ -75,17 +78,24 @@ export function OrgPeoplePanel({
           <table className="w-full text-left">
             <thead className="bg-surface-container-low/50">
               <tr>
-                <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant">Person</th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">
+                <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant">Person</th>
+                <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">
                   Org Role
                 </th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">
-                  Events
-                </th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">
-                  Portal Access
-                </th>
-                <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant text-right">
+                {organizationId && (
+                  <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">
+                    Events
+                  </th>
+                )}
+                {onToggleAdmin && (
+                  <th
+                    className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant"
+                    title="Platform administrators can manage every organisation in Bendie Studio"
+                  >
+                    Platform Admin
+                  </th>
+                )}
+                <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant text-right">
                   Last Active
                 </th>
                 {onRemovePerson && <th className="px-4 py-4"></th>}
@@ -94,7 +104,7 @@ export function OrgPeoplePanel({
             <tbody className="divide-y divide-outline-variant/30">
               {people.map((person) => (
                 <tr key={person.userId}>
-                  <td className="px-4 sm:px-lg py-5">
+                  <td className="px-4 sm:px-lg py-3">
                     <div className="flex items-center gap-3">
                       <Avatar name={person.fullName} email={person.email} avatarUrl={person.avatarUrl} size={40} />
                       <div className="min-w-0 flex-1">
@@ -114,12 +124,13 @@ export function OrgPeoplePanel({
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-5 hidden sm:table-cell">
+                  <td className="px-4 py-3 hidden sm:table-cell">
                     <span className="px-2.5 py-1 rounded-md bg-surface-container-low text-on-surface-variant text-xs font-semibold whitespace-nowrap">
                       {ORG_ROLE_LABELS[person.orgRole] ?? person.orgRole}
                     </span>
                   </td>
-                  <td className="px-6 py-5 hidden md:table-cell">
+                  {organizationId && (
+                  <td className="px-4 py-3 hidden md:table-cell">
                     {organizationId ? (
                       <EventAssignmentsDropdown
                         userId={person.userId}
@@ -133,7 +144,9 @@ export function OrgPeoplePanel({
                       <span className="text-xs text-on-surface-variant">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-5">
+                  )}
+                  {onToggleAdmin && (
+                  <td className="px-4 py-3">
                     {onToggleAdmin &&
                       (person.userId === currentUserId ? (
                         <span className="text-xs text-on-surface-variant italic">(you)</span>
@@ -157,11 +170,12 @@ export function OrgPeoplePanel({
                         </button>
                       ))}
                   </td>
-                  <td className="px-4 sm:px-lg py-5 text-right text-body-sm font-body-sm text-on-surface-variant">
+                  )}
+                  <td className="px-4 sm:px-lg py-3 text-right text-body-sm font-body-sm text-on-surface-variant">
                     {formatRelativeTime(person.lastSeenAt)}
                   </td>
                   {onRemovePerson && (
-                    <td className="px-4 py-5 text-right">
+                    <td className="px-4 py-3 text-right">
                       {person.userId !== currentUserId && (
                         <button
                           onClick={() => onRemovePerson(person)}

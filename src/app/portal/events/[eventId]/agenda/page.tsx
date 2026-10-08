@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
+import { SectionHeader } from '@/components/portal/SectionHeader';
+import { RowActionsMenu } from '@/components/portal/RowActionsMenu';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
 import { FormModal } from '@/components/portal/FormModal';
 import { getField, parseFlexibleDate, type ColumnSpec, type RowResult } from '@/lib/csvImport';
@@ -47,6 +49,9 @@ const EMPTY_FORM: SessionForm = {
 };
 
 const BLOCK_TYPES = ['session', 'activity', 'meal', 'transfer', 'freetime', 'ceremony', 'break'];
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+  session: 'Session', activity: 'Activity', meal: 'Meal', transfer: 'Transfer', freetime: 'Free time', ceremony: 'Ceremony', break: 'Break',
+};
 
 // ─── Multi-speaker assignment (agenda_session_speakers) ────────────────────
 
@@ -166,13 +171,24 @@ const AGENDA_CSV_SAMPLES: Record<string, string>[] = [
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * ISO → `datetime-local` value in the browser's LOCAL time. Feature 016 fix: this used
+ * `toISOString().slice(0, 16)` (UTC) while saving parses the input as local time, so in
+ * any non-UTC timezone opening and re-saving a session shifted it by the UTC offset.
+ */
 function toLocal(iso: string | null) {
   if (!iso) return '';
-  return new Date(iso).toISOString().slice(0, 16);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Local calendar day (matches the date shown in the chip and on the session). */
 function dateKeyOf(iso: string) {
-  return new Date(iso).toISOString().slice(0, 10);
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function formatDateLabel(iso: string) {
@@ -219,6 +235,9 @@ export default function AgendaPage() {
   const [search, setSearch] = useState('');
   const [csvOpen, setCsvOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // Feature 016: field-level validation + 'More options' disclosure for rarer settings.
+  const [fieldErrors, setFieldErrors] = useState<{ title?: string; starts_at?: string; ends_at?: string }>({});
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const fetchData = async () => {
     const [sessRes, facRes] = await Promise.all([
@@ -239,6 +258,8 @@ export default function AgendaPage() {
     setSpeakers([]);
     setOriginalSpeakerIds(new Set());
     setBreakoutRooms([]);
+    setFieldErrors({});
+    setMoreOpen(false);
     setShowForm(true);
   };
 
@@ -251,6 +272,9 @@ export default function AgendaPage() {
       accent_color: s.accent_color ?? '',
     });
     setBreakoutRooms(parseBreakoutRooms(s.breakout_rooms));
+    setFieldErrors({});
+    // Never hide settings this session already uses.
+    setMoreOpen((s.audience && s.audience !== 'everyone') || !!s.accent_color || parseBreakoutRooms(s.breakout_rooms).length > 0);
     setSpeakers([]);
     setOriginalSpeakerIds(new Set());
     setShowForm(true);
@@ -304,13 +328,18 @@ export default function AgendaPage() {
       ? { ...r, agenda: r.agenda.map(a => (a.id === itemId ? { ...a, [field]: value } : a)) }
       : r)));
 
-  const handleSave = async () => {
-    if (!form.title) { toast.error('Title is required'); return; }
-    if (!form.starts_at || !form.ends_at) { toast.error('Start and end time are required'); return; }
+  const handleSave = async (keepOpen = false) => {
+    const errors: { title?: string; starts_at?: string; ends_at?: string } = {};
+    if (!form.title.trim()) errors.title = 'Give the session a title.';
+    if (!form.starts_at) errors.starts_at = 'Choose when the session starts.';
+    if (!form.ends_at) errors.ends_at = 'Choose when the session ends.';
+    else if (form.starts_at && new Date(form.ends_at) <= new Date(form.starts_at)) errors.ends_at = 'The end must be after the start.';
+    setFieldErrors(errors);
+    if (errors.title || errors.starts_at || errors.ends_at) return;
     for (const room of breakoutRooms) {
-      if (!room.name.trim()) { toast.error('Every breakout room needs a name'); return; }
+      if (!room.name.trim()) { setMoreOpen(true); toast.error('Every breakout room needs a name'); return; }
       for (const item of room.agenda) {
-        if (!item.title.trim()) { toast.error(`Every time block in "${room.name}" needs a title`); return; }
+        if (!item.title.trim()) { setMoreOpen(true); toast.error(`Every time block in "${room.name}" needs a title`); return; }
       }
     }
 
@@ -346,25 +375,38 @@ export default function AgendaPage() {
       const toDelete = [...originalSpeakerIds].filter(id => !speakers.some(s => s.dbId === id));
       if (toDelete.length > 0) {
         const { error } = await supabase.from('agenda_session_speakers').delete().in('id', toDelete);
-        if (error) toast.error(`Failed to remove some speakers: ${error.message}`);
+        if (error) toast.error(friendlyError(error, 'Some speakers couldn’t be removed from this session — try again.'));
       }
       for (let i = 0; i < speakers.length; i++) {
         const sp = speakers[i];
         if (sp.dbId) {
           const { error } = await supabase.from('agenda_session_speakers')
             .update({ speaker_type: sp.speaker_type, display_order: i }).eq('id', sp.dbId);
-          if (error) toast.error(`Failed to update a speaker: ${error.message}`);
+          if (error) toast.error(friendlyError(error, 'A speaker on this session couldn’t be updated — try again.'));
         } else {
           const { error } = await supabase.from('agenda_session_speakers').insert({
             session_id: sessionId, facilitator_id: sp.facilitator_id, speaker_type: sp.speaker_type, display_order: i,
           });
-          if (error) toast.error(`Failed to add a speaker: ${error.message}`);
+          if (error) toast.error(friendlyError(error, 'A speaker couldn’t be added to this session — try again.'));
         }
       }
     }
 
     toast.success(editing ? 'Session updated' : 'Session added');
-    setShowForm(false);
+    if (keepOpen && !editing) {
+      // Feature 016 — Save & Add Another: the next session usually follows this one in the
+      // same place, so it starts when this one ended (same length) with the same type and
+      // location. Title, description, speakers and breakout rooms are cleared.
+      const lengthMs = new Date(form.ends_at).getTime() - new Date(form.starts_at).getTime();
+      const nextStart = new Date(form.ends_at);
+      setForm({ ...EMPTY_FORM, block_type: form.block_type, location: form.location, starts_at: toLocal(nextStart.toISOString()), ends_at: toLocal(new Date(nextStart.getTime() + lengthMs).toISOString()) });
+      setSpeakers([]);
+      setOriginalSpeakerIds(new Set());
+      setBreakoutRooms([]);
+      setFieldErrors({});
+    } else {
+      setShowForm(false);
+    }
     fetchData();
     setSaving(false);
   };
@@ -479,64 +521,80 @@ export default function AgendaPage() {
       .map(([key, { count, sample }]) => ({ key, count, label: formatDateLabel(sample) }));
   })();
 
-  const effectiveDate = selectedDate ?? dateGroups[0]?.key ?? null;
+  const allDateCount = new Set(sessions.map((x) => dateKeyOf(x.starts_at))).size;
+  // A selected day that the search no longer matches falls back to the first matching day.
+  const effectiveDate = (selectedDate && dateGroups.some((d) => d.key === selectedDate) ? selectedDate : null) ?? dateGroups[0]?.key ?? null;
   const filtered = effectiveDate ? searched.filter(s => dateKeyOf(s.starts_at) === effectiveDate) : searched;
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="font-headline-md text-headline-md text-on-surface">Agenda</h1>
-          <span className="px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-semibold whitespace-nowrap">
-            {sessions.length} session{sessions.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <SectionHeader
+          sectionKey="agenda"
+          desc={sessions.length === 0 ? undefined : `${sessions.length} session${sessions.length !== 1 ? 's' : ''} across ${allDateCount} day${allDateCount !== 1 ? 's' : ''}`}
+        />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
           </button>
           <button onClick={openAdd} className="btn-primary">
-            <span className="material-symbols-outlined text-[18px]">add</span> Add Session
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
           </button>
         </div>
       </div>
 
       {/* Form modal */}
       <FormModal open={showForm} onClose={() => setShowForm(false)} title={editing ? 'Edit Session' : 'New Session'}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
             <div className="sm:col-span-2">
-              <label className="label">Session Title *</label>
-              <input className="input" value={form.title} onChange={set('title')} placeholder="Opening Keynote" />
+              <label className="label" htmlFor="agenda-title">Session Title *</label>
+              <input
+                id="agenda-title"
+                className={`input ${fieldErrors.title ? 'border-error' : ''}`}
+                value={form.title}
+                onChange={(e) => { set('title')(e); if (fieldErrors.title) setFieldErrors((p) => ({ ...p, title: undefined })); }}
+                placeholder="Opening Keynote"
+                aria-invalid={!!fieldErrors.title}
+                aria-describedby={fieldErrors.title ? 'agenda-title-error' : undefined}
+              />
+              {fieldErrors.title && <p id="agenda-title-error" className="text-xs text-error mt-1">{fieldErrors.title}</p>}
             </div>
             <div>
-              <label className="label">Start *</label>
-              <input type="datetime-local" className="input" value={form.starts_at} onChange={set('starts_at')} />
+              <label className="label" htmlFor="agenda-start">Start *</label>
+              <input
+                id="agenda-start"
+                type="datetime-local"
+                className={`input ${fieldErrors.starts_at ? 'border-error' : ''}`}
+                value={form.starts_at}
+                onChange={(e) => { set('starts_at')(e); setFieldErrors((p) => ({ ...p, starts_at: undefined, ends_at: undefined })); }}
+                aria-invalid={!!fieldErrors.starts_at}
+                aria-describedby={fieldErrors.starts_at ? 'agenda-start-error' : undefined}
+              />
+              {fieldErrors.starts_at && <p id="agenda-start-error" className="text-xs text-error mt-1">{fieldErrors.starts_at}</p>}
             </div>
             <div>
-              <label className="label">End *</label>
-              <input type="datetime-local" className="input" value={form.ends_at} onChange={set('ends_at')} />
+              <label className="label" htmlFor="agenda-end">End *</label>
+              <input
+                id="agenda-end"
+                type="datetime-local"
+                className={`input ${fieldErrors.ends_at ? 'border-error' : ''}`}
+                value={form.ends_at}
+                min={form.starts_at || undefined}
+                onChange={(e) => { set('ends_at')(e); setFieldErrors((p) => ({ ...p, ends_at: undefined })); }}
+                aria-invalid={!!fieldErrors.ends_at}
+                aria-describedby={fieldErrors.ends_at ? 'agenda-end-error' : undefined}
+              />
+              {fieldErrors.ends_at && <p id="agenda-end-error" className="text-xs text-error mt-1">{fieldErrors.ends_at}</p>}
             </div>
             <div>
-              <label className="label">Block Type</label>
+              <label className="label">Session Type</label>
               <select className="input" value={form.block_type} onChange={set('block_type')}>
-                {BLOCK_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                {BLOCK_TYPES.map(t => <option key={t} value={t}>{BLOCK_TYPE_LABELS[t] ?? t}</option>)}
               </select>
-            </div>
-            <div>
-              <label className="label">Audience</label>
-              <input className="input" value={form.audience} onChange={set('audience')} placeholder="everyone" />
             </div>
             <div>
               <label className="label">Location</label>
               <input className="input" value={form.location} onChange={set('location')} placeholder="Main Hall" />
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <label className="label">Accent Color</label>
-                <input className="input font-mono" value={form.accent_color} onChange={set('accent_color')} placeholder="#3B82F6" />
-              </div>
-              <input type="color" value={form.accent_color || '#3B82F6'} onChange={e => setForm(p => ({ ...p, accent_color: e.target.value }))}
-                className="mt-5 w-10 h-10 rounded-lg cursor-pointer border border-outline-variant p-0.5" />
             </div>
             <div className="sm:col-span-2">
               <label className="label">Description</label>
@@ -553,148 +611,196 @@ export default function AgendaPage() {
             onChangeType={handleChangeSpeakerType}
           />
 
-          <BreakoutRoomsPanel
-            rooms={breakoutRooms}
-            onAddRoom={handleAddRoom}
-            onRemoveRoom={handleRemoveRoom}
-            onMoveRoom={handleMoveRoom}
-            onChangeRoomField={handleChangeRoomField}
-            onAddAgendaItem={handleAddAgendaItem}
-            onRemoveAgendaItem={handleRemoveAgendaItem}
-            onMoveAgendaItem={handleMoveAgendaItem}
-            onChangeAgendaItemField={handleChangeAgendaItemField}
-          />
+          {/* Feature 016 density pass — rarer settings (audience, accent colour, breakout rooms)
+              behind a disclosure; opened automatically when the session already uses them. */}
+          <details className="border-t border-outline-variant mt-4 pt-3 group" open={moreOpen} onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)}>
+            <summary className="cursor-pointer select-none text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide flex items-center gap-1">
+              <span className="material-symbols-outlined text-[18px] transition-transform group-open:rotate-90" aria-hidden="true">chevron_right</span>
+              More options
+              <span className="normal-case tracking-normal font-normal text-xs text-on-surface-variant/80 ml-1">Audience, accent colour, breakout rooms</span>
+            </summary>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 mt-3">
+              <div>
+                <label className="label">Audience</label>
+                <input className="input" value={form.audience} onChange={set('audience')} placeholder="everyone" />
+                <p className="hint">Shown as a pill on the session in the attendee app.</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <label className="label">Accent Colour</label>
+                  <input className="input font-mono" value={form.accent_color} onChange={set('accent_color')} placeholder="#3B82F6" />
+                  <p className="hint">Leave empty to use the session type&apos;s colour.</p>
+                </div>
+                <input
+                  type="color"
+                  aria-label="Pick accent colour"
+                  value={form.accent_color || '#3B82F6'}
+                  onChange={e => setForm(p => ({ ...p, accent_color: e.target.value }))}
+                  className="mt-6 w-9 h-9 rounded-lg cursor-pointer border border-outline-variant p-0.5"
+                />
+              </div>
+            </div>
+            <BreakoutRoomsPanel
+              rooms={breakoutRooms}
+              onAddRoom={handleAddRoom}
+              onRemoveRoom={handleRemoveRoom}
+              onMoveRoom={handleMoveRoom}
+              onChangeRoomField={handleChangeRoomField}
+              onAddAgendaItem={handleAddAgendaItem}
+              onRemoveAgendaItem={handleRemoveAgendaItem}
+              onMoveAgendaItem={handleMoveAgendaItem}
+              onChangeAgendaItemField={handleChangeAgendaItemField}
+            />
+          </details>
 
-          <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant">
-            <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Session'}</button>
+          <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
+            <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">{saving ? 'Saving...' : editing ? 'Update' : 'Add Session'}</button>
+            {!editing && (
+              <button onClick={() => handleSave(true)} disabled={saving} className="btn-secondary">
+                {saving ? 'Saving...' : 'Save & Add Another'}
+              </button>
+            )}
             <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
           </div>
       </FormModal>
 
       {loading ? (
-        <div className="animate-pulse space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-20 bg-surface-container-low rounded-[20px]" />)}</div>
+        <div className="animate-pulse space-y-2">{[1, 2, 3, 4].map(i => <div key={i} className="h-14 bg-surface-container-low rounded-xl" />)}</div>
       ) : sessions.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">calendar_month</p>
-          <p className="text-on-surface-variant">No sessions yet. Add the first agenda item.</p>
+        <div className="text-center py-10 px-6 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-2" aria-hidden="true">calendar_month</p>
+          <p className="font-medium text-on-surface">No sessions yet</p>
+          <p className="text-sm text-on-surface-variant mt-1 max-w-md mx-auto">
+            Build the programme attendees see in the app&apos;s Agenda. Add sessions one by one, or bring in your whole schedule from a spreadsheet.
+          </p>
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            <button onClick={openAdd} className="btn-primary">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
+            </button>
+            <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
-          {/* Dates sidebar */}
-          <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-4 lg:self-start">
-            <h3 className="font-semibold text-on-surface mb-3">Dates</h3>
-            <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible">
+        <div>
+          {/* Feature 016 density pass — dates as compact horizontal chips (was a 220px side rail);
+              same "one day at a time" behaviour, counts follow the search. */}
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-3">
+            <div role="tablist" aria-label="Agenda days" className="flex gap-1.5 overflow-x-auto custom-scrollbar pb-1 lg:pb-0 flex-1 min-w-0">
               {dateGroups.map(d => {
                 const active = d.key === effectiveDate;
                 return (
                   <button
                     key={d.key}
+                    role="tab"
+                    aria-selected={active}
                     onClick={() => setSelectedDate(d.key)}
-                    className={`flex-shrink-0 flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition ${
+                    className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap border transition ${
                       active
-                        ? 'bg-primary/10 text-primary border border-primary/30'
-                        : 'text-on-surface-variant border border-transparent hover:bg-surface-container-low'
+                        ? 'bg-primary/10 text-primary border-primary/30'
+                        : 'text-on-surface-variant border-outline-variant bg-white hover:border-primary/30 hover:text-on-surface'
                     }`}
                   >
-                    <span>{d.label}</span>
-                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${active ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant'}`}>
+                    {d.label}
+                    <span className={`text-[11px] font-bold px-1.5 rounded-full ${active ? 'bg-primary text-white' : 'bg-surface-container-low text-on-surface-variant'}`}>
                       {d.count}
                     </span>
                   </button>
                 );
               })}
             </div>
-          </div>
-
-          {/* Sessions for the selected date */}
-          <div>
-            <div className="mb-4 max-w-sm">
+            <div className="lg:w-72 flex-shrink-0">
               <input
-                type="text"
-                placeholder="Search by title, location, speaker..."
+                type="search"
+                aria-label="Search sessions"
+                placeholder="Search title, location, speaker…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="input w-full"
               />
             </div>
+          </div>
 
-            {filtered.length === 0 ? (
-              <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-                <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">search</p>
-                <p className="text-on-surface-variant">No sessions match your search.</p>
+          {filtered.length === 0 ? (
+            <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+              <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-2" aria-hidden="true">search</p>
+              <p className="text-on-surface-variant">No sessions match your search.</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+              <div className="hidden md:grid grid-cols-[112px_minmax(0,1fr)_minmax(0,160px)_minmax(0,180px)_40px] gap-4 px-4 py-2 border-b border-outline-variant text-xs font-semibold text-on-surface-variant">
+                <span>Time</span>
+                <span>Session</span>
+                <span>Location</span>
+                <span>Speaker</span>
+                <span className="sr-only">Actions</span>
               </div>
-            ) : (
-              <div className="space-y-3">
+              <ul className="divide-y divide-outline-variant/40">
                 {filtered.map(s => {
                   const fac = facilitators.find(f => f.id === s.facilitator_id);
                   const accent = s.accent_color || (s.block_type ? BLOCK_ACCENT[s.block_type] : undefined) || '#3B82F6';
                   const roomCount = parseBreakoutRooms(s.breakout_rooms).length;
                   return (
-                    <div
+                    <li
                       key={s.id}
-                      className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 hover:border-primary/30 transition"
-                      style={{ borderLeftColor: accent, borderLeftWidth: 4 }}
-                      onClick={() => openEdit(s)}
+                      className="relative grid grid-cols-[minmax(0,1fr)_40px] md:grid-cols-[112px_minmax(0,1fr)_minmax(0,160px)_minmax(0,180px)_40px] gap-x-4 gap-y-1 items-center pl-4 pr-2 py-2.5 hover:bg-surface-container-low/40 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
-                          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-                            {s.block_type && (
-                              <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${BLOCK_COLOR[s.block_type] ?? 'bg-surface-container-low text-on-surface-variant'}`}>
-                                {s.block_type}
-                              </span>
-                            )}
-                            {roomCount > 0 && (
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-100 text-purple-700">
-                                <span className="material-symbols-outlined text-[12px]">meeting_room</span> {roomCount} room{roomCount !== 1 ? 's' : ''}
-                              </span>
-                            )}
-                          </div>
-                          <p className="font-bold text-lg text-on-surface">{s.title}</p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button onClick={(e) => { e.stopPropagation(); openEdit(s); }} className="p-1.5 rounded-lg text-on-surface-variant hover:text-primary hover:bg-primary/5 transition-colors" aria-label={`Edit ${s.title}`}>
-                            <span className="material-symbols-outlined text-[18px]">edit</span>
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id, s.title); }} className="p-1.5 rounded-lg text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors" aria-label={`Delete ${s.title}`}>
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-on-surface-variant text-[18px] mt-0.5">schedule</span>
-                          <div>
-                            <p className="text-xs text-on-surface-variant">Time</p>
-                            <p className="text-sm text-on-surface font-medium">{formatDateLabel(s.starts_at)}</p>
-                            <p className="text-sm text-on-surface-variant">{formatTimeOnly(s.starts_at)} → {formatTimeOnly(s.ends_at)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-on-surface-variant text-[18px] mt-0.5">location_on</span>
-                          <div>
-                            <p className="text-xs text-on-surface-variant">Location</p>
-                            <p className="text-sm text-on-surface font-medium">{s.location || '—'}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-2">
-                          {fac ? (
-                            <Avatar name={fac.full_name} email={fac.email} size={28} />
-                          ) : (
-                            <span className="material-symbols-outlined text-on-surface-variant text-[18px] mt-0.5">person</span>
+                      <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r" style={{ backgroundColor: accent }} aria-hidden="true" />
+                      <p className="text-sm font-semibold text-on-surface tabular-nums whitespace-nowrap md:col-auto col-span-1">
+                        {formatTimeOnly(s.starts_at)}–{formatTimeOnly(s.ends_at)}
+                      </p>
+                      <div className="min-w-0 row-start-2 col-start-1 md:row-auto md:col-auto">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(s)}
+                          className="text-left text-sm font-semibold text-on-surface hover:text-primary truncate max-w-full block focus-visible:outline-none focus-visible:underline"
+                          title={`Edit ${s.title}`}
+                        >
+                          {s.title}
+                        </button>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {s.block_type && (
+                            <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-px rounded ${BLOCK_COLOR[s.block_type] ?? 'bg-surface-container-low text-on-surface-variant'}`}>
+                              {BLOCK_TYPE_LABELS[s.block_type] ?? s.block_type}
+                            </span>
                           )}
-                          <div>
-                            <p className="text-xs text-on-surface-variant">Speaker</p>
-                            <p className="text-sm text-on-surface font-medium">{fac?.full_name ?? 'No speaker'}</p>
-                          </div>
+                          {roomCount > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider px-1.5 py-px rounded bg-purple-100 text-purple-700">
+                              <span className="material-symbols-outlined text-[12px]" aria-hidden="true">meeting_room</span> {roomCount} room{roomCount !== 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    </div>
+                      <p className="text-sm text-on-surface-variant truncate row-start-3 col-start-1 md:row-auto md:col-auto">
+                        <span className="md:hidden material-symbols-outlined text-[14px] align-[-2px] mr-0.5" aria-hidden="true">location_on</span>
+                        {s.location || <span className="text-on-surface-variant/50">—</span>}
+                      </p>
+                      <div className="flex items-center gap-2 min-w-0 row-start-4 col-start-1 md:row-auto md:col-auto">
+                        {fac ? (
+                          <>
+                            <Avatar name={fac.full_name} email={fac.email} size={22} />
+                            <span className="text-sm text-on-surface truncate">{fac.full_name}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-on-surface-variant/60">No speaker</span>
+                        )}
+                      </div>
+                      <div className="row-start-1 col-start-2 md:row-auto md:col-auto justify-self-end">
+                        <RowActionsMenu
+                          label={`Actions for ${s.title}`}
+                          actions={[
+                            { label: 'Edit', icon: 'edit', onSelect: () => openEdit(s) },
+                            { label: 'Delete', icon: 'delete', destructive: true, onSelect: () => handleDelete(s.id, s.title) },
+                          ]}
+                        />
+                      </div>
+                    </li>
                   );
                 })}
-              </div>
-            )}
-          </div>
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -735,8 +841,8 @@ function SpeakersPanel({
   const availableFacilitators = facilitators.filter(f => !speakers.some(s => s.facilitator_id === f.id));
 
   return (
-    <div className="border-t border-outline-variant mt-4 pt-4">
-      <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-3">Speakers</h3>
+    <div className="border-t border-outline-variant mt-4 pt-3">
+      <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-2">Speakers</h3>
       {speakers.length === 0 ? (
         <p className="text-sm text-on-surface-variant/70 italic mb-3">No speakers assigned yet.</p>
       ) : (
@@ -820,7 +926,7 @@ function BreakoutRoomsPanel({
   onChangeAgendaItemField: (roomId: string, itemId: string, field: keyof BreakoutAgendaItem, value: string) => void;
 }) {
   return (
-    <div className="border-t border-outline-variant mt-4 pt-4">
+    <div className="mt-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide">Breakout Rooms</h3>
         <button type="button" onClick={onAddRoom} className="btn-secondary text-xs py-1.5">

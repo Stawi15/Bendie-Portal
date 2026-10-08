@@ -25,7 +25,7 @@ function formatLegLabel(flightType: string | null): string {
 export function PlannerFlightList({ flights, canManage, busyId, onEdit, onDelete, onToggleMarked, onAdd, onImportCsv }: PlannerFlightListProps) {
   if (flights.length === 0) {
     return (
-      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-16 px-6">
+      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-10 px-6">
         <p className="text-on-surface-variant text-sm">No flights added to this event yet.</p>
         {canManage && (onAdd || onImportCsv) && (
           <>
@@ -33,7 +33,7 @@ export function PlannerFlightList({ flights, canManage, busyId, onEdit, onDelete
             <div className="flex items-center justify-center gap-2 mt-4">
               {onImportCsv && (
                 <button className="btn-secondary" onClick={onImportCsv}>
-                  Import CSV
+                  Import spreadsheet
                 </button>
               )}
               {onAdd && (
@@ -53,13 +53,13 @@ export function PlannerFlightList({ flights, canManage, busyId, onEdit, onDelete
       <table className="w-full text-left">
         <thead className="bg-surface-container-low/50">
           <tr>
-            <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant">Participant</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Leg</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Flight</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Date</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Depart / Arrive</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Confirmed</th>
-            {canManage && <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
+            <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant">Participant</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Leg</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Flight</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Date</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Depart / Arrive</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Confirmed</th>
+            {canManage && <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-outline-variant/30">
@@ -67,22 +67,22 @@ export function PlannerFlightList({ flights, canManage, busyId, onEdit, onDelete
             const isBusy = busyId === f.id;
             return (
               <tr key={f.id} className="hover:bg-surface-container-low/20 transition-colors align-top">
-                <td className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface">{f.passengerName}</td>
-                <td className="px-6 py-4 text-body-sm font-body-sm text-on-surface-variant">{formatLegLabel(f.flightType)}</td>
-                <td className="px-6 py-4 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">{[f.flightCode, f.region].filter(Boolean).join(' · ') || '—'}</td>
-                <td className="px-6 py-4 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{f.flightDate ?? '—'}</td>
-                <td className="px-6 py-4 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">
+                <td className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface">{f.passengerName}</td>
+                <td className="px-4 py-2.5 text-body-sm font-body-sm text-on-surface-variant">{formatLegLabel(f.flightType)}</td>
+                <td className="px-4 py-2.5 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">{[f.flightCode, f.region].filter(Boolean).join(' · ') || '—'}</td>
+                <td className="px-4 py-2.5 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{f.flightDate ?? '—'}</td>
+                <td className="px-4 py-2.5 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">
                   {[f.departureTime?.slice(0, 5), f.arrivalTime?.slice(0, 5)].filter(Boolean).join(' → ') || '—'}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-2.5">
                   <input type="checkbox" className="w-4 h-4 accent-primary rounded" checked={f.marked} disabled={!canManage || isBusy} onChange={(e) => onToggleMarked(f, e.target.checked)} />
                 </td>
                 {canManage && (
-                  <td className="px-4 sm:px-lg py-4 text-right space-x-2 whitespace-nowrap">
-                    <button className="btn-secondary text-xs py-1.5" onClick={() => onEdit(f)} disabled={isBusy}>
+                  <td className="px-4 sm:px-lg py-2.5 text-right space-x-2 whitespace-nowrap">
+                    <button className="row-action" onClick={() => onEdit(f)} disabled={isBusy}>
                       Edit
                     </button>
-                    <button className="btn-danger text-xs py-1.5" onClick={() => onDelete(f)} disabled={isBusy}>
+                    <button className="row-action-danger" onClick={() => onDelete(f)} disabled={isBusy}>
                       Delete
                     </button>
                   </td>
