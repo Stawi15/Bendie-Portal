@@ -57,7 +57,8 @@ There is no `agent/`, `actions/`, or `services/` layer — this is a much flatte
 | Folder             | Owns                                                                                  |
 | ------------------- | -------------------------------------------------------------------------------------- |
 | `app/portal/**`     | Pages. Each page owns its own data fetching, form state, and Supabase calls — there is no separate "service layer" to route through. |
-| `app/api/admin/**`  | The only server-side privileged operations (service-role user creation). Every route re-verifies the caller is `global_role = 'admin'` via the cookie-based server client before touching the service-role client — never trust the client body alone. |
+| `app/api/admin/**`  | Platform-wide privileged operations (service-role). Every route re-verifies the caller is `global_role = 'admin'` via the cookie-based server client before touching the service-role client — never trust the client body alone. Stays platform-admin-only (constitution v1.1.0, Principle II). |
+| `app/api/events/**`, `app/api/organizations/**` | Organization-scoped privileged operations (constitution v1.1.0). Each route re-verifies, per request, that the caller is a platform admin **or** an owner/admin of the organization that owns the target record — resolved server-side (e.g. `events.organization_id`, or the route's organization verified against `organization_members`), never from a client-supplied or "currently selected" org id. Precedent: Feature 008 `planner-permissions/*` via `canAdministerPlannerPermissions`. Must never escalate (no platform admin, no org owner/admin grants unless a spec allows it, no cross-organization access). |
 | `components/portal` | Presentational + lightly-stateful UI (modals, cards, badges). Can call Supabase directly (e.g. `AssetPickerModal`) — this project does not enforce "components never touch the DB." |
 | `contexts/`         | Cross-page state: current user/profile, current event, current organization, a shared confirm-dialog. |
 | `lib/`              | Supabase client singleton, auth/role helpers, CSV parsing, asset upload, and small per-domain hooks (`useOrgEvents`, `useTeams`, etc.). |
@@ -96,11 +97,13 @@ if (user && pathname.startsWith('/portal')) {
 }
 ```
 
-**Privileged API route pattern** (`src/app/api/admin/create-user/route.ts`):
+**Privileged API route pattern** (`src/app/api/admin/create-user/route.ts`; org-scoped variant: `src/app/api/events/[eventId]/members/[memberId]/planner-permissions/enable/route.ts`):
 
 ```typescript
 // 1. Build a cookie-based server client, call auth.getUser()
-// 2. Look up profiles.global_role for that user — reject with 401/403 if not admin
+// 2. Authorize server-side — reject with 401/403 otherwise:
+//    platform-wide route: profiles.global_role = 'admin'
+//    org-scoped route:    platform admin OR owner/admin of the target record's own organization
 // 3. Only then construct the service-role client and perform the privileged action
 const adminClient = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -189,6 +192,6 @@ see `specs/001-bendie-planner-integration/` for the full spec/plan/tasks.
 
 - `/portal/*` is unreachable without `profiles.global_role = 'admin'` — enforced in `middleware.ts`, backstopped by RLS (never rely on middleware alone).
 - Every Supabase write from the client stamps `event_id` (or `organization_id`) to the current context — never a user-editable field.
-- Privileged operations (user creation) only ever happen server-side in `app/api/admin/*`, gated by a fresh role check, never by trusting a client-supplied "I'm an admin" flag.
+- Privileged (service-role) operations only ever happen server-side in route handlers, gated by a fresh per-request authorization check, never by trusting a client-supplied "I'm an admin" flag: platform-wide operations in `app/api/admin/*` (platform admin only), organization-scoped ones elsewhere (platform admin or owner/admin of the target's own organization) — constitution v1.1.0, Principle II.
 - No hardcoded hex values or raw Tailwind color classes in components — use the tokens in `ui-tokens.md`.
 - Facilitators are populated via CSV import as the primary path — if you add fields to the facilitators form/table, verify the CSV template/parser (`src/lib/csvImport.ts` + `CsvImportModal.tsx`) covers them, per schema-reference.md's 2026-08-18 note that new fields have gone live without CSV support before.

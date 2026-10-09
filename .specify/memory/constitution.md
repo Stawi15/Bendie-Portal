@@ -1,19 +1,32 @@
 <!--
 Sync Impact Report
-Version change: (unratified template) → 1.0.0
-Modified principles: n/a — initial ratification, all principles newly added
-Added sections:
-  - Core Principles I–IX (Brownfield Preservation, Architecture Boundaries,
-    Supabase and Database Safety, Security, UI Consistency, Scope Discipline,
-    Documentation Discipline, Verification and Quality, Spec Kit + JSM
-    Responsibilities)
-  - Source-of-Truth Priority
-  - Governance
-Removed sections: the 5 generic [PRINCIPLE_N_NAME] placeholders and the
-  [SECTION_2_NAME]/[SECTION_3_NAME] placeholders from constitution-template
-  (replaced with project-specific content; no third free section was needed
-  and none was retained as an unfilled placeholder)
-Follow-up TODOs: none — no placeholder was left undefined
+Version change: 1.1.0 → 1.1.1 (PATCH — wording/clarification only; no new obligation)
+Modified principles:
+  - III. Supabase and Database Safety — migration naming now describes the real repository
+    convention (descriptive snake_case names; later-sorting name, e.g. `zz_`, when a file
+    supersedes earlier ones) instead of "sequential numeric prefix", which only the earliest files
+    follow. Renaming/reordering applied files stays forbidden (made explicit).
+Added sections: none
+Removed sections: none
+Approved by: the developer, 2026-10-09 (resolves /speckit-analyze finding C1, Feature 017).
+Follow-up TODOs: none.
+
+Previous amendment —
+Version change: 1.0.0 → 1.1.0 (MINOR — materially expanded guidance; no principle removed)
+Modified principles:
+  - II. Architecture Boundaries — privileged operations may now be authorized by either platform
+    admin or, for single-organization operations, an owner/admin of that organization (resolved
+    server-side); app/api/admin/** stays platform-admin-only; explicit no-escalation rule added.
+    Codifies the precedent already shipped in Feature 008 (planner-permissions routes).
+  - IV. Security — gating reference updated from "same as app/api/admin/**" to the two
+    authorization tiers defined in Principle II.
+Added sections: none
+Removed sections: none
+Approved by: the developer, 2026-10-09. First consumer: Feature 017 (client organization admins
+  create member accounts for their own organization).
+Follow-up TODOs: none. Note for /architect and /review: context/architecture.md and
+  context/code-standards.md may still describe privileged routes as admin-only — flag and
+  reconcile if found (Governance rule), not done by this amendment.
 -->
 
 # Bendie Portal Constitution
@@ -35,20 +48,36 @@ The application is a standard Next.js 14 App Router project (TypeScript) with no
 layer and no service/repository layer — pages under `app/portal/**` own their own data fetching
 and mutation directly via the shared browser Supabase client. This MUST NOT change without an
 approved specification; do not introduce Server Actions or a service layer for a single new
-feature. Privileged operations (anything requiring the Supabase service-role key) MUST live only
-in `app/api/admin/**` route handlers, each independently re-verifying the caller is
-`profiles.global_role = 'admin'` server-side before performing the privileged action — never trust
-a client-supplied authorization flag, and never assume a UI-level check is sufficient. New features
+feature. Privileged operations (anything requiring the Supabase service-role key) MUST live only in
+server-side route handlers, each independently re-verifying the caller's authorization server-side
+immediately before performing the privileged action — never trust a client-supplied authorization
+flag, and never assume a UI-level check is sufficient. Exactly two authorization tiers are allowed:
+- **Platform admin** (`profiles.global_role = 'admin'`): the only tier for `app/api/admin/**`,
+  which MUST remain platform-admin-only.
+- **Organization owner/admin**, only for operations scoped to a single organization: the caller
+  MUST be an owner/admin of the organization that owns the target record, resolved server-side from
+  that record (e.g. `events.organization_id`) or from a route-addressed organization verified
+  against `organization_members` — never from a client-supplied or "currently selected"
+  organization id taken on trust. Such routes live outside `app/api/admin/**` (e.g.
+  `app/api/events/**`, `app/api/organizations/**`), following the precedent of Feature 008's
+  `planner-permissions` routes and `canAdministerPlannerPermissions`.
+Organization-scoped privilege MUST NOT allow escalation: it can never grant platform admin, never
+grant organization owner/admin roles unless an approved spec explicitly allows it, and never read or
+act on another organization's people or records. New features
 MUST reuse existing helpers, hooks, and shared components (`src/lib/**`, `src/components/portal/**`,
 `src/contexts/**`) before writing new ones, and event-scoped work MUST fit within the existing
 `app/portal/events/[eventId]/<section>` tab-section model rather than inventing a new navigational
 structure.
 
 ### III. Supabase and Database Safety
-Every schema change MUST go through a numbered migration in `supabase/migrations/`, following the
-existing convention (sequential numeric prefix, snake_case description, a header comment explaining
-*why* the migration exists). Migrations MUST NOT be created for logic-only or documentation-only
-changes, and a migration already applied to production MUST NOT be deleted even if later superseded.
+Every schema change MUST go through a migration file in `supabase/migrations/`, following the
+existing convention: a descriptive snake_case file name and a header comment explaining *why* the
+migration exists (only the earliest files carry numeric prefixes). When a migration replaces
+objects created by earlier files, its name MUST sort after theirs in filename order so a fresh
+replay applies it last — a `zz_` prefix is the established way (precedent:
+`zz_event_members_role_guard_final_authoritative.sql`). Migrations MUST NOT be created for
+logic-only or documentation-only changes, and a migration already applied to production MUST NOT be
+deleted, renamed, or reordered even if later superseded.
 Row Level Security MUST be explicitly considered for every new table and column — reuse the
 existing `portal_is_global_admin()` bypass pattern for admin-only data, or the dual
 restrictive-policy pattern for data attendees also read, matching whichever precedent the new
@@ -67,8 +96,10 @@ Environment variables MUST follow the existing convention: public/browser-safe v
 referenced outside server-only code paths. Service-role credentials MUST NEVER be exposed to or
 usable from the browser. Every privileged action MUST perform its own authentication and
 authorization check immediately before acting, independent of any check already done in a calling
-layer, and any cross-project or admin-only operation MUST remain server-only, gated the same way as
-existing `app/api/admin/**` routes. No API response MUST ever echo back a secret, key, or raw
+layer, and any cross-project or admin-only operation MUST remain server-only, gated by one of the
+two authorization tiers defined in Principle II (platform-wide operations by platform admin only;
+organization-scoped operations by platform admin or an owner/admin of that same organization). No
+API response MUST ever echo back a secret, key, or raw
 credential. New code SHOULD default to the least privilege that accomplishes the task — reach for
 the service-role client only when the operation genuinely requires bypassing RLS, not as a default
 convenience.
@@ -148,4 +179,4 @@ MUST be flagged and reconciled explicitly, not silently overridden in either dir
 and `/review` MUST check proposed and completed work against these principles as part of their
 existing validation/review responsibilities.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-10 | **Last Amended**: 2026-09-10
+**Version**: 1.1.1 | **Ratified**: 2026-09-10 | **Last Amended**: 2026-10-09
