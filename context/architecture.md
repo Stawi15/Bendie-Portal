@@ -80,6 +80,8 @@ Two tiers, both real and in use:
 - **Global gate** (`profiles.global_role = 'admin'`) — required for `/portal/*` at all. Checked in `src/middleware.ts`.
 - **Org/event-scoped roles** (`organization_members.role`, `event_members.role`) — `host`/`organizer`/`admin` at the event level, `owner`/`admin` at the org level; checked via helpers in `src/lib/portalAuth.ts` (`canManageEvent`, `isOrgAdmin`, `getUserEventRole`) for finer-grained UI/action gating beyond the blanket global-admin check.
 
+- **Feature 017 (2026-10-09)**: every organization `owner`/`admin` is automatically an event `admin` on every event of their organization (triggers on `events` and `organization_members` + backfill), so event access still comes from `event_members` as Feature 003 requires. Only platform admins (or the service role) can create or change organization `owner`/`admin` memberships — enforced by `organization_members` RLS, not only the UI.
+
 **Middleware pattern** (`src/middleware.ts`):
 
 ```typescript

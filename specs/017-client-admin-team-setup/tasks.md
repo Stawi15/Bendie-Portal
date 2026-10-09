@@ -128,8 +128,8 @@ US2 (P2), US5 (P2), US3 (P3).
 ## Phase 8: Polish & Cross-Cutting Concerns
 
 - [X] T029 Run the package.json scripts `npm run type-check`, `npm run lint` and `npm run build`; all must pass (lint warnings no worse than the current baseline).
-- [ ] T030 [P] Update context/progress-tracker.md with Feature 017 (what shipped, migration name, flagged follow-ups from research); context/schema-reference.md with the new `organization_members` policies and the two triggers; and the "Role-Based Access Control" section of context/architecture.md to state that every organization owner/admin is automatically an event `admin` on every event of their organization (FR-021) and that only platform admins manage organization owner/admin roles (FR-024) — constitution VII.
-- [ ] T031 [P] Update context/ui-registry.md with `AddTeamMemberModal` if it is treated as a reusable pattern (run `/imprint`), per constitution V.
+- [X] T030 [P] Update context/progress-tracker.md with Feature 017 (what shipped, migration name, flagged follow-ups from research); context/schema-reference.md with the new `organization_members` policies and the two triggers; and the "Role-Based Access Control" section of context/architecture.md to state that every organization owner/admin is automatically an event `admin` on every event of their organization (FR-021) and that only platform admins manage organization owner/admin roles (FR-024) — constitution VII.
+- [X] T031 [P] **No registry change:** no new component was created (T011 reused `AddPeopleModal`); the panel's empty state uses existing tokens and `.btn-primary`. Original wording: Update context/ui-registry.md with `AddTeamMemberModal` if it is treated as a reusable pattern (run `/imprint`), per constitution V.
 - [ ] T032 Run `/review` and report findings before fixing; then `/speckit.converge`, which appends any remaining work to specs/017-client-admin-team-setup/tasks.md.
 - [ ] T033 Save session state with `/remember save` to the project memory directory (decisions, migration applied, open follow-ups); no secrets.
 

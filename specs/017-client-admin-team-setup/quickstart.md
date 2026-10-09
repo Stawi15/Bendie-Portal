@@ -34,3 +34,11 @@
 ## Repo checks
 
 `npm run type-check`, `npm run lint`, `npm run build` must pass (constitution VIII).
+
+## Results
+
+| Date | Check | Result |
+| --- | --- | --- |
+| 2026-10-09 | T007 migration verification (SQL) | Pass — policies swapped, both triggers present, 0 org owners/admins missing or below admin on any org event, `event_members` 388 → 412 |
+| 2026-10-09 | Row 16 (client admin, browser-equivalent anon client as `xperia.test`) | Pass — insert outsider as admin refused (42501); demote another admin: 0 rows; promote self to owner: 0 rows; memberships confirmed unchanged |
+| — | Row 16 as Stawi admin, row 17 (member ↔ attendee) | Not yet run — needs a member row to change; to do in the browser pass |
