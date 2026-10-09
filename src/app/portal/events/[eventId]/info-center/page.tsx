@@ -211,7 +211,7 @@ export default function InfoCenterPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="info-center" desc="Support contacts available to attendees" />
         <button onClick={() => openAdd()} className="btn-primary flex-shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span> Add Contact
@@ -264,7 +264,7 @@ export default function InfoCenterPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : contacts.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">info</p>
           <p className="text-on-surface-variant">No support contacts yet.</p>
         </div>

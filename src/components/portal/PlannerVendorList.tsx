@@ -59,7 +59,7 @@ export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage,
 
   if (items.length === 0) {
     return (
-      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-16 px-6">
+      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-10 px-6">
         <p className="text-on-surface-variant text-sm">No vendor items yet for this event.</p>
         {canManage && (onAdd || onImportCsv) && (
           <>
@@ -67,7 +67,7 @@ export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage,
             <div className="flex items-center justify-center gap-2 mt-4">
               {onImportCsv && (
                 <button className="btn-secondary" onClick={onImportCsv}>
-                  Import CSV
+                  Import spreadsheet
                 </button>
               )}
               {onAdd && (
@@ -87,13 +87,13 @@ export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage,
       <table className="w-full text-left">
         <thead className="bg-surface-container-low/50">
           <tr>
-            <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant">Item</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Quantity</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Packed</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Loaded</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">On-site</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden lg:table-cell">Notes</th>
-            {canManage && <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
+            <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant">Item</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Quantity</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Packed</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Loaded</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">On-site</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden lg:table-cell">Notes</th>
+            {canManage && <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-outline-variant/30">
@@ -101,23 +101,23 @@ export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage,
             const isBusy = busyItemId === item.id;
             return (
               <tr key={item.id} className="hover:bg-surface-container-low/20 transition-colors align-top">
-                <td className="px-4 sm:px-lg py-4">
+                <td className="px-4 sm:px-lg py-2.5">
                   <p className="font-label-md text-label-md text-on-surface">{item.description}</p>
                   <p className="text-xs text-on-surface-variant mt-0.5">{item.category}</p>
                 </td>
-                <td className="px-6 py-4 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">
+                <td className="px-4 py-2.5 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">
                   {[item.quantityText, item.unit].filter(Boolean).join(' ') || '—'}
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-2.5">
                   <StageCell isSet={item.isPacked} at={item.packedAt} byName={item.packedByName} disabled={!canManage || isBusy} onChange={(next) => onToggleStage(item, 'isPacked', next)} />
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-2.5">
                   <StageCell isSet={item.isLoaded} at={item.loadedAt} byName={item.loadedByName} disabled={!canManage || isBusy} onChange={(next) => onToggleStage(item, 'isLoaded', next)} />
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-2.5">
                   <StageCell isSet={item.isOnSite} at={item.onSiteAt} byName={item.onSiteByName} disabled={!canManage || isBusy} onChange={(next) => onToggleStage(item, 'isOnSite', next)} />
                 </td>
-                <td className="px-6 py-4 hidden lg:table-cell min-w-[180px]">
+                <td className="px-4 py-2.5 hidden lg:table-cell min-w-[180px]">
                   {canManage ? (
                     <div className="flex flex-col gap-1.5">
                       <textarea
@@ -150,8 +150,8 @@ export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage,
                   )}
                 </td>
                 {canManage && (
-                  <td className="px-4 sm:px-lg py-4 text-right">
-                    <button className="btn-danger text-xs py-1.5" onClick={() => onDelete(item)} disabled={isBusy}>
+                  <td className="px-4 sm:px-lg py-2.5 text-right">
+                    <button className="row-action-danger" onClick={() => onDelete(item)} disabled={isBusy}>
                       Delete
                     </button>
                   </td>

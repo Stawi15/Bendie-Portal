@@ -140,6 +140,27 @@ button {
       disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  /* Compact icon-only row action (Edit / Delete / More). 32px visual, keeps an accessible
+     hit area; callers must pass an aria-label. Shared by Bendie and Planner lists. */
+  .btn-icon {
+    @apply inline-flex items-center justify-center w-8 h-8 rounded-lg text-on-surface-variant
+      hover:bg-surface-container-low hover:text-on-surface transition-colors
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+      disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  /* Text-link row action ("Edit", "Remove") — the one secondary row-action weight for Bendie
+     and Planner lists (Feature 016). ≥32px hit area, colour carries no meaning on its own. */
+  .row-action {
+    @apply inline-flex items-center justify-center min-h-[32px] px-2 rounded-lg text-xs font-medium text-primary
+      hover:bg-primary/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+      disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .row-action-danger {
+    @apply row-action text-error hover:bg-error/5;
+  }
+
   .btn-danger {
     @apply inline-flex items-center gap-2 px-4 py-2.5 bg-error hover:opacity-90
       text-white text-label-md rounded-xl transition

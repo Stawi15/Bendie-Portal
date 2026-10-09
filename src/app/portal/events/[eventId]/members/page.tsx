@@ -7,6 +7,13 @@ import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { EditProfileModal } from '@/components/portal/EditProfileModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import {
+  EVENT_TEAM_CSV_COLUMNS,
+  ATTENDEE_CSV_SAMPLES,
+  parseEventTeamCsvRow,
+  importEventTeamCsvRow,
+  type EventTeamCsvRow,
+} from '@/lib/eventTeamCsv';
 import { PlannerPermissionsModal } from '@/components/portal/PlannerPermissionsModal';
 import { AddPeopleMenu } from '@/components/portal/AddPeopleMenu';
 import { AddPeopleModal } from '@/components/portal/AddPeopleModal';
@@ -14,7 +21,6 @@ import { AddFromTeamModal } from '@/components/portal/AddFromTeamModal';
 import { AddAllOrgPeopleModal } from '@/components/portal/AddAllOrgPeopleModal';
 import { useEvent } from '@/contexts/EventContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { EVENT_MEMBER_ROLE_LABELS } from '@/lib/portalLabels';
@@ -22,38 +28,10 @@ import {
   EVENT_MEMBER_ROLES,
   resolveEventProductContext,
   checkCanAdministerPlanner,
-  resolveOrCreatePersonByEmail,
-  addPersonToEvent,
-  type EventAccessConfig,
-  type PlannerAccessChoice,
 } from '@/lib/eventTeamProvisioning';
 import { useLatestRequest } from '@/lib/useLatestRequest';
 import toast from 'react-hot-toast';
 import { friendlyError } from '@/lib/userFacingError';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type NewMemberCsvRow = {
-  rowIndex: number;
-  email: string;
-  full_name: string | null;
-  role: string;
-  bendieAccess: boolean;
-  plannerAccess: PlannerAccessChoice;
-};
-
-const MEMBER_CSV_COLUMNS: ColumnSpec[] = [
-  { key: 'email', label: 'Email', required: true },
-  { key: 'full_name', label: 'Full Name' },
-  { key: 'role', label: `Event Role (${EVENT_MEMBER_ROLES.join(', ')})` },
-  { key: 'bendieAccess', label: 'Bendie Access (yes/no)' },
-  { key: 'plannerAccess', label: 'Planner Access (none/viewer/manager)' },
-];
-
-const MEMBER_CSV_SAMPLES: Record<string, string>[] = [
-  { email: 'jane@example.com', full_name: 'Jane Smith', role: 'attendee', bendieAccess: 'yes', plannerAccess: 'none' },
-  { email: 'david@example.com', full_name: 'David Otieno', role: 'facilitator', bendieAccess: 'yes', plannerAccess: 'none' },
-];
 
 type Member = {
   event_id: string;
@@ -271,7 +249,7 @@ export default function MembersPage() {
     const result = (Array.isArray(data) ? data[0] : data) as IssueAccessCodeResult | undefined;
 
     if (error || !result) {
-      toast.error(error?.message ?? 'Failed to generate a new access code');
+      toast.error(friendlyError(error, 'A new access code couldn’t be created — try again.'));
       setResendingCode(null);
       return;
     }
@@ -320,54 +298,6 @@ export default function MembersPage() {
     fetchData();
   };
 
-  const parseMemberCsvRow = (raw: Record<string, string>, rowIndex: number): RowResult<NewMemberCsvRow> => {
-    const errors: string[] = [];
-
-    const email = getField(raw, 'email').toLowerCase();
-    if (!email) errors.push('email is required');
-    else if (!EMAIL_RE.test(email)) errors.push('email is not a valid email address');
-
-    const roleRaw = getField(raw, 'role').toLowerCase();
-    const role = roleRaw || 'attendee';
-    if (roleRaw && !(EVENT_MEMBER_ROLES as readonly string[]).includes(roleRaw)) errors.push(`role must be one of: ${EVENT_MEMBER_ROLES.join(', ')}`);
-
-    // Backward-compatible: both new columns are optional. Absent
-    // bendieAccess defaults to false (matching the pre-existing CSV import,
-    // which never auto-issued an access code — codes were always a
-    // separate, deliberate Resend Code action). Absent plannerAccess
-    // defaults to 'none' — a deliberate behavior change from the old
-    // implicit role-based auto-sync (Feature 016: product access must never
-    // be silently inferred from event role).
-    const bendieRaw = getField(raw, 'bendieAccess').toLowerCase();
-    const bendieAccess = bendieRaw ? bendieRaw === 'yes' || bendieRaw === 'true' : false;
-
-    const plannerRaw = getField(raw, 'plannerAccess').toLowerCase();
-    const plannerAccess: PlannerAccessChoice = plannerRaw === 'viewer' || plannerRaw === 'manager' ? plannerRaw : 'none';
-    if (plannerRaw && plannerAccess === 'none' && plannerRaw !== 'none') errors.push('plannerAccess must be one of: none, viewer, manager');
-
-    const data: NewMemberCsvRow = { rowIndex, email, full_name: getField(raw, 'full_name') || null, role, bendieAccess, plannerAccess };
-    return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
-  };
-
-  const importMemberRow = async (row: NewMemberCsvRow) => {
-    const organizationId = productContext?.organizationId ?? currentEvent?.organization_id;
-    if (!organizationId) return { error: 'Could not determine this event\'s organisation' };
-
-    const resolved = await resolveOrCreatePersonByEmail(row.email, row.full_name ?? '', organizationId);
-    if ('error' in resolved) return { error: resolved.error };
-
-    const config: EventAccessConfig = { eventRole: row.role as EventAccessConfig['eventRole'], grantBendie: row.bendieAccess, plannerAccess: row.plannerAccess };
-    const label = row.full_name ?? row.email;
-    const outcome = await addPersonToEvent(eventId, currentEvent?.name ?? 'this event', organizationId, { userId: resolved.userId, email: row.email, label }, config);
-
-    if (outcome.eventMembership === 'failed') return { error: outcome.eventMembershipError ?? 'Failed to add to event' };
-    const problems: string[] = [];
-    if (outcome.bendieAccess === 'failed') problems.push('Bendie access code could not be sent');
-    if (outcome.plannerAccess === 'failed' || outcome.plannerAccess === 'denied') problems.push('Planner access could not be granted');
-    if (problems.length > 0) return { error: `Added to event, but: ${problems.join('; ')}` };
-    return {};
-  };
-
   const existingEventMemberIds = new Set(members.map((m) => m.user_id));
 
   const roles = ['all', ...Array.from(new Set(members.map(m => m.role)))];
@@ -395,7 +325,7 @@ export default function MembersPage() {
         <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">lock</span>
         <h1 className="font-headline-sm text-headline-sm text-on-surface mb-1">You don&apos;t have access to this page</h1>
         <p className="text-body-md font-body-md text-on-surface-variant max-w-sm">
-          Managing attendees and access requires the host, organizer, or admin role for this event.
+          Managing attendees and access requires the Host, Organiser or Admin role for this event.
         </p>
         <Link href={`/portal/events/${eventId}/dashboard`} className="btn-secondary mt-4">
           Back to Event
@@ -406,11 +336,14 @@ export default function MembersPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="members" desc={`${members.length} ${members.length === 1 ? 'person' : 'people'} on this event`} />
         {productContext && (
           <AddPeopleMenu
-            canCreateAccounts={isGlobalAdmin}
+            // Feature 017: account creation is open to the same people as Planner
+            // administration — platform admin or owner/admin of this event's
+            // organisation (the server re-checks both routes).
+            canCreateAccounts={isGlobalAdmin || canAdministerPlanner}
             onFromOrganisation={() => setAddFromOrgOpen(true)}
             onFromTeam={() => setAddFromTeamOpen(true)}
             onInviteNew={() => setInviteOpen(true)}
@@ -422,7 +355,7 @@ export default function MembersPage() {
 
       {!isGlobalAdmin && (
         <p className="hint mb-4">
-          Creating brand-new accounts (Invite New / Import CSV) is currently a platform-administration function.
+          Creating brand-new accounts (Invite new attendee / Import spreadsheet) is currently a platform-administration function.
           You can still add existing organisation or team members below.
         </p>
       )}
@@ -485,16 +418,25 @@ export default function MembersPage() {
         </>
       )}
 
-      <CsvImportModal<NewMemberCsvRow>
+      <CsvImportModal<EventTeamCsvRow>
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
         onImported={fetchData}
         title="Import Attendees"
         templateFilename="event-team-template.csv"
-        columns={MEMBER_CSV_COLUMNS}
-        sampleRows={MEMBER_CSV_SAMPLES}
-        parseRow={parseMemberCsvRow}
-        importRow={importMemberRow}
+        columns={EVENT_TEAM_CSV_COLUMNS}
+        sampleRows={ATTENDEE_CSV_SAMPLES}
+        parseRow={(raw, rowIndex) => parseEventTeamCsvRow(raw, rowIndex, { defaultRole: 'attendee', defaultPlannerAccess: 'none' })}
+        importRow={(row) => {
+          const organizationId = productContext?.organizationId ?? currentEvent?.organization_id;
+          if (!organizationId) return Promise.resolve({ error: "Could not determine this event's organisation" });
+          return importEventTeamCsvRow(row, {
+            eventId,
+            eventName: currentEvent?.name ?? 'this event',
+            organizationId,
+            bendieAvailable: productContext?.bendieAvailable ?? true,
+          });
+        }}
       />
 
       {/* Role breakdown */}
@@ -519,9 +461,12 @@ export default function MembersPage() {
       {loading ? (
         <div className="animate-pulse space-y-2">{[1,2,3,4,5].map(i => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">groups</p>
-          <p className="text-on-surface-variant">{search ? 'No one matches your search.' : 'No one on this event yet.'}</p>
+          <p className="font-medium text-on-surface">{search || roleFilter !== 'all' ? 'No one matches your filters.' : 'No attendees yet'}</p>
+          {!search && roleFilter === 'all' && (
+            <p className="text-sm text-on-surface-variant mt-1 max-w-md mx-auto">Attendees are the people who can use the Bendie app for this event. Use <span className="font-medium">Add Attendees</span> above to add people from your organisation or a team.</p>
+          )}
         </div>
       ) : (
         <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow overflow-hidden">

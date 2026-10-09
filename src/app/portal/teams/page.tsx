@@ -59,7 +59,7 @@ export default function TeamsPage() {
           <h1 className="font-headline-lg text-headline-lg text-on-surface">Teams</h1>
           <p className="text-body-md font-body-md text-on-surface-variant mt-1">
             Reusable groups of organisation people — add a whole team to an event in one step from that event&apos;s
-            Attendees &amp; Access page (Add People → From team).
+            Attendees &amp; Access page (Add Attendees → From team).
           </p>
         </div>
         {canManageTeams && (
@@ -82,7 +82,7 @@ export default function TeamsPage() {
           {[1, 2, 3].map((i) => <div key={i} className="h-32 bg-surface-container-low rounded-[20px] animate-pulse" />)}
         </div>
       ) : teams.length === 0 ? (
-        <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow flex flex-col items-center text-center py-20 px-6">
+        <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow flex flex-col items-center text-center py-12 px-6">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
             <span className="material-symbols-outlined text-primary text-3xl">groups</span>
           </div>

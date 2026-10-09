@@ -17,6 +17,35 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-10-09 — Feature 018: Planner `event_agenda_items` is now Portal-authored (no schema change)
+
+The Planner project's `event_agenda_items` (programme) is now written by the Portal's Planner **Agenda**
+tab, in addition to the Feature 001 Bendie agenda push. Portal-authored rows: `source_portal_session_id`
+NULL, `source_document` NULL, naive local `start_at`/`end_at` + `start_time`/`end_time` + `agenda_date`
+(same shape as Planner-native rows), `day_number` derived from the Portal event's start date when blank,
+`sort_order` appended per date when blank, `updated_at` set explicitly (no trigger). Rows with
+`source_portal_session_id` set (pushed) are never modified by the tab.
+
+### 2026-10-09 — Feature 017: organization role protection + org admins on every org event (no table/column change)
+
+Migration `supabase/migrations/zz_organization_admin_event_membership_and_role_guard.sql`, applied
+to the shared Bendie project (`droaamagpsojkzznywgd`) via the SQL Editor and verified:
+
+- **`organization_members` policies**: `organization_members_insert_self` → `organization_members_insert_org_admin`
+  (org owner/admin may insert only roles other than `owner`/`admin`); `organization_members_update_owner_admin` →
+  `organization_members_update_org_admin` (org owner/admin may update only rows that are, and stay,
+  non-owner/admin). Only platform admins (unchanged ALL policy) or the service role write owner/admin rows.
+- **Trigger `trg_add_org_admins_to_new_event`** (`AFTER INSERT ON events`, `SECURITY DEFINER` function
+  `add_org_admins_to_new_event`): every org owner/admin except `created_by` gets an `event_members` row,
+  role `admin`, on conflict do nothing. The creator is excluded because `create_event_with_products`
+  inserts it afterwards and re-raises other unique violations.
+- **Trigger `trg_add_new_org_admin_to_events`** (`AFTER INSERT OR UPDATE OF role ON organization_members`,
+  function `add_new_org_admin_to_events`): when a membership becomes owner/admin, upsert role `admin` on
+  every org event, raising roles other than host/organizer/admin.
+- **Backfill**: 24 rows added, 1 raised (`event_members` 388 → 412). Not in Supabase's migration history
+  table (run in the SQL Editor). Mobile-app impact: org admins now appear on each org event's roster with
+  role `admin`, like event creators already did; the existing access-code trigger fired for the new rows.
+
 ### 2026-09-28 — Feature 016: `events.portal_setup_modules` (Portal-only setup preference)
 
 Migration `supabase/migrations/event_portal_setup_modules.sql` (applied live). Adds one nullable

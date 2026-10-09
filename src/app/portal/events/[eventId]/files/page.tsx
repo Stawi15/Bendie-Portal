@@ -87,7 +87,7 @@ export default function EventFilesPage() {
         contentType: file.type || undefined,
         upsert: true, // re-uploading the same filename replaces it (e.g. an updated sponsor deck)
       });
-      if (error) toast.error(`${file.name}: ${error.message}`);
+      if (error) toast.error(`${file.name}: ${friendlyError(error, 'couldn’t be uploaded — try again.')}`);
       else successCount++;
     }
     setUploading(false);
@@ -140,7 +140,7 @@ export default function EventFilesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader
           sectionKey="files"
           desc={`${files.length} file${files.length !== 1 ? 's' : ''} available for attendees to download`}
@@ -172,7 +172,7 @@ export default function EventFilesPage() {
       {loading ? (
         <div className="space-y-2 animate-pulse">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : files.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">folder_open</p>
           <p className="text-on-surface-variant">No files yet. Upload the first document for this event.</p>
         </div>

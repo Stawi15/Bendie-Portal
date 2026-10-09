@@ -25,7 +25,7 @@ Implementation rules and conventions for this project, reflecting what's actuall
 
 - App Router only.
 - **Every content-editor page is a Client Component** (`'use client'` at the top) that fetches and mutates data directly via the shared `supabase` browser client — this project does **not** use the Server Components + Server Actions split that an earlier, now-superseded planning pass assumed. Don't introduce Server Actions for a single new page; it would be inconsistent with all 16 existing sections.
-- Route handlers (`app/api/admin/*/route.ts`) are reserved for privileged operations that need the Supabase **service-role** key — never expose the service-role key to client code, and never do a privileged mutation from a page component.
+- Route handlers are reserved for privileged operations that need the Supabase **service-role** key — never expose the service-role key to client code, and never do a privileged mutation from a page component. Platform-wide operations live in `app/api/admin/*` (platform admin only); organization-scoped ones live under `app/api/events/*` or `app/api/organizations/*` (platform admin or owner/admin of the target's own organization) — constitution v1.1.0, Principle II.
 - Dynamic event routes: `app/portal/events/[eventId]/...`, read via `useParams<{ eventId: string }>()`.
 
 ---
@@ -102,15 +102,21 @@ export default function XPage() {
 ## API Route Handlers (privileged operations only)
 
 ```typescript
-// app/api/admin/create-user/route.ts pattern
+// app/api/admin/create-user/route.ts pattern (platform-wide)
+// org-scoped variant: app/api/events/[eventId]/members/[memberId]/planner-permissions/enable/route.ts
 export async function POST(request: NextRequest) {
   // 1. Parse + validate the body
   // 2. Build a cookie-based server client, call auth.getUser()
-  // 3. Look up profiles.global_role — reject 401/403 if not 'admin'
+  // 3. Authorize — reject 401/403 otherwise:
+  //    platform-wide: profiles.global_role = 'admin'
+  //    org-scoped:    platform admin OR owner/admin of the organization that owns the target
+  //                   record, resolved server-side (never a client-supplied org id)
   // 4. Only then build the service-role client and perform the privileged write
   // 5. Return NextResponse.json(...) with an explicit status code on every branch
 }
 ```
+
+Org-scoped routes must never escalate: no platform-admin grants, no org owner/admin grants unless an approved spec allows it, no reads or writes in another organization.
 
 Never skip step 3 because "the UI already checks this" — the route must re-verify itself; the client cannot be trusted.
 
@@ -122,7 +128,7 @@ Never skip step 3 because "the UI already checks this" — the route must re-ver
 - Always `.eq('id', eventId)` (or the relevant scoping column) on every read and write — never query a content table without scoping to the current event/organization.
 - Always handle the `error` return explicitly — never assume success. Surface it via `toast.error(error.message)`, never render the raw error object.
 - Use `.single()` when expecting exactly one row.
-- Service-role client (`SUPABASE_SERVICE_ROLE_KEY`) only inside `app/api/admin/*` route handlers, constructed with `auth: { autoRefreshToken: false, persistSession: false }`, and only after verifying the caller server-side.
+- Service-role client (`SUPABASE_SERVICE_ROLE_KEY`) only inside privileged route handlers (or a `server-only` helper they call), constructed with `auth: { autoRefreshToken: false, persistSession: false }`, and only after verifying the caller server-side.
 
 ---
 

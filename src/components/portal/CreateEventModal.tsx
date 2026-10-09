@@ -316,7 +316,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
       toast.success('Event created');
     }
     if (result.modulesSaved === false) {
-      toast.error('Your module choices couldn’t be saved — every module is shown for now. Use “Manage modules” on the Dashboard.');
+      toast.error('Your module choices couldn’t be saved — every module is shown for now. Use “Manage modules” at the top of the event.');
     }
 
     // Corrective fix (2026-09-23, live bug report): the event is already
@@ -519,7 +519,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
               {step === 'modules' && (
                 <div className="space-y-4">
                   <p className="text-sm text-on-surface-variant">
-                    Choose what you&apos;ll be managing. Only these appear in your event&apos;s navigation — you can change this anytime from the event Dashboard.
+                    Choose what your team will manage. Only these appear in your event&apos;s Portal navigation (attendees aren&apos;t affected) — change it anytime with Manage modules at the top of the event.
                   </p>
                   {products.length === 0 ? (
                     <p className="hint">Checking which products your organisation can use…</p>

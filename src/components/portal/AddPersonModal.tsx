@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Avatar } from '@/components/portal/Avatar';
 import { ORG_ROLE_LABELS } from '@/lib/portalLabels';
 import { friendlyError } from '@/lib/userFacingError';
+import { useAuth } from '@/contexts/AuthContext';
 
 type ProfileResult = {
   id: string;
@@ -24,6 +25,9 @@ type AddPersonModalProps = {
 export const ORG_ROLES = ['member', 'admin', 'attendee', 'facilitator', 'staff'];
 
 export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPersonModalProps) {
+  // Feature 017: client owners/admins create accounts through the org-scoped
+  // route, always as 'member' (FR-004); only Stawi picks an organisation role.
+  const { isGlobalAdmin } = useAuth();
   const [mode, setMode] = useState<'search' | 'create'>('search');
 
   // Search-existing mode
@@ -100,22 +104,47 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
     if (!newEmail.trim()) { toast.error('Email is required'); return; }
     setCreating(true);
     try {
-      const res = await fetch('/api/admin/create-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: newEmail.trim(),
-          fullName: newName.trim(),
-          organizationId,
-          orgRole: newRole,
-        }),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        toast.error(body.error ?? 'Failed to create user');
+      const res = isGlobalAdmin
+        ? await fetch('/api/admin/create-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: newEmail.trim(),
+              fullName: newName.trim(),
+              organizationId,
+              orgRole: newRole,
+            }),
+          })
+        : await fetch(`/api/organizations/${organizationId}/people`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ people: [{ email: newEmail.trim(), fullName: newName.trim() }] }),
+          });
+      const body = await res.json().catch(() => ({}));
+      const result = isGlobalAdmin ? null : body.results?.[0];
+      if (!res.ok || result?.error) {
+        // Route error codes → plain language (/code-review #7); anything else is already a sentence.
+        const CODES: Record<string, string> = {
+          invalid_email: 'Enter a valid email address',
+          invalid_name: 'The name is too long — use at most 200 characters',
+          duplicate: 'That email was entered twice',
+          forbidden: 'You do not have permission to add people to this organisation',
+        };
+        const code = result?.error ?? body.error;
+        toast.error(CODES[code] ?? result?.error ?? body.message ?? 'Failed to create user');
         return;
       }
-      toast.success(`${newName.trim() || newEmail.trim()} created — add them to an event below to grant access.`);
+      if (result?.organization === 'already_member') {
+        toast(`${newName.trim() || newEmail.trim()} is already in this organisation.`);
+        onAdded();
+        return;
+      }
+      const who = newName.trim() || newEmail.trim();
+      toast.success(
+        result?.account === 'existing'
+          ? `${who} already had an account and was added to this organisation — add them to an event below to grant access.`
+          : `${who} created — add them to an event below to grant access.`
+      );
       setNewName('');
       setNewEmail('');
       setNewRole('member');
@@ -204,7 +233,7 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
             <p className="hint mb-3">
               Creates their account — no email is sent. They log into the app directly; access to an
               event is granted the moment you add them to it (use the Events column on the People page
-              or the event&apos;s Members tab).
+              or the event&apos;s Attendees &amp; Access page).
             </p>
             <div className="space-y-3">
               <div>
@@ -221,14 +250,21 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
                   placeholder="jane@example.com"
                 />
               </div>
-              <div>
-                <label className="label">Organisation Role</label>
-                <select className="input" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
-                  {ORG_ROLES.map((r) => (
-                    <option key={r} value={r}>{ORG_ROLE_LABELS[r] ?? r}</option>
-                  ))}
-                </select>
-              </div>
+              {isGlobalAdmin ? (
+                <div>
+                  <label className="label">Organisation Role</label>
+                  <select className="input" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
+                    {ORG_ROLES.map((r) => (
+                      <option key={r} value={r}>{ORG_ROLE_LABELS[r] ?? r}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <p className="hint">
+                  They join as a Member. If this email already has an account, that account is added instead. Only Stawi can make someone an
+                  organisation admin.
+                </p>
+              )}
             </div>
             <div className="flex justify-end mt-4">
               <button className="btn-primary" onClick={handleCreateUser} disabled={creating}>

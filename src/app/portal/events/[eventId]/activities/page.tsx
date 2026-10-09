@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { useEvent } from '@/contexts/EventContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { EmptyState } from '@/components/portal/EmptyState';
 import { FormModal } from '@/components/portal/FormModal';
 import { ImageField } from '@/components/portal/ImageField';
 import { AssetPickerModal } from '@/components/portal/AssetPickerModal';
@@ -232,20 +233,20 @@ export default function ActivitiesPage() {
       const toDelete = [...originalImageIds].filter(id => !currentIds.has(id));
       if (toDelete.length > 0) {
         const { error } = await supabase.from('activity_images').delete().in('id', toDelete);
-        if (error) toast.error(`Failed to remove some images: ${error.message}`);
+        if (error) toast.error(friendlyError(error, 'Some images couldn’t be removed — try again.'));
       }
 
       if (heroImage.image_url.trim()) {
         if (heroImage.dbId) {
           const { error } = await supabase.from('activity_images')
             .update({ image_url: heroImage.image_url, alt_text: heroImage.alt_text || null }).eq('id', heroImage.dbId);
-          if (error) toast.error(`Failed to update hero image: ${error.message}`);
+          if (error) toast.error(friendlyError(error, 'The hero image couldn’t be updated — try again.'));
         } else {
           const { error } = await supabase.from('activity_images').insert({
             activity_id: activityId, image_url: heroImage.image_url, alt_text: heroImage.alt_text || null,
             image_type: 'hero', display_order: 0,
           });
-          if (error) toast.error(`Failed to add hero image: ${error.message}`);
+          if (error) toast.error(friendlyError(error, 'The hero image couldn’t be added — try again.'));
         }
       }
 
@@ -255,13 +256,13 @@ export default function ActivitiesPage() {
         if (img.dbId) {
           const { error } = await supabase.from('activity_images')
             .update({ image_url: img.image_url, alt_text: img.alt_text || null, display_order: i }).eq('id', img.dbId);
-          if (error) toast.error(`Failed to update a gallery image: ${error.message}`);
+          if (error) toast.error(friendlyError(error, 'A gallery image couldn’t be updated — try again.'));
         } else {
           const { error } = await supabase.from('activity_images').insert({
             activity_id: activityId, image_url: img.image_url, alt_text: img.alt_text || null,
             image_type: 'gallery', display_order: i,
           });
-          if (error) toast.error(`Failed to add a gallery image: ${error.message}`);
+          if (error) toast.error(friendlyError(error, 'A gallery image couldn’t be added — try again.'));
         }
       }
     }
@@ -311,11 +312,11 @@ export default function ActivitiesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="activities" desc={`${activities.length} activit${activities.length !== 1 ? 'ies' : 'y'}`} />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={openAdd} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span> Add Activity
@@ -445,11 +446,12 @@ export default function ActivitiesPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-16 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : activities.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
-          <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">bolt</p>
-          <p className="text-on-surface-variant">No activities yet.</p>
-          <p className="text-on-surface-variant/70 text-sm mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
-        </div>
+<EmptyState
+          icon="bolt"
+          title="No activities yet"
+          description="Experiences attendees can join — tours, workshops, wellness sessions. They appear on the attendee app’s Home screen."
+          actions={<><button onClick={openAdd} className="btn-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add activity</button><button onClick={() => setCsvOpen(true)} className="btn-secondary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet</button></>}
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {activities.map(a => (

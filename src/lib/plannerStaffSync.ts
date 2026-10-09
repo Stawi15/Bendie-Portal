@@ -9,7 +9,7 @@ const STAFF_ROLES = ['host', 'organizer', 'admin', 'facilitator', 'staff', 'spea
 // citext/lower() column exists on Planner's profiles.email to compare
 // against instead, so this is the minimal fix that doesn't touch Portal's
 // own broader email-case policy at all.
-function escapeLikePattern(value: string): string {
+export function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (match) => `\\${match}`);
 }
 
@@ -100,14 +100,38 @@ export type StaffSyncOutcome = { ok: true; status: 'succeeded' | 'failed' | 'ski
  * service-role/Planner-touching client.
  */
 export async function syncStaffMemberToPlanner(params: {
+  /**
+   * Kept for call-site compatibility; no longer used. Feature 017 (FR-029):
+   * the target's profile is read and its planner_profile_id written with
+   * portalAdmin — the caller's session cannot see or update another user's
+   * profile, so syncing anyone but yourself silently skipped the write.
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  authClient: any;
+  authClient?: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   portalAdmin: any;
   eventId: string;
   userId: string;
 }): Promise<StaffSyncOutcome> {
-  const { authClient, portalAdmin, eventId, userId } = params;
+  const { portalAdmin, eventId, userId } = params;
+
+  const markResult = async (status: 'succeeded' | 'failed' | 'skipped', error?: string) => {
+    let update = portalAdmin
+      .from('event_members')
+      .update({
+        planner_synced_at: new Date().toISOString(),
+        planner_sync_status: status,
+        planner_sync_error: error ?? null,
+      })
+      .eq('event_id', eventId)
+      .eq('user_id', userId);
+    // A 'skipped' sync never replaces the status of someone who still holds a
+    // Planner assignment (e.g. a synced member later made an attendee) —
+    // their access is unchanged, so 'succeeded' stays true (/code-review #5).
+    if (status === 'skipped') update = update.is('planner_assignment_id', null);
+    const { error: markError } = await update;
+    if (markError) console.error('syncStaffMemberToPlanner: could not record sync result', markError);
+  };
 
   // event_planner_links is admin-only RLS (`portal_is_global_admin()` only —
   // see plannerEventProvisioning.ts's own use of this table). This helper is
@@ -131,6 +155,7 @@ export async function syncStaffMemberToPlanner(params: {
   }
 
   if (!link || !link.is_active) {
+    await markResult('skipped', 'Event is not linked to Bendie Planner');
     return { ok: true, status: 'skipped', reason: 'Event is not linked to Bendie Planner' };
   }
 
@@ -175,26 +200,15 @@ export async function syncStaffMemberToPlanner(params: {
   }
 
   if (!STAFF_ROLES.includes(member.role)) {
+    await markResult('skipped', 'Ordinary attendees do not sync to Bendie Planner');
     return { ok: true, status: 'skipped', reason: 'Ordinary attendees do not sync to Bendie Planner' };
   }
 
-  const { data: profile, error: profileError } = await authClient
+  const { data: profile, error: profileError } = await portalAdmin
     .from('profiles')
     .select('id,full_name,email,planner_profile_id')
     .eq('id', userId)
     .single();
-
-  const markResult = async (status: 'succeeded' | 'failed', error?: string) => {
-    await portalAdmin
-      .from('event_members')
-      .update({
-        planner_synced_at: new Date().toISOString(),
-        planner_sync_status: status,
-        planner_sync_error: error ?? null,
-      })
-      .eq('event_id', eventId)
-      .eq('user_id', userId);
-  };
 
   // A failed lookup is not the same condition as "this member genuinely has
   // no email" — conflating the two misleads an admin troubleshooting a real
@@ -230,7 +244,8 @@ export async function syncStaffMemberToPlanner(params: {
     }
 
     plannerProfileId = resolved.id;
-    await authClient.from('profiles').update({ planner_profile_id: plannerProfileId }).eq('id', userId);
+    const { error: bridgeError } = await portalAdmin.from('profiles').update({ planner_profile_id: plannerProfileId }).eq('id', userId);
+    if (bridgeError) console.error('syncStaffMemberToPlanner: could not save planner_profile_id', bridgeError);
   }
 
   const flags = roleToPlannerFlags(member.role);
@@ -270,4 +285,108 @@ export async function syncStaffMemberToPlanner(params: {
     .eq('user_id', userId);
 
   return { ok: true, status: 'succeeded' };
+}
+
+const ORG_ADMIN_ROLES = ['owner', 'admin'];
+const RETRY_AFTER_MS = 10 * 60 * 1000;
+
+/**
+ * Feature 017 (US6, FR-027/FR-028) — makes sure one organisation owner/admin
+ * has full Planner access on one Planner event of their organisation. Cheap
+ * when nothing is needed (a few reads, no writes): skips non-admins,
+ * manager-configured/disabled access, and already-synced members. Otherwise
+ * ensures the roster row (role 'admin', normally created by the
+ * zz_organization_admin_event_membership trigger) and runs the normal sync,
+ * whose 'admin' role maps to full view + manage flags.
+ */
+export async function ensureOrgAdminPlannerAccess(params: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  portalAdmin: any;
+  eventId: string;
+  userId: string;
+}): Promise<StaffSyncOutcome> {
+  const { portalAdmin, eventId, userId } = params;
+
+  const { data: event, error: eventError } = await portalAdmin.from('events').select('organization_id').eq('id', eventId).maybeSingle();
+  if (eventError || !event) {
+    if (eventError) console.error('ensureOrgAdminPlannerAccess: events lookup failed', eventError);
+    return { ok: true, status: 'failed', reason: 'Could not read this event' };
+  }
+
+  const { data: orgMember } = await portalAdmin
+    .from('organization_members')
+    .select('role')
+    .eq('organization_id', event.organization_id)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!orgMember || !ORG_ADMIN_ROLES.includes(orgMember.role)) {
+    return { ok: true, status: 'skipped', reason: 'Not an owner/admin of this event’s organisation' };
+  }
+
+  const { data: member, error: memberError } = await portalAdmin
+    .from('event_members')
+    .select('role,planner_sync_status,planner_synced_at,planner_assignment_id,planner_permissions_configured_at')
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (memberError) {
+    console.error('ensureOrgAdminPlannerAccess: event_members lookup failed', memberError);
+    return { ok: true, status: 'failed', reason: 'Could not verify this event membership' };
+  }
+  if (member?.planner_permissions_configured_at) {
+    return { ok: true, status: 'skipped', reason: 'Planner permissions are manager-configured; automatic sync does not apply' };
+  }
+  if (member?.planner_sync_status === 'succeeded' && member.planner_assignment_id) {
+    return { ok: true, status: 'succeeded' };
+  }
+  // Called on every Planner page load (planner-capabilities): after a failed or
+  // skipped attempt, wait before retrying instead of re-running the full sync
+  // on each navigation (/code-review #3).
+  if (
+    (member?.planner_sync_status === 'failed' || member?.planner_sync_status === 'skipped') &&
+    member.planner_synced_at &&
+    Date.now() - Date.parse(member.planner_synced_at) < RETRY_AFTER_MS
+  ) {
+    return { ok: true, status: member.planner_sync_status, reason: 'Recently attempted; retrying later' };
+  }
+  if (!member) {
+    const { error: insertError } = await portalAdmin
+      .from('event_members')
+      .insert({ event_id: eventId, user_id: userId, organization_id: event.organization_id, role: 'admin' });
+    if (insertError && insertError.code !== '23505') {
+      console.error('ensureOrgAdminPlannerAccess: event_members insert failed', insertError);
+      return { ok: true, status: 'failed', reason: 'Could not add them to the event' };
+    }
+  }
+
+  return syncStaffMemberToPlanner({ portalAdmin, eventId, userId });
+}
+
+/** Feature 017 (FR-027) — every owner/admin of the event's organisation; one person's failure never stops the rest. */
+export async function syncOrgAdminsToPlanner(params: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  portalAdmin: any;
+  eventId: string;
+}): Promise<{ userId: string; outcome: StaffSyncOutcome }[]> {
+  const { portalAdmin, eventId } = params;
+  const { data: event } = await portalAdmin.from('events').select('organization_id').eq('id', eventId).maybeSingle();
+  if (!event) return [];
+  const { data: admins, error } = await portalAdmin
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', event.organization_id)
+    .in('role', ORG_ADMIN_ROLES);
+  if (error) {
+    console.error('syncOrgAdminsToPlanner: organization_members lookup failed', error);
+    return [];
+  }
+  const results: { userId: string; outcome: StaffSyncOutcome }[] = [];
+  for (const { user_id } of (admins ?? []) as { user_id: string }[]) {
+    const outcome = await ensureOrgAdminPlannerAccess({ portalAdmin, eventId, userId: user_id }).catch((err: unknown): StaffSyncOutcome => {
+      console.error('syncOrgAdminsToPlanner: unexpected error', err);
+      return { ok: true, status: 'failed', reason: 'Unexpected error' };
+    });
+    results.push({ userId: user_id, outcome });
+  }
+  return results;
 }

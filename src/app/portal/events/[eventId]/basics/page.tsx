@@ -46,9 +46,17 @@ const MENU_ITEM_LABELS: Record<string, string> = {
 };
 const MENU_ITEM_KEYS = Object.keys(MENU_ITEM_LABELS);
 
+/**
+ * ISO → `datetime-local` value in LOCAL time. Feature 016 fix: was the UTC slice of
+ * `toISOString()`, while Save parses the input as local time — re-saving Basics in a
+ * non-UTC timezone shifted the event's dates by the UTC offset.
+ */
 function toLocalDatetime(iso: string | null) {
   if (!iso) return '';
-  return new Date(iso).toISOString().slice(0, 16);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function BasicsPage() {
@@ -106,7 +114,14 @@ export default function BasicsPage() {
         : prev.disabled_menu_items.filter(k => k !== key),
     }));
 
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; ends_at?: string }>({});
+
   const handleSave = async () => {
+    const errors: { name?: string; ends_at?: string } = {};
+    if (!form.name.trim()) errors.name = 'Your event needs a name.';
+    if (form.starts_at && form.ends_at && new Date(form.ends_at) < new Date(form.starts_at)) errors.ends_at = 'The end is before the start. Choose the same time or later.';
+    setFieldErrors(errors);
+    if (errors.name || errors.ends_at) return;
     setSaving(true);
     saveStatus.start();
     const payload = {
@@ -135,16 +150,25 @@ export default function BasicsPage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <SectionHeader sectionKey="basics" />
       </div>
 
-      <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8 space-y-6">
+      <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 sm:p-6 space-y-5">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-4">
           <div className="sm:col-span-2 lg:col-span-4">
-            <label className="label">Event Name *</label>
-            <input className="input" value={form.name} onChange={set('name')} placeholder="Annual Tech Summit 2026" />
+            <label className="label" htmlFor="basics-name">Event Name *</label>
+            <input
+              id="basics-name"
+              className={`input ${fieldErrors.name ? 'border-error' : ''}`}
+              value={form.name}
+              onChange={(e) => { set('name')(e); if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: undefined })); }}
+              placeholder="Annual Tech Summit 2026"
+              aria-invalid={!!fieldErrors.name}
+              aria-describedby={fieldErrors.name ? 'basics-name-error' : undefined}
+            />
+            {fieldErrors.name && <p id="basics-name-error" className="text-xs text-error mt-1">{fieldErrors.name}</p>}
           </div>
 
           <div>
@@ -158,7 +182,7 @@ export default function BasicsPage() {
             <select className="input" value={form.status} onChange={set('status')}>
               <option value="draft">Draft</option>
               <option value="published">Published</option>
-              <option value="active">Active</option>
+              <option value="active">Live</option>
               <option value="completed">Completed</option>
               <option value="archived">Archived</option>
             </select>
@@ -194,8 +218,18 @@ export default function BasicsPage() {
           </div>
 
           <div>
-            <label className="label">End Date & Time</label>
-            <input type="datetime-local" className="input" value={form.ends_at} onChange={set('ends_at')} />
+            <label className="label" htmlFor="basics-end">End Date & Time</label>
+            <input
+              id="basics-end"
+              type="datetime-local"
+              className={`input ${fieldErrors.ends_at ? 'border-error' : ''}`}
+              value={form.ends_at}
+              min={form.starts_at || undefined}
+              onChange={(e) => { set('ends_at')(e); if (fieldErrors.ends_at) setFieldErrors((p) => ({ ...p, ends_at: undefined })); }}
+              aria-invalid={!!fieldErrors.ends_at}
+              aria-describedby={fieldErrors.ends_at ? 'basics-end-error' : undefined}
+            />
+            {fieldErrors.ends_at && <p id="basics-end-error" className="text-xs text-error mt-1">{fieldErrors.ends_at}</p>}
           </div>
 
           <div>
@@ -219,10 +253,11 @@ export default function BasicsPage() {
           </div>
         </div>
 
-        <div className="border-t border-outline-variant pt-6">
-          <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-1">Hide Menu Items</h3>
+        <div className="border-t border-outline-variant pt-5">
+          <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-1">Attendee app menu — hide items</h3>
           <p className="hint mb-3">
-            Hide optional menu items for this event only. Gallery and Help/FAQs can&apos;t be hidden here — the app&apos;s bottom tab bar always links to them. Networking is controlled by the Networking Mode field above, not this list.
+            Ticked items are hidden from attendees in the Bendie app for this event. Gallery and Help/FAQs always stay in the app&apos;s bottom bar; Networking follows Networking Mode above.
+            This is separate from <span className="font-medium">Manage modules</span> (top of the event), which only changes what your team sees here in the Portal.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {MENU_ITEM_KEYS.map(key => (

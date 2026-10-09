@@ -61,7 +61,7 @@ export function PlannerChecklistList({ items, canManage, busyItemId, onToggleSta
 
   if (items.length === 0) {
     return (
-      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-16 px-6">
+      <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow text-center py-10 px-6">
         <p className="text-on-surface-variant text-sm">No checklist items yet for this event.</p>
         {canManage && (onAdd || onImportCsv) && (
           <>
@@ -69,7 +69,7 @@ export function PlannerChecklistList({ items, canManage, busyItemId, onToggleSta
             <div className="flex items-center justify-center gap-2 mt-4">
               {onImportCsv && (
                 <button className="btn-secondary" onClick={onImportCsv}>
-                  Import CSV
+                  Import spreadsheet
                 </button>
               )}
               {onAdd && (
@@ -89,14 +89,14 @@ export function PlannerChecklistList({ items, canManage, busyItemId, onToggleSta
       <table className="w-full text-left">
         <thead className="bg-surface-container-low/50">
           <tr>
-            <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant">Item</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Quantity / Spec</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Day</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Owner</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Sourced</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">On-site</th>
-            <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden lg:table-cell">Notes</th>
-            {canManage && <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
+            <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant">Item</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Quantity / Spec</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Day</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Owner</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Sourced</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">On-site</th>
+            <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden lg:table-cell">Notes</th>
+            {canManage && <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-outline-variant/30">
@@ -104,24 +104,24 @@ export function PlannerChecklistList({ items, canManage, busyItemId, onToggleSta
             const isBusy = busyItemId === item.id;
             return (
               <tr key={item.id} className="hover:bg-surface-container-low/20 transition-colors align-top">
-                <td className="px-4 sm:px-lg py-4">
+                <td className="px-4 sm:px-lg py-2.5">
                   <p className="font-label-md text-label-md text-on-surface">{item.itemName}</p>
                   <p className="text-xs text-on-surface-variant mt-0.5">{item.category}</p>
                 </td>
-                <td className="px-6 py-4 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">
+                <td className="px-4 py-2.5 hidden sm:table-cell text-body-sm font-body-sm text-on-surface-variant">
                   {[item.quantityText, item.specification].filter(Boolean).join(' · ') || '—'}
                 </td>
-                <td className="px-6 py-4 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">
+                <td className="px-4 py-2.5 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">
                   {item.dayNumber ? `Day ${item.dayNumber}` : item.eventDayDate ? item.eventDayDate : '—'}
                 </td>
-                <td className="px-6 py-4 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{item.ownerName ?? '—'}</td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-2.5 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{item.ownerName ?? '—'}</td>
+                <td className="px-4 py-2.5">
                   <StageCell isSet={item.isSourced} at={item.sourcedAt} byName={item.sourcedByName} disabled={!canManage || isBusy} onChange={(next) => onToggleStage(item, 'isSourced', next)} />
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-4 py-2.5">
                   <StageCell isSet={item.isOnSite} at={item.onSiteAt} byName={item.onSiteByName} disabled={!canManage || isBusy} onChange={(next) => onToggleStage(item, 'isOnSite', next)} />
                 </td>
-                <td className="px-6 py-4 hidden lg:table-cell min-w-[180px]">
+                <td className="px-4 py-2.5 hidden lg:table-cell min-w-[180px]">
                   {canManage ? (
                     <div className="flex flex-col gap-1.5">
                       <textarea
@@ -154,8 +154,8 @@ export function PlannerChecklistList({ items, canManage, busyItemId, onToggleSta
                   )}
                 </td>
                 {canManage && (
-                  <td className="px-4 sm:px-lg py-4 text-right">
-                    <button className="btn-danger text-xs py-1.5" onClick={() => onDelete(item)} disabled={isBusy}>
+                  <td className="px-4 sm:px-lg py-2.5 text-right">
+                    <button className="row-action-danger" onClick={() => onDelete(item)} disabled={isBusy}>
                       Delete
                     </button>
                   </td>

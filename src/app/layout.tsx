@@ -11,7 +11,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: 'Bendie Studio',
-  description: 'Admin panel for managing event content, branding, and settings',
+  description: 'Manage your organisation’s events, attendee app and event operations',
   icons: {
     icon: '/bendie.png',
   },

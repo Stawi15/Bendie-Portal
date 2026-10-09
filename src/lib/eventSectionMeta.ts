@@ -27,11 +27,11 @@ export type EventSectionMeta = {
  * section cards, and each page's own header.
  */
 export const EVENT_SECTIONS: EventSectionMeta[] = [
-  { key: 'dashboard', label: 'Dashboard', desc: 'Event status overview and setup progress', icon: 'dashboard', badgeBg: 'bg-gray-100', badgeFg: 'text-gray-600', product: 'bendie', group: 'Overview' },
+  { key: 'dashboard', label: 'Dashboard', desc: 'What’s ready, what’s missing, and what to do next', icon: 'dashboard', badgeBg: 'bg-gray-100', badgeFg: 'text-gray-600', product: 'bendie', group: 'Overview' },
   { key: 'basics', label: 'Basics', desc: 'Name, dates, location, status', icon: 'checklist', badgeBg: 'bg-orange-100', badgeFg: 'text-orange-600', product: 'bendie', group: 'Event Setup' },
   { key: 'hero', label: 'Hero & Branding', desc: 'Hero image, title, banner', icon: 'image', badgeBg: 'bg-green-100', badgeFg: 'text-green-600', product: 'bendie', group: 'Event Setup' },
-  { key: 'theme', label: 'Theme Colors', desc: 'Primary, secondary, tertiary colors', icon: 'palette', badgeBg: 'bg-pink-100', badgeFg: 'text-pink-600', product: 'bendie', group: 'Event Setup' },
-  { key: 'terminology', label: 'Terminology', desc: 'Labels, icons, feature toggles', icon: 'sell', badgeBg: 'bg-amber-100', badgeFg: 'text-amber-600', product: 'bendie', group: 'Event Setup' },
+  { key: 'theme', label: 'Theme Colours', desc: 'Brand, card and heading colours of the attendee app', icon: 'palette', badgeBg: 'bg-pink-100', badgeFg: 'text-pink-600', product: 'bendie', group: 'Event Setup' },
+  { key: 'terminology', label: 'Terminology', desc: 'Speaker labels, event category and theme, and the feedback link', icon: 'sell', badgeBg: 'bg-amber-100', badgeFg: 'text-amber-600', product: 'bendie', group: 'Event Setup' },
   { key: 'facilitators', label: 'Speakers', desc: 'Speaker and presenter profiles', icon: 'mic', badgeBg: 'bg-purple-100', badgeFg: 'text-purple-600', product: 'bendie', group: 'Programme' },
   { key: 'agenda', label: 'Agenda', desc: 'Session schedule and timetable', icon: 'calendar_month', badgeBg: 'bg-blue-100', badgeFg: 'text-blue-600', product: 'bendie', group: 'Programme' },
   { key: 'activities', label: 'Activities', desc: 'Experiences and activities attendees can take part in', icon: 'bolt', badgeBg: 'bg-teal-100', badgeFg: 'text-teal-600', product: 'bendie', group: 'Programme' },
@@ -57,6 +57,8 @@ export const EVENT_SECTIONS: EventSectionMeta[] = [
   { key: 'planner-vendors', label: 'Vendors', desc: 'Suppliers, the equipment they provide, and whether it has arrived on site', icon: 'local_shipping', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Planning' },
   { key: 'planner-checklist', label: 'Checklist', desc: 'Items to source and check off before the event and on site', icon: 'checklist', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Planning' },
   { key: 'planner-logistics', label: 'Logistics', desc: 'Participant flights, hotel stays and ground transport (vehicles and movements)', icon: 'luggage', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Logistics' },
+  // Feature 018 — the Planner event's programme (event_agenda_items); same permission as Production.
+  { key: 'planner-agenda', label: 'Agenda', desc: 'The event programme your team sees in Bendie Planner: sessions, breaks, speakers and MCs', icon: 'event_note', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Production' },
   { key: 'planner-production', label: 'Production', desc: 'Run-of-show: what needs to happen, and when, in each session', icon: 'theaters', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Production' },
 ];
 

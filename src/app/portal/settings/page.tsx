@@ -10,7 +10,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="font-headline-lg text-headline-lg text-on-surface">Settings</h1>
         <p className="text-body-md font-body-md text-on-surface-variant mt-1">
-          Manage portal access and organisation details.
+          Your organisation’s details in Bendie Studio.
         </p>
       </div>
 

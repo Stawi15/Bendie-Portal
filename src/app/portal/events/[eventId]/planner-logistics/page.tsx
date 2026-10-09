@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { SectionHeader } from '@/components/portal/SectionHeader';
+import { PRODUCT_PRESENTATION } from '@/lib/productPresentation';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { PlannerFlightList } from '@/components/portal/PlannerFlightList';
 import { PlannerFlightModal, type PlannerFlightClient, type ParticipantOption, type PlannerFlightFormValues } from '@/components/portal/PlannerFlightModal';
@@ -995,17 +996,17 @@ export default function PlannerLogisticsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-logistics" />
         {capability.canManage && (
           <div className="flex gap-2">
             {(subTab === 'flights' || subTab === 'hotels') && (
               <button className="btn-secondary" onClick={() => setCsvModalOpen(true)}>
-                Import CSV
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
               </button>
             )}
             <button className="btn-primary" onClick={addButtonHandler}>
-              {addButtonLabel}
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> {addButtonLabel}
             </button>
           </div>
         )}
@@ -1031,24 +1032,24 @@ export default function PlannerLogisticsPage() {
       )}
 
       {participantTotal > 0 && (
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <button type="button" onClick={() => setSubTab('flights')} className="text-left bg-white border border-outline-variant/60 rounded-xl p-3 hover:border-primary/40 transition-colors">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button type="button" onClick={() => setSubTab('flights')} className="text-left bg-white border border-outline-variant/60 rounded-xl px-3 py-2 hover:border-orange-400/60 transition-colors">
             <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">Participants</p>
             <p className="text-lg font-bold text-on-surface mt-0.5">{participantTotal}</p>
           </button>
-          <button type="button" onClick={() => setSubTab('flights')} className="text-left bg-white border border-outline-variant/60 rounded-xl p-3 hover:border-primary/40 transition-colors">
+          <button type="button" onClick={() => setSubTab('flights')} className="text-left bg-white border border-outline-variant/60 rounded-xl px-3 py-2 hover:border-orange-400/60 transition-colors">
             <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">Flights</p>
             <p className="text-sm font-semibold text-on-surface mt-0.5">
               {flightsCoveredCount} configured{flightsCoveredCount < participantTotal && <span className="text-amber-600"> · {participantTotal - flightsCoveredCount} need attention</span>}
             </p>
           </button>
-          <button type="button" onClick={() => setSubTab('hotels')} className="text-left bg-white border border-outline-variant/60 rounded-xl p-3 hover:border-primary/40 transition-colors">
+          <button type="button" onClick={() => setSubTab('hotels')} className="text-left bg-white border border-outline-variant/60 rounded-xl px-3 py-2 hover:border-orange-400/60 transition-colors">
             <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">Accommodation</p>
             <p className="text-sm font-semibold text-on-surface mt-0.5">
               {hotelsCoveredCount} booked{hotelsCoveredCount < participantTotal && <span className="text-amber-600"> · {participantTotal - hotelsCoveredCount} need attention</span>}
             </p>
           </button>
-          <button type="button" onClick={() => setSubTab('groundTransport')} className="text-left bg-white border border-outline-variant/60 rounded-xl p-3 hover:border-primary/40 transition-colors">
+          <button type="button" onClick={() => setSubTab('groundTransport')} className="text-left bg-white border border-outline-variant/60 rounded-xl px-3 py-2 hover:border-orange-400/60 transition-colors">
             <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">Ground Transport</p>
             <p className="text-sm font-semibold text-on-surface mt-0.5">
               {groundTransportAssignedCount} assigned{groundTransportAssignedCount < participantTotal && <span className="text-amber-600"> · {participantTotal - groundTransportAssignedCount} unassigned</span>}
@@ -1057,24 +1058,27 @@ export default function PlannerLogisticsPage() {
         </div>
       )}
 
-      <div className="flex gap-2 mt-6 mb-4 border-b border-outline-variant/30">
+      <div className="flex gap-2 mt-4 mb-3 border-b border-outline-variant">
         <button
           type="button"
-          className={`px-3 py-2 text-sm font-medium ${subTab === 'flights' ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant'}`}
+          className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${subTab === 'flights' ? `${PRODUCT_PRESENTATION.planner.areaActive} font-semibold` : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+          aria-pressed={subTab === 'flights'}
           onClick={() => setSubTab('flights')}
         >
           Flights
         </button>
         <button
           type="button"
-          className={`px-3 py-2 text-sm font-medium ${subTab === 'hotels' ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant'}`}
+          className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${subTab === 'hotels' ? `${PRODUCT_PRESENTATION.planner.areaActive} font-semibold` : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+          aria-pressed={subTab === 'hotels'}
           onClick={() => setSubTab('hotels')}
         >
           Hotels
         </button>
         <button
           type="button"
-          className={`px-3 py-2 text-sm font-medium ${subTab === 'groundTransport' ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant'}`}
+          className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${subTab === 'groundTransport' ? `${PRODUCT_PRESENTATION.planner.areaActive} font-semibold` : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}
+          aria-pressed={subTab === 'groundTransport'}
           onClick={() => setSubTab('groundTransport')}
         >
           Ground Transport

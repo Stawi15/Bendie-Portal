@@ -34,7 +34,7 @@ const FACILITATOR_CSV_COLUMNS: ColumnSpec[] = [
   { key: 'full_name', label: 'Full Name', required: true },
   { key: 'email', label: 'Email' },
   { key: 'job_title', label: 'Job Title' },
-  { key: 'organization', label: 'Organization' },
+  { key: 'organization', label: 'Organisation' },
   // Template header is "speaker_group"; the parser still accepts the old "facilitator_group" header (pre-rename templates).
   { key: 'speaker_group', label: 'Speaker Group' },
   { key: 'role_type', label: 'Role Type (speaker, presenter)' },
@@ -225,14 +225,14 @@ export default function FacilitatorsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader
           sectionKey="facilitators"
           desc={`${facilitators.length} speaker${facilitators.length !== 1 ? 's' : ''} for this event`}
         />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import CSV
+            <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
           </button>
           <button onClick={openAdd} className="btn-primary">
             <span className="material-symbols-outlined text-[18px]">add</span> Add Speaker
@@ -332,23 +332,23 @@ export default function FacilitatorsPage() {
       {loading ? (
         <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : facilitators.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">mic</p>
-          <p className="font-medium text-on-surface">No speakers have been added yet</p>
+          <p className="font-medium text-on-surface">No speakers yet</p>
           <p className="text-sm text-on-surface-variant mt-1 max-w-md mx-auto px-4">
-            Add the people speaking or presenting at your event — attendees browse them on the Home screen. Have a list already? Import it or paste it straight from a spreadsheet.
+            Add the people presenting at your event. They appear in the attendee app and can be assigned to agenda sessions.
           </p>
           <div className="flex flex-wrap justify-center gap-2 mt-4">
             <button onClick={openAdd} className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add</span> Add Speaker
             </button>
             <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-              <span className="material-symbols-outlined text-[18px]">upload_file</span> Import or paste
+              <span className="material-symbols-outlined text-[18px]">upload_file</span> Import spreadsheet
             </button>
           </div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">search</p>
           <p className="text-on-surface-variant">No speakers match your search.</p>
         </div>
@@ -363,8 +363,8 @@ export default function FacilitatorsPage() {
                 {f.facilitator_group && <p className="text-[11px] text-on-surface-variant/70 truncate">{f.facilitator_group}</p>}
               </div>
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                <span className={`hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${f.claim_status === 'claimed' ? 'bg-green-100 text-green-700' : 'bg-surface-container-low text-on-surface-variant'}`}>
-                  {f.claim_status}
+                <span className={`hidden sm:inline text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${f.claim_status === 'claimed' ? 'bg-green-100 text-green-700' : 'bg-surface-container-low text-on-surface-variant'}`} title="Whether this speaker has claimed their profile in the attendee app">
+                  {f.claim_status === 'claimed' ? 'Profile claimed' : 'Not claimed'}
                 </span>
                 <button onClick={() => openEdit(f)} title="Edit" className="text-sm text-primary hover:opacity-80 font-medium px-2 py-1 rounded-lg hover:bg-primary/5 transition">
                   <span className="hidden sm:inline">Edit</span>

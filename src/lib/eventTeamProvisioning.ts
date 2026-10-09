@@ -24,8 +24,9 @@ import { VIEWER_FLAGS, MANAGER_FLAGS, PLANNER_MODULES, type PlannerPermissionFla
  * failure class this pass fixes).
  */
 
-export const EVENT_MEMBER_ROLES = ['host', 'organizer', 'admin', 'facilitator', 'staff', 'attendee', 'speaker'] as const;
-export type EventMemberRole = (typeof EVENT_MEMBER_ROLES)[number];
+export { EVENT_MEMBER_ROLES, type EventMemberRole } from '@/lib/eventMemberRoles';
+import type { EventMemberRole } from '@/lib/eventMemberRoles';
+import { EVENT_MEMBER_ROLE_LABELS } from '@/lib/portalLabels';
 
 export type PlannerAccessChoice = 'none' | 'viewer' | 'manager' | 'custom';
 
@@ -53,6 +54,10 @@ export type PersonOutcome = {
   bendieAccessError?: string;
   plannerAccess: 'granted' | 'skipped' | 'failed' | 'denied';
   plannerAccessError?: string;
+  /** Feature 017 — set by addPersonToEventByEmail only. */
+  account?: 'created' | 'existing';
+  /** Feature 017 — the person's existing event role when it differs from the one requested (FR-012). */
+  roleKept?: string;
 };
 
 function outcomeSucceeded(o: PersonOutcome): boolean {
@@ -88,6 +93,8 @@ export function summarizeOutcomes(outcomes: PersonOutcome[]): {
 export function describeOutcome(o: PersonOutcome): string {
   if (o.eventMembership === 'failed') return `${o.label}: could not be added — ${o.eventMembershipError ?? 'unknown error'}`;
   const parts: string[] = [o.eventMembership === 'already_member' ? `${o.label} was already on this event` : `${o.label} added to the event`];
+  if (o.roleKept) parts[0] += ` (kept their existing role: ${EVENT_MEMBER_ROLE_LABELS[o.roleKept] ?? o.roleKept})`;
+  if (o.account === 'created') parts[0] += ' — new account created; they set a password with "Forgot password"';
   if (o.bendieAccess === 'failed') parts.push(`Bendie access code could not be sent (${o.bendieAccessError ?? 'unknown error'})`);
   if (o.plannerAccess === 'denied') parts.push('Planner access could not be granted — you do not have permission to administer Planner access for this event');
   else if (o.plannerAccess === 'failed') parts.push(`Planner access could not be enabled (${o.plannerAccessError ?? 'unknown error'})`);
@@ -116,44 +123,6 @@ export async function checkCanAdministerPlanner(eventId: string): Promise<boolea
     return !!body.ok && body.canAdminister === true;
   } catch {
     return false;
-  }
-}
-
-/**
- * Resolves an existing Portal identity by email, or creates a brand-new one
- * via the existing (deliberately platform-admin-only) /api/admin/create-user
- * route — never a second account-provisioning implementation. Ensures an
- * `organization_members` row exists either way (role 'member' at the org
- * tier, matching every existing provisioning path's convention — the event
- * role is configured separately).
- */
-export async function resolveOrCreatePersonByEmail(
-  email: string,
-  fullName: string,
-  organizationId: string
-): Promise<{ userId: string; created: boolean } | { error: string }> {
-  const normalized = email.trim().toLowerCase();
-  const { data: existing } = await supabase.from('profiles').select('id').ilike('email', normalized).maybeSingle();
-
-  if (existing?.id) {
-    const { error: orgError } = await supabase
-      .from('organization_members')
-      .insert({ organization_id: organizationId, user_id: existing.id, role: 'member' });
-    if (orgError && orgError.code !== '23505') return { error: orgError.message };
-    return { userId: existing.id, created: false };
-  }
-
-  try {
-    const res = await fetch('/api/admin/create-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: normalized, fullName, organizationId, orgRole: 'member' }),
-    });
-    const body = await res.json();
-    if (!res.ok) return { error: body.error ?? 'Failed to create account' };
-    return { userId: body.id as string, created: true };
-  } catch {
-    return { error: 'Failed to create account' };
   }
 }
 
@@ -204,7 +173,7 @@ function flagsToModulePatch(flags: PlannerPermissionFlags): Record<string, { vie
  * will not necessarily match a Manager/Custom choice made independently of
  * that role in this flow.
  */
-async function grantPlannerAccess(
+export async function grantPlannerAccess(
   eventId: string,
   userId: string,
   choice: Exclude<PlannerAccessChoice, 'none'>,
@@ -275,7 +244,26 @@ export async function addPersonToEvent(
   }
   outcome.eventMembership = insertError?.code === '23505' ? 'already_member' : 'added';
 
-  outcome.currentEventPointer = await pointCurrentEventAt(person.userId, eventId, organizationId);
+  await applyAccessFollowUps(outcome, eventId, eventName, organizationId, person, config);
+  return outcome;
+}
+
+/**
+ * The steps that follow a person being on the roster — shared by
+ * addPersonToEvent (roster row written from the browser) and
+ * addPersonToEventByEmail (roster row written by the Feature 017 route).
+ */
+async function applyAccessFollowUps(
+  outcome: PersonOutcome,
+  eventId: string,
+  eventName: string,
+  organizationId: string,
+  person: { userId: string; email: string | null },
+  config: EventAccessConfig,
+  /** Feature 017: the members route already set the pointer server-side (code-review #1). */
+  pointerAlreadySet = false
+): Promise<void> {
+  if (!pointerAlreadySet) outcome.currentEventPointer = await pointCurrentEventAt(person.userId, eventId, organizationId);
 
   if (config.grantBendie) {
     if (!person.email) {
@@ -292,7 +280,67 @@ export async function addPersonToEvent(
     outcome.plannerAccess = result.status;
     if (result.error) outcome.plannerAccessError = result.error;
   }
+}
 
+/**
+ * Feature 017 — adds a person to the event by email. The account, the
+ * organisation membership (always 'member') and the roster row are written
+ * server-side by POST /api/events/[eventId]/members, which authorizes the
+ * caller as platform admin or owner/admin of the event's organisation — so
+ * this works for org admins the browser RLS would not let insert, and for
+ * emails whose existing account the caller cannot see. An existing roster
+ * row keeps its role (FR-012). Then the same follow-ups as addPersonToEvent.
+ */
+export async function addPersonToEventByEmail(
+  eventId: string,
+  eventName: string,
+  organizationId: string,
+  email: string,
+  fullName: string,
+  config: EventAccessConfig
+): Promise<PersonOutcome> {
+  const label = fullName.trim() || email.trim();
+  const outcome: PersonOutcome = {
+    userId: '',
+    label,
+    eventMembership: 'failed',
+    currentEventPointer: 'skipped',
+    bendieAccess: 'skipped',
+    plannerAccess: 'skipped',
+  };
+
+  let body: Record<string, unknown>;
+  try {
+    const res = await fetch(`/api/events/${eventId}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, fullName, eventRole: config.eventRole }),
+    });
+    body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      outcome.eventMembershipError =
+        res.status === 403 ? 'you do not have permission to add people to this event' : ((body.message as string) ?? 'the request failed');
+      return outcome;
+    }
+  } catch {
+    outcome.eventMembershipError = 'the request failed — check your connection';
+    return outcome;
+  }
+
+  if (body.account === 'created' || body.account === 'existing') outcome.account = body.account;
+  if (typeof body.userId === 'string') outcome.userId = body.userId;
+  if (body.failedStep) {
+    outcome.eventMembershipError = (body.error as string) ?? 'unknown error';
+    return outcome;
+  }
+
+  outcome.eventMembership = body.event === 'already_member' ? 'already_member' : 'added';
+  if (outcome.eventMembership === 'already_member' && body.eventRole !== config.eventRole) {
+    outcome.roleKept = body.eventRole as string;
+  }
+
+  outcome.currentEventPointer = body.currentEventPointer === 'failed' ? 'failed' : 'ok';
+  await applyAccessFollowUps(outcome, eventId, eventName, organizationId, { userId: outcome.userId, email: (body.email as string) ?? email }, config, true);
   return outcome;
 }
 

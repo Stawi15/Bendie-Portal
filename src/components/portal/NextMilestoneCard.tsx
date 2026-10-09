@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { EventRow } from '@/lib/eventColumns';
-import type { EventStats } from '@/lib/eventStats';
+import { SETUP_BASICS_DESCRIPTION, type EventStats } from '@/lib/eventStats';
 import type { ProductKey } from '@/lib/productNavigation';
 
 type Event = EventRow;
@@ -17,12 +17,12 @@ type NextMilestoneCardProps = {
 
 export function NextMilestoneCard({ event, stats, loading, product }: NextMilestoneCardProps) {
   if (loading) {
-    return <div className="h-64 bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow animate-pulse" />;
+    return <div className="h-52 bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow animate-pulse" />;
   }
 
   if (!event) {
     return (
-      <div className="bg-white p-6 rounded-[20px] border border-[#E4EAF0] panel-shadow text-center">
+      <div className="bg-white p-5 rounded-[20px] border border-[#E4EAF0] panel-shadow text-center">
         <p className="text-on-surface-variant text-sm">No upcoming events scheduled.</p>
       </div>
     );
@@ -44,31 +44,31 @@ export function NextMilestoneCard({ event, stats, loading, product }: NextMilest
 
   return (
     <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow overflow-hidden">
-      <div className="h-32 bg-primary relative">
-        <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
+      <div className="h-24 bg-primary relative">
+        <div className="absolute inset-0 px-5 py-4 flex flex-col justify-end text-white">
           <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider self-start mb-2">
             Next Milestone
           </span>
           <h5 className="font-headline-sm text-headline-sm leading-tight truncate">{event.name}</h5>
         </div>
       </div>
-      <div className="p-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="p-5">
+        <div className="flex items-center gap-4 mb-4">
           <div className="text-center">
             <p className="text-headline-md font-headline-md text-primary leading-none">{daysLeft ?? '—'}</p>
             <p className="text-[10px] font-bold uppercase text-on-surface-variant tracking-wider">Days left</p>
           </div>
-          <div className="flex-1">
+          <div className="flex-1" title={SETUP_BASICS_DESCRIPTION}>
             <div className="flex justify-between items-center mb-1.5">
-              <p className="text-label-sm font-label-sm text-on-surface-variant">Setup Progress</p>
-              <p className="text-label-sm font-label-sm text-on-surface">{progress}%</p>
+              <p className="text-label-sm font-label-sm text-on-surface-variant">Setup basics</p>
+              <p className="text-label-sm font-label-sm text-on-surface">{stats ? `${stats.checksPassed} of ${stats.checksTotal}` : '—'}</p>
             </div>
             <div className="h-2 bg-surface-container-low rounded-full overflow-hidden">
               <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
             </div>
           </div>
         </div>
-        <div className="space-y-3 pt-4 border-t border-outline-variant/30">
+        <div className="space-y-2 pt-3 border-t border-outline-variant/30">
           <div className="flex items-center gap-3 text-on-surface-variant">
             <span className="material-symbols-outlined text-[18px]">calendar_month</span>
             <span className="text-body-sm font-body-sm">{dateRange}</span>
@@ -84,7 +84,7 @@ export function NextMilestoneCard({ event, stats, loading, product }: NextMilest
               ? `/portal/events/${event.id}/${product === 'planner' ? 'planner-overview' : 'dashboard'}?product=${product}`
               : `/portal/events/${event.id}/dashboard`
           }
-          className="block text-center w-full mt-6 py-3 border border-outline-variant rounded-xl font-label-md text-label-md hover:bg-surface-container-low transition-colors"
+          className="block text-center w-full mt-4 py-2 border border-outline-variant rounded-xl font-label-md text-label-md hover:bg-surface-container-low transition-colors"
         >
           Manage Event
         </Link>

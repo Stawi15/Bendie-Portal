@@ -112,7 +112,7 @@ export default function EventNotificationsPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="notifications" desc={`${items.length} notification${items.length !== 1 ? 's' : ''} for this event`} />
         <div className="flex gap-2 flex-shrink-0">
           <button onClick={fetchData} className="btn-secondary">
@@ -161,7 +161,7 @@ export default function EventNotificationsPage() {
       {loading ? (
         <div className="space-y-2 animate-pulse">{[1, 2, 3].map(i => <div key={i} className="h-24 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">notifications</p>
           <p className="text-on-surface-variant">No notifications yet. Send or schedule the first one for this event.</p>
         </div>

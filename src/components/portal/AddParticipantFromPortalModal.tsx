@@ -133,7 +133,7 @@ export function AddParticipantFromPortalModal({ open, source, eventId, organizat
     <FormModal open={open} onClose={onClose} title={source === 'attendees' ? 'Add Participant — From Bendie Attendees' : 'Add Participant — From Organisation'} maxWidthClassName="max-w-lg">
       {step === 'select' && (
         <div className="space-y-3">
-          <input className="input" placeholder={source === 'attendees' ? 'Search attendees…' : 'Search organisation people…'} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input data-ignore-dirty className="input" placeholder={source === 'attendees' ? 'Search attendees…' : 'Search organisation people…'} value={search} onChange={(e) => setSearch(e.target.value)} />
           {loadError ? (
             <p className="text-sm text-error py-4 text-center">{loadError}</p>
           ) : loading ? (

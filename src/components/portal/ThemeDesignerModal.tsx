@@ -48,7 +48,7 @@ function ColourControl({ field, value, text, active, warning, onActivate, onPick
       tabIndex={-1}
       onFocusCapture={onActivate}
       onPointerDown={onActivate}
-      className={`rounded-2xl border-2 p-4 transition-colors focus:outline-none ${active ? 'border-primary bg-surface-container-low' : 'border-outline-variant bg-white'}`}
+      className={`rounded-2xl border-2 p-3.5 transition-colors focus:outline-none ${active ? 'border-primary bg-surface-container-low' : 'border-outline-variant bg-white'}`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
         <h3 id={`${id}-title`} className="font-semibold text-on-surface text-sm">
@@ -61,7 +61,7 @@ function ColourControl({ field, value, text, active, warning, onActivate, onPick
           </span>
         )}
       </div>
-      <p className="text-xs text-on-surface-variant mb-3">{meta.description}</p>
+      <p className="text-xs text-on-surface-variant mb-2.5">{meta.description}</p>
 
       {/* The whole control is the native colour input's hit area — clicking the swatch,
           the HEX or "Choose colour" all open the browser's colour picker. */}
@@ -83,7 +83,7 @@ function ColourControl({ field, value, text, active, warning, onActivate, onPick
         />
       </div>
 
-      <div className="mt-3">
+      <div className="mt-2.5">
         <p className="text-[11px] font-semibold text-on-surface-variant mb-1.5">Quick colours</p>
         <div className="flex flex-wrap gap-1.5">
           {QUICK_COLOURS.map((c) => {
@@ -218,8 +218,8 @@ export function ThemeDesignerModal({ initialTheme, eventName, onClose, onApply }
   const matchesTheme = (theme: EventTheme) => THEME_FIELD_KEYS.every((k) => draft[k] === theme[k] && texts[k] === theme[k]);
 
   return (
-    <FormModal open onClose={requestClose} title="Customize event theme" maxWidthClassName="max-w-6xl">
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
+    <FormModal open onClose={requestClose} title="Customize event theme" maxWidthClassName="max-w-6xl" confirmDiscard={false}>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5">
         {/* Preview first on small screens so people see what they're changing */}
         <section aria-label="Live preview" className="order-first lg:order-last lg:sticky lg:top-0 self-start flex flex-col items-center gap-3">
           <div className="inline-flex rounded-full border border-outline-variant p-0.5" role="group" aria-label="Preview screen">
@@ -238,7 +238,7 @@ export function ThemeDesignerModal({ initialTheme, eventName, onClose, onApply }
           <EventThemePreview theme={draft} eventName={eventName} screen={screen} activeField={activeField} onSelectField={selectFromPreview} />
         </section>
 
-        <div className="space-y-4 min-w-0">
+        <div className="space-y-3 min-w-0">
           <p className="text-sm text-on-surface-variant">
             Pick a colour and watch the preview. Nothing changes for attendees until you press <span className="font-semibold text-on-surface">Apply theme</span>.
           </p>
@@ -288,7 +288,7 @@ export function ThemeDesignerModal({ initialTheme, eventName, onClose, onApply }
         </div>
       </div>
 
-      <div className="sticky -bottom-6 -mx-6 -mb-6 mt-6 px-6 py-4 bg-white border-t border-outline-variant rounded-b-[20px]">
+      <div className="sticky -bottom-5 -mx-5 -mb-5 mt-4 px-5 py-3 bg-white border-t border-outline-variant rounded-b-[20px]">
         {saveError && (
           <div className="mb-3 flex items-start gap-2 rounded-xl border border-error bg-error-container p-2.5" role="alert">
             <span className="material-symbols-outlined text-error text-[18px]" aria-hidden="true">error</span>

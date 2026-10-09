@@ -96,8 +96,11 @@ function canonicalizePriority(value: string): PlannerTaskPriority {
   return PRIORITY_CANONICAL[normalizeKey(value)] ?? 'Medium';
 }
 
+// Planner added a many-to-many `operational_task_assignees` table (2026-10), so a bare
+// `profiles(...)` embed became ambiguous (PGRST201) and broke every Tasks read. The Portal
+// still uses the single `assigned_profile_id` assignee, so name that relationship explicitly.
 const TASK_SELECT_COLUMNS =
-  'task_id, task_code, task, category, status, priority, due_date, remarks, assigned_profile_id, created_at, updated_at, profiles(full_name)';
+  'task_id, task_code, task, category, status, priority, due_date, remarks, assigned_profile_id, created_at, updated_at, profiles!operational_tasks_assigned_profile_id_fkey(full_name)';
 
 type RawTaskRow = {
   task_id: number;

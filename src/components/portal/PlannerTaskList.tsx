@@ -37,6 +37,8 @@ type PlannerTaskListProps = {
   /** Feature 016 Data Entry UX pass — manager-only inline status change, fired immediately on selection (no draft/Save step, unlike the self-assignee control below, since status is the only field this control touches — there is no companion field whose edits it could accidentally co-submit). Resolves to whether it succeeded so the row can revert on failure. */
   onManagerStatusChange?: (task: PlannerTaskClient, status: PlannerTaskClient['status']) => Promise<boolean>;
   onAdd?: () => void;
+  /** Feature 016: empty-state import action (same handler as the page header). */
+  onImport?: () => void;
 };
 
 type SelfAssigneeDraft = { status: PlannerTaskClient['status']; remarks: string };
@@ -48,7 +50,7 @@ type SelfAssigneeDraft = { status: PlannerTaskClient['status']; remarks: string 
  * control are both driven exclusively by server-derived capability/task
  * data — never a client-side inference (T034/T035).
  */
-export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busyTaskId, onEdit, onDelete, onSelfAssigneeUpdate, onManagerStatusChange, onAdd }: PlannerTaskListProps) {
+export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busyTaskId, onEdit, onDelete, onSelfAssigneeUpdate, onManagerStatusChange, onAdd, onImport }: PlannerTaskListProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   // Optimistic-with-rollback local override for the inline manager status
   // control only (item 14: immediate saving state, revert on failure) — never
@@ -114,7 +116,7 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
 
   return (
     <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow flex flex-col">
-      <div className="px-4 sm:px-lg py-4 border-b border-outline-variant flex flex-wrap gap-3 items-center">
+      <div className="px-4 sm:px-lg py-2.5 border-b border-outline-variant flex flex-wrap gap-3 items-center">
         <select className="input !w-auto" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="all">All statuses</option>
           {STATUS_VALUES.map((s) => (
@@ -142,7 +144,7 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 px-6">
+        <div className="text-center py-10 px-6">
           <p className="text-on-surface-variant text-sm">
             {tasks.length === 0 ? 'No tasks yet for this event.' : 'No tasks match the current filters.'}
           </p>
@@ -150,10 +152,15 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
             <>
               <p className="text-on-surface-variant/70 text-xs mt-1">Add one manually, paste from a spreadsheet, or import a CSV.</p>
               {onAdd && (
-                <div className="mt-4">
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <button className="btn-primary" onClick={onAdd}>
-                    New Task
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add task
                   </button>
+                  {onImport && (
+                    <button className="btn-secondary" onClick={onImport}>
+                      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
+                    </button>
+                  )}
                 </div>
               )}
             </>
@@ -164,13 +171,13 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
           <table className="w-full text-left">
             <thead className="bg-surface-container-low/50">
               <tr>
-                <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant">Task</th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Code</th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Status</th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Priority</th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Due</th>
-                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant">Assignee</th>
-                <th className="px-4 sm:px-lg py-4 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>
+                <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant">Task</th>
+                <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden sm:table-cell">Code</th>
+                <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Status</th>
+                <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Priority</th>
+                <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hidden md:table-cell">Due</th>
+                <th className="px-4 py-2.5 font-label-md text-label-md text-on-surface-variant">Assignee</th>
+                <th className="px-4 sm:px-lg py-2.5 font-label-md text-label-md text-on-surface-variant text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/30">
@@ -179,12 +186,12 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
                 const isBusy = busyTaskId === t.taskId;
                 return (
                   <tr key={t.taskId} className="hover:bg-surface-container-low/20 transition-colors align-top">
-                    <td className="px-4 sm:px-lg py-4">
+                    <td className="px-4 sm:px-lg py-2.5">
                       <p className="font-label-md text-label-md text-on-surface">{t.task}</p>
                       {t.category && <p className="text-xs text-on-surface-variant mt-0.5">{t.category}</p>}
                     </td>
-                    <td className="px-6 py-4 hidden sm:table-cell text-xs text-on-surface-variant">{t.taskCode}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-2.5 hidden sm:table-cell text-xs text-on-surface-variant">{t.taskCode}</td>
+                    <td className="px-4 py-2.5">
                       {isSelfAssignee ? (
                         <select
                           className="input !w-auto !py-1 text-xs"
@@ -223,20 +230,20 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell">
+                    <td className="px-4 py-2.5 hidden md:table-cell">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${PRIORITY_PILL_CLASSES[t.priority]}`}>
                         {t.priority}
                       </span>
                     </td>
-                    <td className="px-6 py-4 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{formatDate(t.dueDate)}</td>
-                    <td className="px-6 py-4 text-body-sm font-body-sm text-on-surface-variant">{t.assignedProfileName ?? '—'}</td>
-                    <td className="px-4 sm:px-lg py-4 text-right">
+                    <td className="px-4 py-2.5 hidden md:table-cell text-body-sm font-body-sm text-on-surface-variant">{formatDate(t.dueDate)}</td>
+                    <td className="px-4 py-2.5 text-body-sm font-body-sm text-on-surface-variant">{t.assignedProfileName ?? '—'}</td>
+                    <td className="px-4 sm:px-lg py-2.5 text-right">
                       {canManage ? (
                         <div className="flex justify-end gap-2">
-                          <button className="btn-secondary text-xs py-1.5" onClick={() => onEdit(t)} disabled={isBusy}>
+                          <button className="row-action" onClick={() => onEdit(t)} disabled={isBusy}>
                             Edit
                           </button>
-                          <button className="btn-danger text-xs py-1.5" onClick={() => onDelete(t)} disabled={isBusy}>
+                          <button className="row-action-danger" onClick={() => onDelete(t)} disabled={isBusy}>
                             Delete
                           </button>
                         </div>
@@ -250,7 +257,7 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
                             disabled={isBusy}
                           />
                           {isDirty(t) && (
-                            <button className="btn-secondary text-xs py-1.5" disabled={isBusy} onClick={() => discardDraft(t)}>
+                            <button className="row-action" disabled={isBusy} onClick={() => discardDraft(t)}>
                               Cancel
                             </button>
                           )}

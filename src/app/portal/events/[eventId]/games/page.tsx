@@ -125,7 +125,7 @@ export default function GamesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="games" desc={`${games.length} game${games.length !== 1 ? 's' : ''}`} />
         <button onClick={() => { setEditingGame(null); setGameForm(EMPTY_GAME); setShowGameForm(true); }} className="btn-primary flex-shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span> New Game

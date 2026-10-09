@@ -58,17 +58,17 @@ export default function ThemePage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <SectionHeader sectionKey="theme" />
       </div>
 
-      <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-8 items-center">
+      <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 sm:p-6">
+        <div className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)] gap-6 items-center">
           <div className="flex justify-center">
             <EventThemePreview theme={current} eventName={previewName} />
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div>
               <h2 className="font-headline-sm text-headline-sm text-on-surface">Event theme</h2>
               <p className="text-sm text-on-surface-variant mt-1">

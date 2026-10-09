@@ -66,6 +66,8 @@ export const EVENT_MODULES: EventModule[] = [
   { key: 'planner-people', label: 'Participants', description: 'The people you manage travel and logistics for.', product: 'planner', category: 'Travel & logistics', alwaysIncluded: true },
   { key: 'planner-logistics', label: 'Flights, hotels & transport', description: 'Participant flights, accommodation and ground transport.', product: 'planner', category: 'Travel & logistics' },
   // Event operations (Planner)
+  // Feature 018 — always included so events whose Planner modules were chosen before it existed still show it.
+  { key: 'planner-agenda', label: 'Agenda', description: 'The event programme your team sees in Bendie Planner.', product: 'planner', category: 'Event operations', alwaysIncluded: true },
   { key: 'planner-production', label: 'Production', description: 'Run-of-show: what needs to happen in each session.', product: 'planner', category: 'Event operations' },
   { key: 'planner-tasks', label: 'Tasks', description: 'To-dos assigned to your event team.', product: 'planner', category: 'Event operations' },
   { key: 'planner-checklist', label: 'Checklist', description: 'Items to source and check off before and on site.', product: 'planner', category: 'Event operations' },

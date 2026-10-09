@@ -6,7 +6,7 @@ type ComingSoonPanelProps = {
 
 export function ComingSoonPanel({ icon, title, description }: ComingSoonPanelProps) {
   return (
-    <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow flex flex-col items-center text-center py-20 px-6">
+    <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow flex flex-col items-center text-center py-12 px-6">
       <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
         <span className="material-symbols-outlined text-primary text-3xl">{icon}</span>
       </div>

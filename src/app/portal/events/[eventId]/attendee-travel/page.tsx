@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { useEvent } from '@/contexts/EventContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { FormModal } from '@/components/portal/FormModal';
 import { isProductAvailableForEvent } from '@/lib/eventAuth';
@@ -60,6 +61,9 @@ export default function AttendeeTravelPage() {
   const router = useRouter();
   const confirm = useConfirm();
   const { currentEvent } = useEvent();
+  // The pull endpoint (/api/admin/planner-pull-travel) only authorises platform admins;
+  // others are told who can do it instead of being offered a button that always fails.
+  const { isGlobalAdmin } = useAuth();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,7 +212,7 @@ export default function AttendeeTravelPage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <SectionHeader sectionKey="attendee-travel" desc="Flight and ground-transfer details, organiser-entered per attendee" />
       </div>
 
@@ -238,9 +242,14 @@ export default function AttendeeTravelPage() {
             <div className="flex flex-wrap gap-2 mt-3">
               {justReturnedFromPlanner ? (
                 <>
-                  <button onClick={handlePullTravel} disabled={pullingTravel} className="btn-primary text-xs py-1.5">
-                    {pullingTravel ? 'Pulling…' : 'Pull from Bendie Planner'}
-                  </button>
+                  {isGlobalAdmin && (
+                    <button onClick={handlePullTravel} disabled={pullingTravel} className="btn-primary text-xs py-1.5">
+                      {pullingTravel ? 'Pulling…' : 'Pull from Bendie Planner'}
+                    </button>
+                  )}
+                  {!isGlobalAdmin && (
+                    <p className="text-xs text-on-surface-variant self-center">Pulling Planner travel into Bendie is done by a platform administrator.</p>
+                  )}
                   <button onClick={handleSetUpInPlanner} className="text-xs text-primary hover:opacity-80 font-medium px-2 py-1.5">
                     Continue in Planner
                   </button>
@@ -250,9 +259,13 @@ export default function AttendeeTravelPage() {
                   <button onClick={handleSetUpInPlanner} className="btn-primary text-xs py-1.5">
                     Set up in Bendie Planner
                   </button>
-                  <button onClick={handlePullTravel} disabled={pullingTravel} className="btn-secondary text-xs py-1.5">
-                    {pullingTravel ? 'Pulling…' : 'Pull from Bendie Planner'}
-                  </button>
+                  {isGlobalAdmin ? (
+                    <button onClick={handlePullTravel} disabled={pullingTravel} className="btn-secondary text-xs py-1.5">
+                      {pullingTravel ? 'Pulling…' : 'Pull from Bendie Planner'}
+                    </button>
+                  ) : (
+                    <p className="text-xs text-on-surface-variant self-center">Pulling Planner travel into Bendie is done by a platform administrator.</p>
+                  )}
                 </>
               )}
             </div>

@@ -54,7 +54,7 @@ export function AddParticipantMenu({ showFromAttendees, onFromAttendees, onFromO
           {showFromAttendees && item('From Bendie Attendees', 'confirmation_number', onFromAttendees)}
           {item('From organisation', 'group', onFromOrganisation)}
           {item('Add new participant', 'person_add', onAddNew)}
-          {item('Import CSV', 'upload_file', onImportCsv)}
+          {item('Import spreadsheet', 'upload_file', onImportCsv)}
         </div>
       )}
     </div>

@@ -105,11 +105,14 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
     };
   }, [events, eventsLoading]);
 
-  // Needs attention: emergency contact gaps + speaker gaps, scoped to this product's events.
+  // Needs attention: emergency contact gaps + speaker gaps. Both checks read Bendie
+  // content tables, so (Feature 016 density pass) they only run on the Bendie overview —
+  // on the Planner overview they flagged Planner-only events that have no emergency
+  // screen at all. Each item now links to the one page that fixes it.
   useEffect(() => {
     if (eventsLoading) return;
     const allEventIds = events.map((e) => e.id);
-    if (allEventIds.length === 0) {
+    if (allEventIds.length === 0 || product !== 'bendie') {
       setAttentionItems([]);
       setAttentionLoading(false);
       return;
@@ -119,6 +122,7 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
     (async () => {
       setAttentionLoading(true);
       const items: AttentionItem[] = [];
+      const eventName = (id: string) => events.find((e) => e.id === id)?.name ?? 'An event';
       // Navigation pass (016 continuation 4) — uses the same canonical
       // lifecycle as everywhere else now, so an event whose dates show it's
       // already over (even if its raw `status` was never manually updated)
@@ -145,26 +149,50 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
             iconClass: 'text-red-500',
             bgClass: 'bg-red-50 border-red-100',
             title: 'Emergency contacts missing',
-            subtitle: `${event.name}: no emergency contacts configured`,
+            subtitle: `${event.name} has no emergency contacts yet`,
+            href: `/portal/events/${event.id}/emergency?product=bendie`,
+            actionLabel: 'Add emergency contacts',
           });
         }
       }
 
-      const { count: gapCount } = await supabase
+      // Same single request as before; it now returns the event ids (not just a head count)
+      // so each gap can point at the agenda that has it.
+      const { data: gapRows, count: gapCount } = await supabase
         .from('agenda_sessions')
-        .select('id', { count: 'exact', head: true })
+        .select('event_id', { count: 'exact' })
         .in('event_id', allEventIds)
         .is('facilitator_id', null);
 
       if ((gapCount ?? 0) > 0) {
-        items.push({
-          id: 'speaker-gaps',
-          icon: 'mic_off',
-          iconClass: 'text-secondary',
-          bgClass: 'bg-secondary/5 border-secondary/10',
-          title: 'Speaker Gaps',
-          subtitle: `${gapCount} agenda session${gapCount === 1 ? '' : 's'} with no speaker assigned`,
-        });
+        const perEvent = new Map<string, number>();
+        for (const row of (gapRows as { event_id: string | null }[]) ?? []) {
+          if (row.event_id) perEvent.set(row.event_id, (perEvent.get(row.event_id) ?? 0) + 1);
+        }
+        const ranked = Array.from(perEvent.entries()).sort((a, b) => b[1] - a[1]);
+        for (const [eventId, n] of ranked.slice(0, 3)) {
+          items.push({
+            id: `speaker-gaps-${eventId}`,
+            icon: 'mic_off',
+            iconClass: 'text-secondary',
+            bgClass: 'bg-secondary/5 border-secondary/10',
+            title: 'Speaker gaps',
+            subtitle: `${eventName(eventId)}: ${n} agenda session${n === 1 ? '' : 's'} with no speaker`,
+            href: `/portal/events/${eventId}/agenda?product=bendie`,
+            actionLabel: 'Review agenda',
+          });
+        }
+        if (ranked.length > 3) {
+          const rest = ranked.slice(3).reduce((sum, [, n]) => sum + n, 0);
+          items.push({
+            id: 'speaker-gaps-more',
+            icon: 'mic_off',
+            iconClass: 'text-secondary',
+            bgClass: 'bg-secondary/5 border-secondary/10',
+            title: 'More speaker gaps',
+            subtitle: `${rest} more session${rest === 1 ? '' : 's'} across ${ranked.length - 3} other event${ranked.length - 3 === 1 ? '' : 's'}`,
+          });
+        }
       }
 
       if (cancelled) return;
@@ -175,7 +203,7 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
     return () => {
       cancelled = true;
     };
-  }, [events, eventsLoading]);
+  }, [events, eventsLoading, product]);
 
   // Recent activity across this product's events.
   useEffect(() => {
@@ -262,11 +290,11 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
 
   return (
     <div>
-      <section className="mb-lg flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+      <section className="mb-md flex flex-col md:flex-row justify-between items-start md:items-end gap-3">
         <div>
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-outline-variant panel-shadow">
-              <span className="material-symbols-outlined text-primary">auto_awesome_motion</span>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center border border-outline-variant panel-shadow">
+              <span className="material-symbols-outlined text-primary text-[20px]" aria-hidden="true">auto_awesome_motion</span>
             </div>
             <h2 className="font-headline-lg text-headline-lg text-on-surface">
               Good {timeOfDay}, {greetingName}.
@@ -275,10 +303,10 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
           {/* Navigation pass (016 continuation 4) — §18: the active product is
               now always visually obvious from the header's segmented switcher,
               so this sentence no longer needs to repeat it in words. */}
-          <p className="text-body-lg font-body-lg text-on-surface-variant">
+          <p className="text-body-md font-body-md text-on-surface-variant">
             Here&apos;s what&apos;s happening in <span className="text-on-surface font-semibold">{organization?.name ?? 'your organisation'}</span>.
           </p>
-          <div className="flex flex-wrap gap-4 mt-3">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
             <span className="flex items-center gap-1.5 text-label-sm font-label-sm text-outline">
               <span className="material-symbols-outlined text-[18px]">calendar_today</span> {events.length} events
             </span>
@@ -287,13 +315,13 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
             </span>
             <span className="flex items-center gap-1.5 text-label-sm font-label-sm text-outline">
               <span className="material-symbols-outlined text-[18px]">badge</span> {elevatedCount ?? '—'} organisation
-              users
+              admins
             </span>
           </div>
         </div>
       </section>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md mb-lg">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-md">
         <MetricCard
           icon="groups"
           accent="primary"
@@ -351,7 +379,11 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
             loading={eventsLoading}
             product={product}
           />
-          <NeedsAttentionCard items={attentionItems} loading={attentionLoading} />
+          <NeedsAttentionCard
+            items={attentionItems}
+            loading={attentionLoading}
+            emptyMessage={product === 'planner' ? "Planner readiness is tracked per event — open an event’s Dashboard to see what each one still needs." : undefined}
+          />
           <RecentActivityCard entries={activityEntries} loading={activityLoading} />
           <QuickActionsCard
             onCreateEvent={canCreateEvent ? () => openCreateEvent(product) : undefined}

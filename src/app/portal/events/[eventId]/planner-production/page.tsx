@@ -376,15 +376,15 @@ export default function PlannerProductionPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-production" />
-        {capability.canManage && (
+        {capability.canManage && sessions.length > 0 && (
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={() => setCsvModalOpen(true)}>
-              Import CSV
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
             </button>
             <button className="btn-primary" onClick={openCreate}>
-              Add Session
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
             </button>
           </div>
         )}

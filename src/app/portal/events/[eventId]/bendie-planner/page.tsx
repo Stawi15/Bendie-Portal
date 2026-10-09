@@ -305,7 +305,7 @@ export default function BendiePlannerPage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <SectionHeader
           sectionKey="bendie-planner"
           desc={link ? `Linked to "${link.planner_event_title ?? link.planner_event_id}"` : 'Not linked to Bendie Planner'}
@@ -313,7 +313,7 @@ export default function BendiePlannerPage() {
       </div>
 
       {/* Link status card */}
-      <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-6 sm:p-8 mb-6">
+      <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5 sm:p-6 mb-6">
         {loadingLink ? (
           <div className="animate-pulse h-16 bg-surface-container-low rounded-xl" />
         ) : link ? (
@@ -345,14 +345,14 @@ export default function BendiePlannerPage() {
       </div>
 
       {!link ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow text-on-surface-variant text-sm">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow text-on-surface-variant text-sm">
           Link this event to a Bendie Planner event to see member sync status and enable agenda/travel sync.
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Members */}
           <div className="bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-5">
-            <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-1">Members</h3>
+            <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-1">Event team sync</h3>
             <p className="text-xs text-on-surface-variant/70 mb-3">Portal → Planner · automatic for staff-tier roles</p>
             {loadingMembers ? (
               <div className="animate-pulse space-y-2">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-surface-container-low rounded-lg" />)}</div>
@@ -429,7 +429,7 @@ export default function BendiePlannerPage() {
 
       {/* Browse Planner events modal */}
       <FormModal open={browseOpen} onClose={() => setBrowseOpen(false)} title="Find a Bendie Planner Event">
-        <input
+        <input data-ignore-dirty
           type="text"
           placeholder="Search by title or location..."
           value={plannerSearch}

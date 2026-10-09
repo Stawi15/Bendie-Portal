@@ -6,6 +6,42 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 018 — Planner Agenda Authoring ✅ Built (2026-10-09) — browser acceptance pending
+
+Spec/plan/tasks: `specs/018-planner-agenda-authoring/`. New Planner workspace section **Agenda**
+(`planner-agenda`) authors the linked Planner event's programme (`event_agenda_items`) — previously only
+reachable for Bendie+Planner events via the Stawi-only agenda push, so Planner-only events had no way to
+build it from the Portal. Add / edit / delete / spreadsheet import; same permission as Production;
+items pushed from a Bendie Agenda are read-only (409 on write). Files: `src/lib/plannerAgenda.ts`,
+`/api/events/[eventId]/planner-agenda` (+ `/[itemId]`), page, `PlannerAgendaList`, `PlannerAgendaModal`;
+`alwaysIncluded` module so configured events still show it. Verified: type-check, lint baseline, isolated
+build, live create/update/delete round trip on Planner event 61 (cleaned up). No schema change.
+
+---
+
+## Feature 017 — Client Admins Set Up Their Own Team ✅ Built (2026-10-09) — browser acceptance pending
+
+Spec/plan/tasks: `specs/017-client-admin-team-setup/`. Commits `99cea0a` (planning, constitution
+v1.1.1) and `1513cd2` (implementation).
+
+- Organization owners/admins create accounts for their own organisation (always Member), via new
+  org-scoped routes `POST /api/events/[eventId]/members` and `POST /api/organizations/[organizationId]/people`
+  (helper `src/lib/accountProvisioning.ts`, server-only). Silent creation; first login via "Forgot password".
+- Planner Overview → Team & Access → **Add team member** (reuses `AddPeopleModal` invite mode); Organisation
+  People add/import, Bendie "Invite new attendee" and the event spreadsheet import work for client admins.
+  An existing event member keeps their role.
+- Migration `zz_organization_admin_event_membership_and_role_guard.sql`: only Stawi creates/changes org
+  owner/admin roles; every org owner/admin is an event `admin` on every org event (triggers + backfill).
+- Verified: type-check, lint (28 warnings, baseline), build; migration checks; client-admin role-escalation
+  attempts refused. **Still to do:** quickstart browser checks (rows 1–15 and 17, plus the Stawi half of row 16, of
+  `specs/017-client-admin-team-setup/quickstart.md`), `/review`, `/speckit.converge`.
+- Flagged, not fixed: Organisation People "remove person" silently does nothing for client admins (no
+  org-admin DELETE policy); `pointCurrentEventAt` cannot update other users' profiles for client admins;
+  demoting an org admin does not remove their event rows; architecture.md's `/portal` global-admin gate
+  statement is stale since Feature 003.
+
+---
+
 ## Carry-forward requirement for the next feature: BENDIE PLANNER STAFF & MODULE PERMISSIONS — OPEN (identified 2026-09-18, during Feature 007 manual acceptance)
 
 **Working title only — FEATURE 008 — Bendie Planner Staff & Module Permissions.** This is a roadmap requirement, not a specification. Do not treat this block as scope-complete or start implementation from it directly — it exists so the requirement survives Feature 007's convergence rather than being lost. A full `/architect` + `/speckit.specify` pass is still required before any implementation.

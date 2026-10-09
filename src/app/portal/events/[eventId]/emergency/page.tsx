@@ -125,7 +125,7 @@ export default function EmergencyPage() {
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-4">
         <SectionHeader sectionKey="emergency" desc="Emergency contacts and safety information" />
       </div>
 
@@ -184,7 +184,7 @@ export default function EmergencyPage() {
 
           {loading ? <div className="animate-pulse space-y-3">{[1,2].map(i=><div key={i} className="h-16 bg-surface-container-low rounded-[20px]"/>)}</div>
           : contacts.length === 0 ? (
-            <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow"><p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">emergency</p><p className="text-on-surface-variant">No emergency contacts yet.</p></div>
+            <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow"><p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">emergency</p><p className="text-on-surface-variant">No emergency contacts yet.</p></div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {contacts.map(c => (
@@ -246,7 +246,7 @@ export default function EmergencyPage() {
           </FormModal>
 
           {images.length === 0 ? (
-            <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow"><p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">image</p><p className="text-on-surface-variant">No safety images yet.</p></div>
+            <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow"><p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">image</p><p className="text-on-surface-variant">No safety images yet.</p></div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {images.map(img => (

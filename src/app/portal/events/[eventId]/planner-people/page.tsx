@@ -553,7 +553,7 @@ export default function PlannerPeoplePage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-people" />
         {capability.canManage && participants.length > 0 && addMenu}
       </div>
@@ -563,8 +563,8 @@ export default function PlannerPeoplePage() {
           One concise description now lives once, in eventSectionMeta.ts;
           this is just a subtle contextual link to where Planner access is
           actually configured, not another explanatory sentence. */}
-      <Link href={`/portal/events/${eventId}/members`} className="text-xs text-on-surface-variant hover:text-primary inline-flex items-center gap-1 mt-2">
-        Need someone to work inside Planner? Manage them under Team &amp; Access
+      <Link href={`/portal/events/${eventId}/planner-overview?product=planner#team-access`} className="text-xs text-on-surface-variant hover:text-primary inline-flex items-center gap-1 mt-2">
+        Need someone to work inside Planner? That’s Planner Team &amp; Access, not Participants
         <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
       </Link>
 

@@ -111,7 +111,7 @@ export default function EventPhotosPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SectionHeader sectionKey="event-photos" desc={`${photos.length} photo${photos.length !== 1 ? 's' : ''} curated for this event`} />
         <button onClick={openAdd} className="btn-primary flex-shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span> Add Photo
@@ -164,7 +164,7 @@ export default function EventPhotosPage() {
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 animate-pulse">{[1, 2, 3, 4].map(i => <div key={i} className="h-48 bg-surface-container-low rounded-[20px]" />)}</div>
       ) : photos.length === 0 ? (
-        <div className="text-center py-16 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
+        <div className="text-center py-10 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow">
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-3">add_photo_alternate</p>
           <p className="text-on-surface-variant">No photos yet. Add the first one to get this event&apos;s gallery started.</p>
         </div>
