@@ -22,8 +22,7 @@ import {
   EVENT_MEMBER_ROLES,
   resolveEventProductContext,
   checkCanAdministerPlanner,
-  resolveOrCreatePersonByEmail,
-  addPersonToEvent,
+  addPersonToEventByEmail,
   type EventAccessConfig,
   type PlannerAccessChoice,
 } from '@/lib/eventTeamProvisioning';
@@ -353,12 +352,10 @@ export default function MembersPage() {
     const organizationId = productContext?.organizationId ?? currentEvent?.organization_id;
     if (!organizationId) return { error: 'Could not determine this event\'s organisation' };
 
-    const resolved = await resolveOrCreatePersonByEmail(row.email, row.full_name ?? '', organizationId);
-    if ('error' in resolved) return { error: resolved.error };
-
+    // Feature 017: account, organisation membership and roster row are written
+    // server-side (works for any org owner/admin); an existing member keeps their role.
     const config: EventAccessConfig = { eventRole: row.role as EventAccessConfig['eventRole'], grantBendie: row.bendieAccess, plannerAccess: row.plannerAccess };
-    const label = row.full_name ?? row.email;
-    const outcome = await addPersonToEvent(eventId, currentEvent?.name ?? 'this event', organizationId, { userId: resolved.userId, email: row.email, label }, config);
+    const outcome = await addPersonToEventByEmail(eventId, currentEvent?.name ?? 'this event', organizationId, row.email, row.full_name ?? '', config);
 
     if (outcome.eventMembership === 'failed') return { error: outcome.eventMembershipError ?? 'Failed to add to event' };
     const problems: string[] = [];
@@ -410,7 +407,10 @@ export default function MembersPage() {
         <SectionHeader sectionKey="members" desc={`${members.length} ${members.length === 1 ? 'person' : 'people'} on this event`} />
         {productContext && (
           <AddPeopleMenu
-            canCreateAccounts={isGlobalAdmin}
+            // Feature 017: account creation is open to the same people as Planner
+            // administration — platform admin or owner/admin of this event's
+            // organisation (the server re-checks both routes).
+            canCreateAccounts={isGlobalAdmin || canAdministerPlanner}
             onFromOrganisation={() => setAddFromOrgOpen(true)}
             onFromTeam={() => setAddFromTeamOpen(true)}
             onInviteNew={() => setInviteOpen(true)}

@@ -120,8 +120,24 @@ Callers found that create accounts:
 - **Impact**: People import by a client admin with `org_role=admin` is capped to member in the UI
   before insert (plan), so it never hits the refusal.
 
+**Applied and verified 2026-10-09 (T006/T007)**: applied by the developer via the SQL Editor of the
+shared Bendie Supabase project (`droaamagpsojkzznywgd` — the Portal has no project of its own; the
+same database serves the Evently-App mobile app). Old `organization_members_insert_self` /
+`_update_owner_admin` policies gone, `_insert_org_admin` / `_update_org_admin` present, both
+triggers present; owners/admins missing or below admin on any org event: 0; `event_members`
+388 → 412 (24 added; the 1 raise confirmed by the 0). Because it was run in the SQL Editor, it is
+not recorded in Supabase's migration history table.
+
 **Verified 2026-10-09 (analysis U2)**: `postgres` (the migration role) is a member of
 `service_role`, so `SET LOCAL ROLE service_role` works for the backfill.
+
+**T022 audit (2026-10-09)** — browser writes to `organization_members` after Feature 017:
+`AddPersonModal` add-existing inserts `member`; People import inserts the sheet role only for platform
+admins, and for client admins caps owner/admin to member (notice) and applies a non-admin sheet role
+only to memberships the import just created; `accountProvisioning.ensureOrgMember` (server) inserts
+`member`; People "remove" deletes (no org-admin DELETE policy — flagged item 2). The People page's
+admin toggle writes `profiles.global_role`, which `enforce_profile_role_immutability` already
+reverts for anyone but platform admins/service role. No client-admin path writes owner/admin.
 
 ## R9 — Migration file name
 

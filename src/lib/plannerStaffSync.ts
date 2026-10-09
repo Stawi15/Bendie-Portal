@@ -9,7 +9,7 @@ const STAFF_ROLES = ['host', 'organizer', 'admin', 'facilitator', 'staff', 'spea
 // citext/lower() column exists on Planner's profiles.email to compare
 // against instead, so this is the minimal fix that doesn't touch Portal's
 // own broader email-case policy at all.
-function escapeLikePattern(value: string): string {
+export function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (match) => `\\${match}`);
 }
 

@@ -39,7 +39,7 @@ const PEOPLE_CSV_SAMPLES: Record<string, string>[] = [
 
 export default function PeoplePage() {
   const { organizationId, loading: orgLoading } = useOrganization();
-  const { user } = useAuth();
+  const { user, isGlobalAdmin } = useAuth();
   const { people, total, elevatedCount, loading, refetch } = useOrgPeople(organizationId, orgLoading);
   const { events } = useOrgEvents(organizationId, orgLoading);
   const confirm = useConfirm();
@@ -53,6 +53,8 @@ export default function PeoplePage() {
   // Populated once per import by beforeImportPeople, read per-row by importPersonRow.
   const emailToIdRef = useRef<Map<string, string>>(new Map());
   const createErrorsRef = useRef<Map<string, string>>(new Map());
+  // Feature 017 (client owners/admins only): emails whose organisation membership this import just created.
+  const newMembershipRef = useRef<Set<string>>(new Set());
 
   const filtered = people.filter((p) => {
     if (!search.trim()) return true;
@@ -147,9 +149,49 @@ export default function PeoplePage() {
     return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
   };
 
+  // Feature 017: client owners/admins resolve/create every row through the
+  // org-scoped route, which also adds the organisation membership as 'member'
+  // (FR-004/FR-017). Stawi keeps the bulk-create path below unchanged.
+  const beforeImportPeopleAsOrgAdmin = async (rows: PersonCsvRow[]) => {
+    if (!organizationId) return;
+    for (let start = 0; start < rows.length; start += 500) {
+      const chunk = rows.slice(start, start + 500);
+      try {
+        const res = await fetch(`/api/organizations/${organizationId}/people`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ people: chunk.map((r) => ({ email: r.email, fullName: r.full_name ?? '' })) }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const message = res.status === 403 ? 'You do not have permission to add people to this organisation' : body.message ?? 'Failed to add people';
+          for (const r of chunk) createErrorsRef.current.set(r.email, message);
+          continue;
+        }
+        for (const result of body.results as Array<{ email: string; userId?: string; organization?: string; error?: string }>) {
+          const key = result.email.toLowerCase();
+          if (result.userId) {
+            emailToIdRef.current.set(key, result.userId);
+            if (result.organization === 'added') newMembershipRef.current.add(key);
+          } else if (!emailToIdRef.current.has(key) && result.error !== 'duplicate') {
+            createErrorsRef.current.set(key, result.error ?? 'Failed to create account');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        for (const r of chunk) createErrorsRef.current.set(r.email, 'Failed to create account');
+      }
+    }
+  };
+
   const beforeImportPeople = async (rows: PersonCsvRow[]) => {
     emailToIdRef.current = new Map();
     createErrorsRef.current = new Map();
+    newMembershipRef.current = new Set();
+    if (!isGlobalAdmin) {
+      await beforeImportPeopleAsOrgAdmin(rows);
+      return;
+    }
 
     const emails = rows.map((r) => r.email);
     const { data: existing, error } = await supabase.from('profiles').select('id,email').in('email', emails);
@@ -195,11 +237,26 @@ export default function PeoplePage() {
     }
     if (!organizationId) return { error: 'No organisation selected' };
 
-    const { error: orgError } = await supabase
-      .from('organization_members')
-      .insert({ organization_id: organizationId, user_id: userId, role: row.org_role });
-    if (orgError && orgError.code !== '23505') {
-      return { error: orgError.message };
+    let notice: string | undefined;
+    if (isGlobalAdmin) {
+      const { error: orgError } = await supabase
+        .from('organization_members')
+        .insert({ organization_id: organizationId, user_id: userId, role: row.org_role });
+      if (orgError && orgError.code !== '23505') {
+        return { error: orgError.message };
+      }
+    } else if (row.org_role === 'owner' || row.org_role === 'admin') {
+      // Only Stawi grants organisation owner/admin (FR-024); the membership stays 'member'.
+      notice = 'Organisation role limited to Member — only Stawi can make someone an organisation admin';
+    } else if (row.org_role !== 'member' && newMembershipRef.current.has(row.email)) {
+      // The route created the membership as 'member'; apply the sheet's non-admin role to that new
+      // membership only, so an existing person's role is never changed (same as before: insert-if-absent).
+      const { error: roleError } = await supabase
+        .from('organization_members')
+        .update({ role: row.org_role })
+        .eq('organization_id', organizationId)
+        .eq('user_id', userId);
+      if (roleError) notice = `Added as Member — the role "${row.org_role}" could not be applied`;
     }
 
     for (const eventId of row.event_ids) {
@@ -211,7 +268,7 @@ export default function PeoplePage() {
       }
     }
 
-    return {};
+    return { notice };
   };
 
   return (

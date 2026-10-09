@@ -14,7 +14,8 @@ import {
 import { knownErrorMessage } from '@/lib/userFacingError';
 import { DismissibleTip } from '@/components/portal/DismissibleTip';
 
-type ImportOutcome = { rowIndex: number; success: boolean; error?: string };
+// `notice` (Feature 017): an optional note on a row that WAS imported, e.g. a value the importer had to limit.
+type ImportOutcome = { rowIndex: number; success: boolean; error?: string; notice?: string };
 
 type CsvImportModalProps<T> = {
   open: boolean;
@@ -25,7 +26,7 @@ type CsvImportModalProps<T> = {
   columns: ColumnSpec[];
   sampleRows: Record<string, string>[];
   parseRow: (raw: Record<string, string>, rowIndex: number) => RowResult<T>;
-  importRow: (data: T) => Promise<{ error?: string }>;
+  importRow: (data: T) => Promise<{ error?: string; notice?: string }>;
   /** Optional one-time setup run once with all valid rows before the per-row import loop starts (e.g. batching account creation into a single request). */
   beforeImport?: (validData: T[]) => Promise<void>;
 };
@@ -183,10 +184,10 @@ export function CsvImportModal<T>({
       validRows,
       5,
       async (row) => {
-        const { error } = await importRow(row.data as T);
+        const { error, notice } = await importRow(row.data as T);
         done += 1;
         setImportProgress(done);
-        return { rowIndex: row.rowIndex, success: !error, error } as ImportOutcome;
+        return { rowIndex: row.rowIndex, success: !error, error, notice: error ? undefined : notice } as ImportOutcome;
       },
       (row, _index, error) => {
         done += 1;
@@ -207,6 +208,7 @@ export function CsvImportModal<T>({
 
   const succeededCount = outcomes.filter((o) => o.success).length;
   const failedDuringImport = outcomes.filter((o) => !o.success);
+  const importedWithNotice = outcomes.filter((o) => o.success && o.notice);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -476,6 +478,27 @@ export function CsvImportModal<T>({
                       <tr key={`failed-${o.rowIndex}`}>
                         <td className="px-3 py-2 text-on-surface-variant">{rowLabel(o.rowIndex)}</td>
                         <td className="px-3 py-2 text-error">{readableImportError(o.error)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {importedWithNotice.length > 0 && (
+              <div className="border border-outline-variant rounded-xl overflow-auto max-h-48">
+                <table className="w-full text-xs">
+                  <thead className="bg-surface-container-low/50 sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-semibold text-on-surface-variant">Row</th>
+                      <th className="text-left px-3 py-2 font-semibold text-on-surface-variant">Imported, with a note</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/30">
+                    {importedWithNotice.map((o) => (
+                      <tr key={`notice-${o.rowIndex}`}>
+                        <td className="px-3 py-2 text-on-surface-variant">{rowLabel(o.rowIndex)}</td>
+                        <td className="px-3 py-2 text-on-surface">{o.notice}</td>
                       </tr>
                     ))}
                   </tbody>

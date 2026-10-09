@@ -4,6 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { PlannerPermissionsModal } from '@/components/portal/PlannerPermissionsModal';
+import { AddPeopleModal } from '@/components/portal/AddPeopleModal';
+import { useEvent } from '@/contexts/EventContext';
+import { resolveEventProductContext } from '@/lib/eventTeamProvisioning';
+import toast from 'react-hot-toast';
 import { EVENT_MEMBER_ROLE_LABELS } from '@/lib/portalLabels';
 
 type Row = {
@@ -27,14 +31,24 @@ const PAGE = 25;
  * new endpoint; Participants and Attendees are not merged into this list.
  *
  * Only rendered for callers who can administer Planner access (the page decides).
+ *
+ * Feature 017 — "Add team member" reuses AddPeopleModal's invite mode: the
+ * account, organisation membership and roster row are written server-side by
+ * POST /api/events/[eventId]/members (one roster for every product view), then
+ * Planner access is granted through the same Feature 008 routes.
  */
 export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
+  const { currentEvent } = useEvent();
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   const [includeAttendees, setIncludeAttendees] = useState(false);
   const [visible, setVisible] = useState(PAGE);
   const [managing, setManaging] = useState<Row | null>(null);
+  // Resolved when "Add team member" is clicked, so the panel itself adds no load-time reads.
+  const [addContext, setAddContext] = useState<{ organizationId: string; bendieAvailable: boolean } | null>(null);
+  const [openingAdd, setOpeningAdd] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -57,7 +71,7 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
         setRows((data as unknown as Row[]) ?? []);
       });
     return () => controller.abort();
-  }, [eventId]);
+  }, [eventId, reloadKey]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -69,6 +83,25 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
   }, [rows, search, includeAttendees]);
 
   const attendeeCount = (rows ?? []).filter((r) => r.role === 'attendee').length;
+  const existingMemberIds = useMemo(() => new Set((rows ?? []).map((r) => r.user_id)), [rows]);
+
+  async function openAdd() {
+    setOpeningAdd(true);
+    const context = await resolveEventProductContext(eventId);
+    setOpeningAdd(false);
+    if (!context) {
+      toast.error('Couldn’t load this event — refresh and try again.');
+      return;
+    }
+    setAddContext({ organizationId: context.organizationId, bendieAvailable: context.bendieAvailable });
+  }
+
+  const addButton = (
+    <button type="button" className="btn-primary flex-shrink-0" onClick={openAdd} disabled={openingAdd}>
+      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>
+      {openingAdd ? 'Opening…' : 'Add team member'}
+    </button>
+  );
 
   return (
     <div>
@@ -98,6 +131,7 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
             Include attendees ({attendeeCount})
           </label>
         )}
+        {rows !== null && rows.length > 0 && <div className="sm:ml-auto">{addButton}</div>}
       </div>
 
       {rows === null ? (
@@ -108,13 +142,17 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
         </div>
       ) : loadError ? (
         <p className="text-sm text-on-surface-variant">Couldn&apos;t load this event&apos;s team right now — refresh to try again.</p>
+      ) : rows.length === 0 ? (
+        <div className="border border-dashed border-outline-variant rounded-xl p-5 text-center space-y-3">
+          <p className="text-sm text-on-surface-variant">
+            No one is on this event&apos;s team yet. Add a team member by email — they get an account if they don&apos;t have one, join your
+            organisation, and get Planner access in one step.
+          </p>
+          <div className="flex justify-center">{addButton}</div>
+        </div>
       ) : filtered.length === 0 ? (
         <p className="text-sm text-on-surface-variant">
-          {search
-            ? 'No one matches your search.'
-            : rows.length === 0
-              ? 'No one has been added to this event yet. Add people from Organisation People (Events column) first, then grant their Planner access here.'
-              : 'No team members besides attendees. Tick “Include attendees” to grant one of them Planner access.'}
+          {search ? 'No one matches your search.' : 'No team members besides attendees. Tick “Include attendees” to grant one of them Planner access.'}
         </p>
       ) : (
         <ul className="divide-y divide-outline-variant/40 border border-outline-variant/60 rounded-xl">
@@ -151,6 +189,24 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
           userId={managing.user_id}
           displayName={managing.profiles?.full_name || managing.profiles?.email || 'this person'}
           onClose={() => setManaging(null)}
+        />
+      )}
+
+      {addContext && (
+        <AddPeopleModal
+          open
+          mode="invite"
+          title="Add Team Member"
+          initialConfig={{ eventRole: 'staff', grantBendie: false, plannerAccess: 'viewer' }}
+          eventId={eventId}
+          eventName={currentEvent?.id === eventId ? currentEvent.name : 'this event'}
+          organizationId={addContext.organizationId}
+          existingEventMemberIds={existingMemberIds}
+          bendieAvailable={addContext.bendieAvailable}
+          plannerAvailable
+          canAdministerPlanner
+          onClose={() => setAddContext(null)}
+          onDone={() => setReloadKey((k) => k + 1)}
         />
       )}
     </div>

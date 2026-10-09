@@ -8,8 +8,7 @@ import { EventAccessConfigFields } from '@/components/portal/EventAccessConfigFi
 import {
   DEFAULT_ACCESS_CONFIG,
   addPeopleToEvent,
-  addPersonToEvent,
-  resolveOrCreatePersonByEmail,
+  addPersonToEventByEmail,
   listOrganizationCandidates,
   describeOutcome,
   type EventAccessConfig,
@@ -31,6 +30,9 @@ type Props = {
   canAdministerPlanner: boolean;
   onClose: () => void;
   onDone: () => void;
+  /** Feature 017 — Planner "Add team member" reuses invite mode with its own title and defaults. */
+  title?: string;
+  initialConfig?: Partial<EventAccessConfig>;
 };
 
 /**
@@ -53,7 +55,10 @@ export function AddPeopleModal({
   canAdministerPlanner,
   onClose,
   onDone,
+  title,
+  initialConfig,
 }: Props) {
+  const startConfig = (): EventAccessConfig => ({ ...DEFAULT_ACCESS_CONFIG, grantBendie: bendieAvailable, ...initialConfig });
   const [step, setStep] = useState<'select' | 'configure' | 'results'>('select');
   const [candidates, setCandidates] = useState<PersonSummary[]>([]);
   const [loadingCandidates, setLoadingCandidates] = useState(false);
@@ -61,7 +66,7 @@ export function AddPeopleModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteFullName, setInviteFullName] = useState('');
-  const [config, setConfig] = useState<EventAccessConfig>({ ...DEFAULT_ACCESS_CONFIG, grantBendie: bendieAvailable });
+  const [config, setConfig] = useState<EventAccessConfig>(startConfig);
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<PersonOutcome[]>([]);
 
@@ -72,7 +77,7 @@ export function AddPeopleModal({
     setSearch('');
     setInviteEmail('');
     setInviteFullName('');
-    setConfig({ ...DEFAULT_ACCESS_CONFIG, grantBendie: bendieAvailable });
+    setConfig(startConfig());
     setResults([]);
     if (mode === 'organisation') {
       setLoadingCandidates(true);
@@ -112,14 +117,11 @@ export function AddPeopleModal({
       const outcomes = await addPeopleToEvent(eventId, eventName, organizationId, people, config);
       setResults(outcomes);
     } else {
-      const resolved = await resolveOrCreatePersonByEmail(inviteEmail, inviteFullName, organizationId);
-      if ('error' in resolved) {
-        toast.error(resolved.error);
-        setSubmitting(false);
-        return;
-      }
-      const label = inviteFullName.trim() || inviteEmail.trim();
-      const outcome = await addPersonToEvent(eventId, eventName, organizationId, { userId: resolved.userId, email: inviteEmail.trim(), label }, config);
+      // Feature 017: account, organisation membership and roster row are
+      // written server-side (works for any org owner/admin); an existing
+      // member keeps their role.
+      const outcome = await addPersonToEventByEmail(eventId, eventName, organizationId, inviteEmail.trim(), inviteFullName.trim(), config);
+      if (outcome.eventMembership === 'failed') toast.error(describeOutcome(outcome));
       setResults([outcome]);
     }
     setSubmitting(false);
@@ -128,7 +130,7 @@ export function AddPeopleModal({
   };
 
   return (
-    <FormModal open={open} onClose={onClose} title={mode === 'organisation' ? 'Add Attendees — From Organisation' : 'Invite New Attendee'} maxWidthClassName="max-w-lg">
+    <FormModal open={open} onClose={onClose} title={title ?? (mode === 'organisation' ? 'Add Attendees — From Organisation' : 'Invite New Attendee')} maxWidthClassName="max-w-lg">
       {step === 'select' && mode === 'organisation' && (
         <div className="space-y-3">
           <input data-ignore-dirty className="input" placeholder="Search organisation people…" value={search} onChange={(e) => setSearch(e.target.value)} />
