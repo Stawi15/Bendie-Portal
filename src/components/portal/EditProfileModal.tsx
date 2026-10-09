@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { Avatar } from '@/components/portal/Avatar';
 import { FormModal } from '@/components/portal/FormModal';
 import { friendlyError } from '@/lib/userFacingError';
+import { useAuth } from '@/contexts/AuthContext';
 
 export type ProfileFormValues = {
   full_name: string;
@@ -22,9 +23,17 @@ type EditProfileModalProps = {
   initial: ProfileFormValues;
   onClose: () => void;
   onSaved: () => void;
+  /**
+   * Feature 019 — the organisation the person is being edited in. A client org
+   * admin cannot update another user's `profiles` row from the browser (RLS: own
+   * row or platform admin only), so their edits of colleagues go through
+   * PATCH /api/organizations/[organizationId]/people/[userId] instead.
+   */
+  organizationId?: string | null;
 };
 
-export function EditProfileModal({ open, userId, initial, onClose, onSaved }: EditProfileModalProps) {
+export function EditProfileModal({ open, userId, initial, onClose, onSaved, organizationId }: EditProfileModalProps) {
+  const { user, isGlobalAdmin } = useAuth();
   const [form, setForm] = useState<ProfileFormValues>(initial);
   const [saving, setSaving] = useState(false);
 
@@ -39,10 +48,50 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved }: Ed
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
+  const editingSelf = user?.id === userId;
+  // Email matches accounts across the Portal and Planner — only Stawi changes other people's.
+  const canEditEmail = isGlobalAdmin || editingSelf;
+
   const handleSave = async () => {
     if (!form.full_name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
-    const { error } = await supabase
+
+    if (!isGlobalAdmin && !editingSelf) {
+      if (!organizationId) {
+        setSaving(false);
+        toast.error('Could not determine this person’s organisation — refresh and try again');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/organizations/${organizationId}/people/${userId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name: form.full_name,
+            phone: form.phone,
+            job_title: form.job_title,
+            avatar_url: form.avatar_url,
+            bio: form.bio,
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(body.message ?? 'Could not save — try again');
+          return;
+        }
+      } catch {
+        toast.error('Could not save — check your connection and try again');
+        return;
+      } finally {
+        setSaving(false);
+      }
+      toast.success('Profile updated');
+      onSaved();
+      onClose();
+      return;
+    }
+
+    const { data: updatedRows, error } = await supabase
       .from('profiles')
       .update({
         full_name: form.full_name.trim(),
@@ -52,10 +101,13 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved }: Ed
         avatar_url: form.avatar_url.trim() || null,
         bio: form.bio.trim() || null,
       })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select('id');
     setSaving(false);
 
     if (error) { toast.error(friendlyError(error)); return; }
+    // RLS can filter an UPDATE to 0 rows without an error — never report a save that didn't happen.
+    if (!updatedRows?.length) { toast.error('You don’t have permission to edit this profile'); return; }
     toast.success('Profile updated');
     onSaved();
     onClose();
@@ -77,8 +129,12 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved }: Ed
           </div>
           <div>
             <label className="label">Email</label>
-            <input className="input" type="email" value={form.email} onChange={set('email')} placeholder="jane@example.com" />
-            <p className="hint">Contact email shown across the portal — this doesn&apos;t change their sign-in credentials.</p>
+            <input className="input" type="email" value={form.email} onChange={set('email')} placeholder="jane@example.com" disabled={!canEditEmail} />
+            <p className="hint">
+              {canEditEmail
+                ? 'Contact email shown across the portal — this doesn\u2019t change their sign-in credentials.'
+                : 'Only Stawi can change someone\u2019s email — it is how their account is matched across the Portal and Bendie Planner.'}
+            </p>
           </div>
           <div>
             <label className="label">Phone</label>

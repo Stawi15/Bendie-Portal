@@ -59,14 +59,26 @@ export async function requireEventWorkspaceAccess(
   eventId: string,
   userId: string,
   selectedOrganizationId: string | null,
-  client: SupabaseClient = supabase
+  client: SupabaseClient = supabase,
+  /**
+   * Feature 019 (performance) — facts the caller has ALREADY read with the same
+   * client, so this check skips re-reading them. Identical decision either way;
+   * omit to keep the original self-contained behaviour.
+   */
+  known?: { isPlatformAdmin?: boolean; eventOrganizationId?: string | null }
 ): Promise<boolean> {
-  if (await isPlatformAdmin(userId, client)) return true;
+  if (known?.isPlatformAdmin ?? (await isPlatformAdmin(userId, client))) return true;
   if (!selectedOrganizationId) return false;
 
-  const { data: event, error: eventError } = await client.from('events').select('organization_id').eq('id', eventId).maybeSingle();
-  if (eventError) console.error('requireEventWorkspaceAccess: events lookup failed', eventError);
-  if (!event || event.organization_id !== selectedOrganizationId) return false;
+  let eventOrganizationId: string | null;
+  if (known && known.eventOrganizationId !== undefined) {
+    eventOrganizationId = known.eventOrganizationId;
+  } else {
+    const { data: event, error: eventError } = await client.from('events').select('organization_id').eq('id', eventId).maybeSingle();
+    if (eventError) console.error('requireEventWorkspaceAccess: events lookup failed', eventError);
+    eventOrganizationId = event?.organization_id ?? null;
+  }
+  if (!eventOrganizationId || eventOrganizationId !== selectedOrganizationId) return false;
 
   const { data: eventMember, error: memberError } = await client
     .from('event_members')

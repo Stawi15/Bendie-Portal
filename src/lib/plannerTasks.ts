@@ -167,11 +167,17 @@ export async function resolveCallerPlannerIdentity(
 export async function resolveTaskCapability(plannerEventId: number, plannerProfileId: string): Promise<ResolvedTaskCapability> {
   const planner = getPlannerAdminClient();
 
-  const { data: profile, error: profileError } = await planner
-    .from('profiles')
-    .select('is_platform_admin, role')
-    .eq('id', plannerProfileId)
-    .maybeSingle();
+  // Feature 019 (performance): independent reads, run in parallel — same decision as before.
+  const [{ data: profile, error: profileError }, { data: assignment, error: assignmentError }] = await Promise.all([
+    planner.from('profiles').select('is_platform_admin, role').eq('id', plannerProfileId).maybeSingle(),
+    planner
+      .from('event_user_assignments')
+      .select('can_view_tasks, can_manage_tasks')
+      .eq('event_id', plannerEventId)
+      .eq('profile_id', plannerProfileId)
+      .eq('is_active', true)
+      .maybeSingle(),
+  ]);
   if (profileError) throw profileError;
 
   const role = (profile?.role ?? '').trim().toLowerCase();
@@ -181,13 +187,6 @@ export async function resolveTaskCapability(plannerEventId: number, plannerProfi
     return { hasPlannerIdentity: true, canView: true, canManage: true };
   }
 
-  const { data: assignment, error: assignmentError } = await planner
-    .from('event_user_assignments')
-    .select('can_view_tasks, can_manage_tasks')
-    .eq('event_id', plannerEventId)
-    .eq('profile_id', plannerProfileId)
-    .eq('is_active', true)
-    .maybeSingle();
   if (assignmentError) throw assignmentError;
 
   if (!assignment) {

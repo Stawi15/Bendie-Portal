@@ -608,6 +608,7 @@ export default function MembersPage() {
         }}
         onClose={() => setEditingMember(null)}
         onSaved={fetchData}
+        organizationId={productContext?.organizationId ?? currentEvent?.organization_id ?? null}
       />
 
       {plannerPermissionsMember && (

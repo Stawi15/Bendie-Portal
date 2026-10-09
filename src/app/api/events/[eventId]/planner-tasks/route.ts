@@ -57,57 +57,9 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
-  // Feature 016 performance pass — also select `planner_profile_id` here so the
-  // separate `resolveCallerPlannerIdentity` round trip below (which queried
-  // this exact same row by the same id) can be eliminated entirely.
-  const { data: profile } = await authClient.from('profiles').select('global_role, current_organization_id, planner_profile_id').eq('id', user.id).maybeSingle();
-
-  const isPlatformAdmin = profile?.global_role === 'admin';
-  let selectedOrganizationId: string | null = null;
-
-  // Mirrors OrganizationContext's own resolution exactly, including the
-  // `.order('organization_id',{ascending:true})` determinism fix — see
-  // `planner-overview/route.ts` for the full rationale; copied verbatim.
-  if (!isPlatformAdmin) {
-    const { data: memberships, error: membershipsError } = await authClient
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .order('organization_id', { ascending: true });
-    if (membershipsError) console.error('planner-tasks: organization_members lookup failed', membershipsError);
-    const accessibleOrgIds = (memberships ?? []).map((m) => m.organization_id);
-    const savedOrganizationId = profile?.current_organization_id ?? null;
-    selectedOrganizationId = savedOrganizationId && accessibleOrgIds.includes(savedOrganizationId) ? savedOrganizationId : (accessibleOrgIds[0] ?? null);
-  }
-
-  if (!isPlatformAdmin && !selectedOrganizationId) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-  }
-
-  const hasWorkspaceAccess = await requireEventWorkspaceAccess(eventId, user.id, selectedOrganizationId, authClient);
-  if (!hasWorkspaceAccess) {
-    return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
-  }
-
-  const { data: event } = await authClient
-    .from('events')
-    .select('organization_id, planner_provisioning_status, planner_provisioning_last_attempted_at, created_at')
-    .eq('id', eventId)
-    .maybeSingle();
-  if (!event) {
-    return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
-  }
-
-  const productAvailable = await isProductAvailableForEvent(eventId, event.organization_id, 'planner', authClient);
-  if (!productAvailable) {
-    return NextResponse.json({ error: 'product_unavailable' }, { status: 403 });
-  }
-
-  const provisioningPhase = resolveProvisioningPhase(event);
-  if (provisioningPhase !== 'needs-link-check') {
-    return NextResponse.json({ ok: true, status: provisioningPhase });
-  }
-
+  // Feature 019 (performance): the same checks as before, but every read that does not depend on
+  // an earlier result runs in parallel — about 3 sequential database round trips instead of ~11
+  // (each ~0.25–0.5 s from Nairobi). Nothing is returned until every check has passed.
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
     console.error('planner-tasks: missing SUPABASE_SERVICE_ROLE_KEY');
@@ -117,36 +69,84 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: activeLink, error: linkError } = await portalAdmin
-    .from('event_planner_links')
-    .select('planner_event_id')
-    .eq('event_id', eventId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (linkError) {
-    console.error('planner-tasks: event_planner_links lookup failed', linkError);
+  // Wave 2 — profile (incl. planner_profile_id, Feature 016), memberships (ordered, as
+  // OrganizationContext — see planner-overview/route.ts), the event row and the Planner link.
+  const [{ data: profile }, membershipsResult, { data: event }, linkResult] = await Promise.all([
+    authClient.from('profiles').select('global_role, current_organization_id, planner_profile_id').eq('id', user.id).maybeSingle(),
+    authClient.from('organization_members').select('organization_id').eq('user_id', user.id).order('organization_id', { ascending: true }),
+    authClient
+      .from('events')
+      .select('organization_id, planner_provisioning_status, planner_provisioning_last_attempted_at, created_at')
+      .eq('id', eventId)
+      .maybeSingle(),
+    portalAdmin.from('event_planner_links').select('planner_event_id').eq('event_id', eventId).eq('is_active', true).maybeSingle(),
+  ]);
+
+  const isPlatformAdmin = profile?.global_role === 'admin';
+  let selectedOrganizationId: string | null = null;
+  if (!isPlatformAdmin) {
+    if (membershipsResult.error) console.error('planner-tasks: organization_members lookup failed', membershipsResult.error);
+    const accessibleOrgIds = (membershipsResult.data ?? []).map((m) => m.organization_id);
+    const savedOrganizationId = profile?.current_organization_id ?? null;
+    selectedOrganizationId = savedOrganizationId && accessibleOrgIds.includes(savedOrganizationId) ? savedOrganizationId : (accessibleOrgIds[0] ?? null);
+  }
+  if (!isPlatformAdmin && !selectedOrganizationId) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  }
+
+  // Wave 3 — workspace access, product availability and the Planner task capability.
+  const plannerEventIdOrNull = (linkResult.data?.planner_event_id as number | undefined) ?? null;
+  const plannerProfileId = profile?.planner_profile_id ?? null;
+  const [hasWorkspaceAccess, productAvailable, capabilityResult] = await Promise.all([
+    requireEventWorkspaceAccess(eventId, user.id, selectedOrganizationId, authClient, {
+      isPlatformAdmin,
+      eventOrganizationId: event?.organization_id ?? null,
+    }),
+    event ? isProductAvailableForEvent(eventId, event.organization_id, 'planner', authClient) : Promise.resolve(false),
+    plannerEventIdOrNull !== null && plannerProfileId
+      ? resolveTaskCapability(plannerEventIdOrNull, plannerProfileId).then(
+          (capability) => ({ capability }),
+          (err: unknown) => ({ err })
+        )
+      : Promise.resolve(null),
+  ]);
+
+  // Same order of checks and the same responses as before.
+  if (!hasWorkspaceAccess) {
+    return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
+  }
+  if (!event) {
+    return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
+  }
+  if (!productAvailable) {
+    return NextResponse.json({ error: 'product_unavailable' }, { status: 403 });
+  }
+
+  const provisioningPhase = resolveProvisioningPhase(event);
+  if (provisioningPhase !== 'needs-link-check') {
+    return NextResponse.json({ ok: true, status: provisioningPhase });
+  }
+
+  if (linkResult.error) {
+    console.error('planner-tasks: event_planner_links lookup failed', linkResult.error);
     return NextResponse.json({ ok: true, status: 'backend_error' });
   }
-  if (!activeLink) {
+  if (plannerEventIdOrNull === null) {
     return NextResponse.json({ ok: true, status: 'unavailable' });
   }
+  const plannerEventId = plannerEventIdOrNull;
 
-  const plannerEventId = activeLink.planner_event_id as number;
-
-  const plannerProfileId = profile?.planner_profile_id ?? null;
   if (!plannerProfileId) {
     return NextResponse.json({ error: 'planner_identity_unavailable' }, { status: 403 });
   }
 
-  let capability;
-  try {
-    capability = await resolveTaskCapability(plannerEventId, plannerProfileId);
-  } catch (err) {
+  if (!capabilityResult || 'err' in capabilityResult) {
     // `/speckit.analyze` H2 — a genuine capability-read failure MUST NOT be
     // reported as an ordinary denial (Feature 006 F1 defect class).
-    console.error('planner-tasks: capability resolution failed', err);
+    console.error('planner-tasks: capability resolution failed', capabilityResult && capabilityResult.err);
     return NextResponse.json({ ok: true, status: 'backend_error' });
   }
+  const { capability } = capabilityResult;
 
   if (!capability.canView) {
     // `/speckit.analyze` H1 — no self-assignee read bypass. Failing this gate
@@ -165,8 +165,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { plannerEventId, plannerProfileId, capability } = context;
 
   try {
-    const tasks = await listEventTasks(plannerEventId);
-    const assignableStaff = capability.canManage ? await listAssignableStaff(plannerEventId) : [];
+    // Feature 019 (FR-008): independent reads — run them in parallel.
+    const [tasks, assignableStaff] = await Promise.all([
+      listEventTasks(plannerEventId),
+      capability.canManage ? listAssignableStaff(plannerEventId) : Promise.resolve([]),
+    ]);
     // `callerProfileId` is the caller's OWN Planner identity, echoed back so the
     // client can identify which task (if any) is assigned to them for the
     // self-assignee status/remarks control (FR-022/FR-023) -- safe to expose

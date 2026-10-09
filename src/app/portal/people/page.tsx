@@ -315,7 +315,8 @@ export default function PeoplePage() {
         people={filtered}
         loading={loading}
         currentUserId={user?.id}
-        onToggleAdmin={handleToggleAdmin}
+        // Feature 019 (FR-002): "Make Admin" sets platform-wide Stawi access — only Stawi sees it.
+        onToggleAdmin={isGlobalAdmin ? handleToggleAdmin : undefined}
         updatingAdminId={updatingAdminId}
         organizationId={organizationId}
         events={events.map((e) => ({ id: e.id, name: e.name }))}
@@ -346,6 +347,7 @@ export default function PeoplePage() {
         }}
         onClose={() => setEditingPerson(null)}
         onSaved={refetch}
+        organizationId={organizationId}
       />
 
       {organizationId && (

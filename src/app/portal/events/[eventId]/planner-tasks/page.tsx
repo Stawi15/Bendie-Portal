@@ -123,10 +123,12 @@ export default function PlannerTasksPage() {
   // stops holding a same-origin connection after the user moves to another tab.
   const startRequest = useLatestRequest();
 
-  const load = useCallback(async () => {
+  // Feature 019 (FR-007): `silent` refreshes after a mutation keep the current list on screen
+  // (no loading skeleton), so the table isn't unmounted and the user keeps their scroll position.
+  const load = useCallback(async (silent = false) => {
     const requestId = ++requestIdRef.current;
     const signal = startRequest();
-    setState({ kind: 'loading' });
+    if (!silent) setState({ kind: 'loading' });
     try {
       const res = await fetch(`/api/events/${eventId}/planner-tasks`, { signal });
       if (requestIdRef.current !== requestId) return;
@@ -151,6 +153,10 @@ export default function PlannerTasksPage() {
       if (requestIdRef.current !== requestId) return;
       if (isAbortError(err)) return; // navigation/supersession — never an error
       console.error('Failed to load Planner Tasks', err);
+      if (silent) {
+        toast.error('Couldn’t refresh the task list — your changes were saved; refresh the page to see them.');
+        return;
+      }
       setState({ kind: 'configuring', status: 'backend_error' });
     }
   }, [eventId, startRequest]);
@@ -222,7 +228,7 @@ export default function PlannerTasksPage() {
         setModalOpen(false);
         setEditingTask(null);
       }
-      await load(); // authoritative refetch — never trust the mutation response as final client state (FR-043)
+      await load(true); // authoritative refetch — never trust the mutation response as final client state (FR-043)
     } catch (err) {
       if (!mountedRef.current) return;
       console.error('Planner Tasks: save failed', err);
@@ -246,14 +252,14 @@ export default function PlannerTasksPage() {
         // than crashing on stale local state (edge case: concurrent delete).
         if (res.status === 404) {
           toast('Task no longer exists.');
-          await load();
+          await load(true);
           return;
         }
         toast.error(data.message ?? 'Could not delete task.');
         return;
       }
       toast.success('Task deleted');
-      await load();
+      await load(true);
     } catch (err) {
       if (!mountedRef.current) return;
       console.error('Planner Tasks: delete failed', err);
@@ -263,36 +269,41 @@ export default function PlannerTasksPage() {
     }
   };
 
-  // Feature 016 Data Entry UX pass — manager-only inline status control.
-  // Reuses the exact same PATCH endpoint/authorization path the "Edit Task"
-  // modal's Status field already goes through (`updateTaskAsManager` sends
-  // only the fields present in the payload, so this never touches
-  // task/category/priority/dueDate/remarks/assignee). Resolves to whether it
-  // succeeded so PlannerTaskList can roll its optimistic row back on failure.
-  const handleManagerStatusChange = async (task: PlannerTaskClient, status: PlannerTaskClient['status']): Promise<boolean> => {
-    setBusyTaskId(task.taskId);
-    try {
-      const res = await fetch(`/api/events/${eventId}/planner-tasks/${task.taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!mountedRef.current) return false;
-      if (!res.ok) {
-        toast.error(data.message ?? 'Could not update status.');
-        return false;
+  // Feature 019 (FR-004/FR-005) — manager status changes are collected by the list and saved
+  // together. Same PATCH endpoint/authorization as before (status only), at most 5 in flight,
+  // then ONE silent refresh. Returns an error message per task id that failed.
+  const handleSaveStatuses = async (
+    changes: { task: PlannerTaskClient; status: PlannerTaskClient['status'] }[]
+  ): Promise<Record<number, string>> => {
+    const errors: Record<number, string> = {};
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < changes.length) {
+        const { task, status } = changes[cursor++];
+        try {
+          const res = await fetch(`/api/events/${eventId}/planner-tasks/${task.taskId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            errors[task.taskId] = res.status === 404 ? 'This task no longer exists' : data.message ?? 'Could not save';
+          }
+        } catch {
+          errors[task.taskId] = 'Could not save — check your connection';
+        }
       }
-      await load();
-      return true;
-    } catch (err) {
-      if (!mountedRef.current) return false;
-      console.error('Planner Tasks: inline status change failed', err);
-      toast.error('Could not update status.');
-      return false;
-    } finally {
-      if (mountedRef.current) setBusyTaskId(null);
-    }
+    };
+    await Promise.all(Array.from({ length: Math.min(5, changes.length) }, worker));
+    if (!mountedRef.current) return errors;
+    const failed = Object.keys(errors).length;
+    const saved = changes.length - failed;
+    if (failed === 0) toast.success(`${saved} status change${saved === 1 ? '' : 's'} saved`);
+    else if (saved > 0) toast.error(`${saved} saved, ${failed} could not be saved — see the marked rows`);
+    else toast.error('No changes could be saved — see the marked rows');
+    if (saved > 0) await load(true);
+    return errors;
   };
 
   // Returns whether the save succeeded, so PlannerTaskList only clears its
@@ -312,13 +323,13 @@ export default function PlannerTasksPage() {
       if (!res.ok) {
         if (res.status === 404) {
           toast('This task is no longer assigned to you, or no longer exists.');
-          await load();
+          await load(true);
           return false;
         }
         toast.error(data.message ?? 'Could not save changes.');
         return false;
       }
-      await load();
+      await load(true);
       return true;
     } catch (err) {
       if (!mountedRef.current) return false;
@@ -450,7 +461,7 @@ export default function PlannerTasksPage() {
           onEdit={openEdit}
           onDelete={handleDelete}
           onSelfAssigneeUpdate={handleSelfAssigneeUpdate}
-          onManagerStatusChange={handleManagerStatusChange}
+          onSaveStatuses={handleSaveStatuses}
           onAdd={openCreate}
           onImport={() => setCsvOpen(true)}
         />
@@ -472,7 +483,7 @@ export default function PlannerTasksPage() {
         <CsvImportModal<TaskCsvRow>
           open={csvOpen}
           onClose={() => setCsvOpen(false)}
-          onImported={load}
+          onImported={() => load(true)}
           title="Import Tasks"
           templateFilename="tasks-template.csv"
           columns={TASK_CSV_COLUMNS}

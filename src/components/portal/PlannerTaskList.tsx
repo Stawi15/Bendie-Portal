@@ -6,11 +6,32 @@ import type { PlannerTaskClient } from '@/components/portal/PlannerTaskModal';
 const STATUS_VALUES: PlannerTaskClient['status'][] = ['Pending', 'In Progress', 'Completed'];
 const PRIORITY_VALUES: PlannerTaskClient['priority'][] = ['Low', 'Medium', 'High'];
 
+// Feature 019 (FR-003): Pending red, In Progress orange/mustard, Completed green — on the read-only
+// pill and on the status picker itself, so a long list can be scanned at a glance while updating.
 const STATUS_PILL_CLASSES: Record<PlannerTaskClient['status'], string> = {
-  Pending: 'bg-surface-container-high text-on-surface-variant',
-  'In Progress': 'bg-blue-100 text-blue-700',
+  Pending: 'bg-red-100 text-red-700',
+  'In Progress': 'bg-amber-100 text-amber-800',
   Completed: 'bg-green-100 text-green-700',
 };
+
+const STATUS_SELECT_CLASSES: Record<PlannerTaskClient['status'], string> = {
+  Pending: '!bg-red-50 !border-red-300 text-red-700 font-semibold',
+  'In Progress': '!bg-amber-50 !border-amber-400 text-amber-800 font-semibold',
+  Completed: '!bg-green-50 !border-green-300 text-green-700 font-semibold',
+};
+
+const STATUS_OPTION_CLASSES: Record<PlannerTaskClient['status'], string> = {
+  Pending: 'text-red-700',
+  'In Progress': 'text-amber-800',
+  Completed: 'text-green-700',
+};
+
+const statusOptions = () =>
+  STATUS_VALUES.map((s) => (
+    <option key={s} value={s} className={STATUS_OPTION_CLASSES[s]}>
+      {s}
+    </option>
+  ));
 
 const PRIORITY_PILL_CLASSES: Record<PlannerTaskClient['priority'], string> = {
   Low: 'bg-surface-container-high text-on-surface-variant',
@@ -34,8 +55,12 @@ type PlannerTaskListProps = {
   onDelete: (task: PlannerTaskClient) => void;
   /** Resolves to whether the save actually succeeded — see the draft-clearing note below. */
   onSelfAssigneeUpdate: (task: PlannerTaskClient, patch: { status?: string; remarks?: string }) => Promise<boolean>;
-  /** Feature 016 Data Entry UX pass — manager-only inline status change, fired immediately on selection (no draft/Save step, unlike the self-assignee control below, since status is the only field this control touches — there is no companion field whose edits it could accidentally co-submit). Resolves to whether it succeeded so the row can revert on failure. */
-  onManagerStatusChange?: (task: PlannerTaskClient, status: PlannerTaskClient['status']) => Promise<boolean>;
+  /**
+   * Feature 019 (FR-004/FR-005) — manager status changes are held as unsaved edits and sent together
+   * by "Save changes". Resolves to an error message per task id that failed (absent = saved), so
+   * saved rows clear and failed rows stay marked.
+   */
+  onSaveStatuses?: (changes: { task: PlannerTaskClient; status: PlannerTaskClient['status'] }[]) => Promise<Record<number, string>>;
   onAdd?: () => void;
   /** Feature 016: empty-state import action (same handler as the page header). */
   onImport?: () => void;
@@ -50,19 +75,16 @@ type SelfAssigneeDraft = { status: PlannerTaskClient['status']; remarks: string 
  * control are both driven exclusively by server-derived capability/task
  * data — never a client-side inference (T034/T035).
  */
-export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busyTaskId, onEdit, onDelete, onSelfAssigneeUpdate, onManagerStatusChange, onAdd, onImport }: PlannerTaskListProps) {
+export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busyTaskId, onEdit, onDelete, onSelfAssigneeUpdate, onSaveStatuses, onAdd, onImport }: PlannerTaskListProps) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  // Optimistic-with-rollback local override for the inline manager status
-  // control only (item 14: immediate saving state, revert on failure) — never
-  // consulted for anything else; `tasks` (server data) remains authoritative
-  // the moment a fresh load() response arrives and clears this per-row entry.
-  const [statusOverride, setStatusOverride] = useState<Record<number, PlannerTaskClient['status']>>({});
-  // Drop any override once the server's own value (from the next `load()`,
-  // triggered by every mutation this list's parent performs) already agrees
-  // with it — keeps this purely a transient "saving..." bridge, never a
-  // second, independently-drifting source of truth.
+  // Feature 019 — unsaved manager status edits, keyed by task id. Nothing is
+  // sent until "Save changes"; `tasks` (server data) stays authoritative and an
+  // entry disappears once the server value matches it.
+  const [pendingStatus, setPendingStatus] = useState<Record<number, PlannerTaskClient['status']>>({});
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [savingStatuses, setSavingStatuses] = useState(false);
   useEffect(() => {
-    setStatusOverride((prev) => {
+    setPendingStatus((prev) => {
       const next = { ...prev };
       let changed = false;
       for (const t of tasks) {
@@ -74,6 +96,56 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
       return changed ? next : prev;
     });
   }, [tasks]);
+  const pendingCount = Object.keys(pendingStatus).length;
+
+  // FR-006: closing or reloading the tab with unsaved status edits asks first.
+  useEffect(() => {
+    if (pendingCount === 0) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [pendingCount]);
+
+  const setPending = (t: PlannerTaskClient, status: PlannerTaskClient['status']) => {
+    setPendingStatus((prev) => {
+      const next = { ...prev };
+      if (status === t.status) delete next[t.taskId];
+      else next[t.taskId] = status;
+      return next;
+    });
+    setRowErrors((prev) => {
+      if (!(t.taskId in prev)) return prev;
+      const next = { ...prev };
+      delete next[t.taskId];
+      return next;
+    });
+  };
+
+  const saveStatuses = async () => {
+    if (!onSaveStatuses || pendingCount === 0) return;
+    const changes = tasks.filter((t) => pendingStatus[t.taskId] !== undefined).map((t) => ({ task: t, status: pendingStatus[t.taskId] }));
+    setSavingStatuses(true);
+    try {
+      const errors = await onSaveStatuses(changes);
+      setRowErrors(errors);
+      // Saved rows clear here; failed rows keep their unsaved value for a retry.
+      setPendingStatus((prev) => {
+        const next: Record<number, PlannerTaskClient['status']> = {};
+        for (const [id, status] of Object.entries(prev)) if (Number(id) in errors) next[Number(id)] = status;
+        return next;
+      });
+    } finally {
+      setSavingStatuses(false);
+    }
+  };
+
+  const discardStatuses = () => {
+    setPendingStatus({});
+    setRowErrors({});
+  };
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   // Manual-acceptance corrective fix — self-assignee status/remarks edits are
@@ -116,6 +188,25 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
 
   return (
     <div className="bg-white rounded-[20px] border border-[#E4EAF0] panel-shadow flex flex-col">
+      {canManage && onSaveStatuses && pendingCount > 0 && (
+        <div
+          className="sticky top-0 z-10 px-4 sm:px-lg py-2.5 border-b border-amber-200 bg-amber-50 rounded-t-[20px] flex flex-wrap items-center justify-between gap-2"
+          role="status"
+        >
+          <p className="text-sm text-amber-900">
+            <span className="font-semibold">{pendingCount}</span> unsaved status change{pendingCount === 1 ? '' : 's'}
+            {Object.keys(rowErrors).length > 0 && <span className="text-red-700"> · {Object.keys(rowErrors).length} could not be saved</span>}
+          </p>
+          <div className="flex gap-2">
+            <button className="btn-secondary" onClick={discardStatuses} disabled={savingStatuses}>
+              Discard
+            </button>
+            <button className="btn-primary" onClick={saveStatuses} disabled={savingStatuses}>
+              {savingStatuses ? 'Saving…' : `Save ${pendingCount} change${pendingCount === 1 ? '' : 's'}`}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="px-4 sm:px-lg py-2.5 border-b border-outline-variant flex flex-wrap gap-3 items-center">
         <select className="input !w-auto" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="all">All statuses</option>
@@ -194,36 +285,30 @@ export function PlannerTaskList({ tasks, canManage, callerPlannerProfileId, busy
                     <td className="px-4 py-2.5">
                       {isSelfAssignee ? (
                         <select
-                          className="input !w-auto !py-1 text-xs"
+                          className={`input !w-auto !py-1 text-xs ${STATUS_SELECT_CLASSES[getDraft(t).status]}`}
                           value={getDraft(t).status}
                           disabled={isBusy}
                           onChange={(e) => updateDraft(t, { status: e.target.value as PlannerTaskClient['status'] })}
+                          aria-label={`Status of ${t.task}`}
                         >
-                          {STATUS_VALUES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
+                          {statusOptions()}
                         </select>
-                      ) : canManage && onManagerStatusChange ? (
-                        <select
-                          className="input !w-auto !py-1 text-xs"
-                          value={statusOverride[t.taskId] ?? t.status}
-                          disabled={isBusy}
-                          onChange={async (e) => {
-                            const next = e.target.value as PlannerTaskClient['status'];
-                            const previous = statusOverride[t.taskId] ?? t.status;
-                            setStatusOverride((prev) => ({ ...prev, [t.taskId]: next }));
-                            const succeeded = await onManagerStatusChange(t, next);
-                            if (!succeeded) setStatusOverride((prev) => ({ ...prev, [t.taskId]: previous }));
-                          }}
-                        >
-                          {STATUS_VALUES.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
+                      ) : canManage && onSaveStatuses ? (
+                        <div>
+                          <select
+                            className={`input !w-auto !py-1 text-xs ${STATUS_SELECT_CLASSES[pendingStatus[t.taskId] ?? t.status]} ${
+                              pendingStatus[t.taskId] !== undefined ? 'ring-2 ring-offset-1 ring-primary/40' : ''
+                            }`}
+                            value={pendingStatus[t.taskId] ?? t.status}
+                            disabled={isBusy || savingStatuses}
+                            onChange={(e) => setPending(t, e.target.value as PlannerTaskClient['status'])}
+                            aria-label={`Status of ${t.task}`}
+                          >
+                            {statusOptions()}
+                          </select>
+                          {pendingStatus[t.taskId] !== undefined && !rowErrors[t.taskId] && <p className="text-[11px] text-on-surface-variant mt-1">Unsaved</p>}
+                          {rowErrors[t.taskId] && <p className="text-[11px] text-error mt-1">{rowErrors[t.taskId]}</p>}
+                        </div>
                       ) : (
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${STATUS_PILL_CLASSES[t.status]}`}>
                           {t.status}
