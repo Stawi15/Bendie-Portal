@@ -251,12 +251,18 @@ export default function PeoplePage() {
     } else if (row.org_role !== 'member' && newMembershipRef.current.has(row.email)) {
       // The route created the membership as 'member'; apply the sheet's non-admin role to that new
       // membership only, so an existing person's role is never changed (same as before: insert-if-absent).
-      const { error: roleError } = await supabase
+      const { data: changed, error: roleError } = await supabase
         .from('organization_members')
         .update({ role: row.org_role })
         .eq('organization_id', organizationId)
-        .eq('user_id', userId);
-      if (roleError) notice = `Added as Member — the role "${row.org_role}" could not be applied`;
+        .eq('user_id', userId)
+        .select('user_id');
+      // RLS can filter the update to 0 rows without an error, so check a row actually changed.
+      if (roleError || !changed?.length) notice = `Added as Member — the role "${row.org_role}" could not be applied`;
+    } else if (row.org_role !== 'member') {
+      // Already in the organisation: their existing role is kept (same as before — insert-if-absent),
+      // but say so instead of reporting a silent success (/code-review #8).
+      notice = `Already in the organisation — kept their existing role (the sheet's "${row.org_role}" was not applied)`;
     }
 
     for (const eventId of row.event_ids) {

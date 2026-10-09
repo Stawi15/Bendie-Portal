@@ -6,6 +6,7 @@ import {
   AgendaValidationError,
   deleteAgendaItem,
   readPortalEventStartDate,
+  resolveTimeZone,
   resolveAgendaCapability,
   updateAgendaItem,
   validateAgendaInput,
@@ -59,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const body = await request.json().catch(() => null);
     const input = validateAgendaInput(body, true);
-    const item = await updateAgendaItem(access.plannerEventId, itemId, input, await readPortalEventStartDate(eventId));
+    const item = await updateAgendaItem(access.plannerEventId, itemId, input, await readPortalEventStartDate(eventId, resolveTimeZone(body?.timeZone)));
     return NextResponse.json({ ok: true, item });
   } catch (err) {
     return errorResponse(err, 'save');

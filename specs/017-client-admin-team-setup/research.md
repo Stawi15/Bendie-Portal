@@ -155,6 +155,21 @@ reverts for anyone but platform admins/service role. No client-admin path writes
   user's `planner_profile_id`) and records skip reasons (FR-029). `bendie-planner` section listed only
   for platform admins (FR-030). Manager-configured access is never overwritten (FR-028).
 
+## R11 — /code-review fixes (2026-10-09)
+
+Review of c30a382..HEAD found 10 issues; fixed: #1 the members route now sets `current_event_id` /
+`current_organization_id` server-side (the browser could not for client admins); #2 Planner agenda
+`sort_order` is renumbered per day by start time (untimed first) after every create/time edit; #3
+the capability self-heal waits 10 minutes after a failed/skipped attempt; #4 migration
+`zz_organization_admin_event_membership_demotion.sql` removes auto-granted event 'admin' rows (not
+on events the person created) when an org owner/admin is demoted or removed — Planner-app
+assignments must still be disabled separately; #5 a 'skipped' sync no longer overwrites the status of
+someone with a Planner assignment; #6 derived day numbers use the event's local start date (browser
+time zone, default Africa/Nairobi); #7 Add Person shows plain-language errors and "existing account
+added"; #8 the People import notes when an existing member's role was kept; #10 agenda edits racing a
+delete/push return 404/409 instead of 500. Deferred: #9 (sequential org-admin sync at provisioning).
+#1/#2/#6 verified live through the routes (4/4).
+
 ## R9 — Migration file name
 
 - **Decision**: `supabase/migrations/zz_organization_admin_event_membership_and_role_guard.sql`.

@@ -122,7 +122,7 @@ export type AgendaInput = {
 };
 
 const TEXT_FIELDS = ['dayLabel', 'subtitle', 'speakers', 'mc', 'roomName', 'trackName', 'itemType', 'description', 'notes'] as const;
-const ALLOWED = new Set<string>(['title', 'date', 'startTime', 'endTime', 'dayNumber', 'sortOrder', ...TEXT_FIELDS]);
+const ALLOWED = new Set<string>(['title', 'date', 'startTime', 'endTime', 'dayNumber', 'sortOrder', 'timeZone', ...TEXT_FIELDS]);
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -178,11 +178,26 @@ function assertTimeOrder(startTime: string | null | undefined, endTime: string |
   if (startTime && endTime && endTime <= startTime) throw new AgendaValidationError('End time must be after start time.');
 }
 
-/** Day 1 = the Portal event's start date (plan D4); null when unknown or before the start. */
-function deriveDayNumber(date: string, portalEventStartDate: string | null): number | null {
-  if (!portalEventStartDate) return null;
-  const days = Math.round((Date.parse(date) - Date.parse(portalEventStartDate.slice(0, 10))) / 86_400_000) + 1;
+/** Day 1 = the Portal event's local start date (plan D4); null when unknown or before the start. */
+function deriveDayNumber(date: string, eventStartLocalDate: string | null): number | null {
+  if (!eventStartLocalDate) return null;
+  const days = Math.round((Date.parse(date) - Date.parse(eventStartLocalDate)) / 86_400_000) + 1;
   return days >= 1 ? days : null;
+}
+
+const DEFAULT_TIME_ZONE = 'Africa/Nairobi';
+
+/** A valid IANA time zone from the request, else Stawi's default. */
+export function resolveTimeZone(raw: unknown): string {
+  if (typeof raw === 'string' && raw.length <= 64) {
+    try {
+      new Intl.DateTimeFormat('en-CA', { timeZone: raw });
+      return raw;
+    } catch {
+      // fall through to the default
+    }
+  }
+  return DEFAULT_TIME_ZONE;
 }
 
 function timingColumns(date: string, startTime: string | null, endTime: string | null) {
@@ -199,13 +214,54 @@ function timingColumns(date: string, startTime: string | null, endTime: string |
 // Data access
 // ---------------------------------------------------------------------------
 
-/** The Portal event's start date — day 1 for derived day numbers (plan D4). */
-export async function readPortalEventStartDate(eventId: string): Promise<string | null> {
+/**
+ * The Portal event's start date as a LOCAL calendar date (YYYY-MM-DD) in `timeZone` — day 1 for
+ * derived day numbers (plan D4). `events.starts_at` is a timestamptz, so its UTC date can be the
+ * previous day for an event starting just after local midnight (/code-review #6).
+ */
+export async function readPortalEventStartDate(eventId: string, timeZone: string): Promise<string | null> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) return null;
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data } = await admin.from('events').select('starts_at').eq('id', eventId).maybeSingle();
-  return data?.starts_at ?? null;
+  if (!data?.starts_at) return null;
+  const start = new Date(data.starts_at);
+  if (Number.isNaN(start.getTime())) return null;
+  return start.toLocaleDateString('en-CA', { timeZone }); // en-CA formats as YYYY-MM-DD
+}
+
+/**
+ * /code-review #2 — Planner orders an agenda day by sort_order before start time, so sort_order must
+ * follow the times. Renumbers the day's Planner-native/Portal-authored rows (pushed rows keep the
+ * order the push gives them) by start time (untimed first), then current sort_order, then id. Idempotent:
+ * concurrent imports converge on the same order because every call recomputes from the full day.
+ */
+async function renumberDay(plannerEventId: number, date: string): Promise<void> {
+  const planner = getPlannerAdminClient();
+  const { data, error } = await planner
+    .from('event_agenda_items')
+    .select('agenda_item_id,start_time,sort_order')
+    .eq('event_id', plannerEventId)
+    .eq('agenda_date', date)
+    .is('source_portal_session_id', null);
+  if (error) throw error;
+  const rows = (data ?? []) as { agenda_item_id: number; start_time: string | null; sort_order: number }[];
+  rows.sort(
+    (a, b) =>
+      (a.start_time === null ? -1 : 0) - (b.start_time === null ? -1 : 0) ||
+      (a.start_time ?? '').localeCompare(b.start_time ?? '') ||
+      a.sort_order - b.sort_order ||
+      a.agenda_item_id - b.agenda_item_id
+  );
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i].sort_order === i + 1) continue;
+    const { error: updateError } = await planner
+      .from('event_agenda_items')
+      .update({ sort_order: i + 1 })
+      .eq('event_id', plannerEventId)
+      .eq('agenda_item_id', rows[i].agenda_item_id);
+    if (updateError) throw updateError;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +290,7 @@ async function loadRow(plannerEventId: number, itemId: number): Promise<Row> {
   return data as Row;
 }
 
-export async function createAgendaItem(plannerEventId: number, input: AgendaInput, portalEventStartDate: string | null): Promise<AgendaItem> {
+export async function createAgendaItem(plannerEventId: number, input: AgendaInput, eventStartLocalDate: string | null): Promise<AgendaItem> {
   const date = input.date as string;
   const startTime = input.startTime ?? null;
   const endTime = input.endTime ?? null;
@@ -243,7 +299,7 @@ export async function createAgendaItem(plannerEventId: number, input: AgendaInpu
   const planner = getPlannerAdminClient();
   let sortOrder = input.sortOrder ?? null;
   if (sortOrder === null) {
-    // sort_order is NOT NULL: append within the same date (plan D5).
+    // sort_order is NOT NULL: provisional value, then renumberDay puts it in time order.
     const { data: last } = await planner
       .from('event_agenda_items')
       .select('sort_order')
@@ -260,7 +316,7 @@ export async function createAgendaItem(plannerEventId: number, input: AgendaInpu
     .insert({
       event_id: plannerEventId,
       ...timingColumns(date, startTime, endTime),
-      day_number: input.dayNumber ?? deriveDayNumber(date, portalEventStartDate),
+      day_number: input.dayNumber ?? deriveDayNumber(date, eventStartLocalDate),
       day_label: input.dayLabel ?? null,
       item_title: input.title,
       subtitle: input.subtitle ?? null,
@@ -276,14 +332,15 @@ export async function createAgendaItem(plannerEventId: number, input: AgendaInpu
     .select(COLUMNS)
     .single();
   if (error) throw error;
-  return toItem(data as Row);
+  await renumberDay(plannerEventId, date);
+  return toItem((await loadRow(plannerEventId, (data as Row).agenda_item_id)) as Row);
 }
 
 export async function updateAgendaItem(
   plannerEventId: number,
   itemId: number,
   input: AgendaInput,
-  portalEventStartDate: string | null
+  eventStartLocalDate: string | null
 ): Promise<AgendaItem> {
   const current = await loadRow(plannerEventId, itemId);
   if (current.source_portal_session_id !== null) throw new AgendaReadOnlyError('This item comes from the Bendie Agenda — edit it there.');
@@ -299,7 +356,7 @@ export async function updateAgendaItem(
     Object.assign(patch, timingColumns(date, startTime ?? null, endTime ?? null));
   }
   if (input.title !== undefined) patch.item_title = input.title;
-  if (input.dayNumber !== undefined) patch.day_number = input.dayNumber ?? (date ? deriveDayNumber(date, portalEventStartDate) : null);
+  if (input.dayNumber !== undefined) patch.day_number = input.dayNumber ?? (date ? deriveDayNumber(date, eventStartLocalDate) : null);
   if (input.sortOrder !== undefined && input.sortOrder !== null) patch.sort_order = input.sortOrder;
   const map: Record<(typeof TEXT_FIELDS)[number], string> = {
     dayLabel: 'day_label',
@@ -322,8 +379,20 @@ export async function updateAgendaItem(
     .eq('agenda_item_id', itemId)
     .is('source_portal_session_id', null)
     .select(COLUMNS)
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  if (!data) {
+    // Changed since loadRow (deleted, or turned into a pushed row): report which.
+    const latest = await loadRow(plannerEventId, itemId); // throws AgendaNotFoundError when deleted
+    if (latest.source_portal_session_id !== null) throw new AgendaReadOnlyError('This item comes from the Bendie Agenda — edit it there.');
+    throw new AgendaNotFoundError('Agenda item not found.');
+  }
+  const timingChanged = input.date !== undefined || input.startTime !== undefined || input.endTime !== undefined;
+  if (timingChanged) {
+    await renumberDay(plannerEventId, date);
+    if (current.agenda_date && current.agenda_date !== date) await renumberDay(plannerEventId, current.agenda_date);
+    return toItem(await loadRow(plannerEventId, itemId));
+  }
   return toItem(data as Row);
 }
 

@@ -78,6 +78,15 @@ type PageState =
 
 const orNull = (v: string) => (v.trim() ? v.trim() : null);
 
+/** The organiser's time zone, so the server works out day numbers from the event's local start date. */
+const browserTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+};
+
 function bodyFromValues(v: PlannerAgendaFormValues) {
   return {
     title: v.title.trim(),
@@ -94,6 +103,7 @@ function bodyFromValues(v: PlannerAgendaFormValues) {
     itemType: orNull(v.itemType),
     description: orNull(v.description),
     notes: orNull(v.notes),
+    timeZone: browserTimeZone(),
   };
 }
 
@@ -232,6 +242,7 @@ export default function PlannerAgendaPage() {
         itemType: orNull(row.type),
         description: orNull(row.description),
         notes: orNull(row.notes),
+        timeZone: browserTimeZone(),
       }),
     });
     if (res.ok) return {};

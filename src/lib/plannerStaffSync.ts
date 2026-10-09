@@ -116,7 +116,7 @@ export async function syncStaffMemberToPlanner(params: {
   const { portalAdmin, eventId, userId } = params;
 
   const markResult = async (status: 'succeeded' | 'failed' | 'skipped', error?: string) => {
-    const { error: markError } = await portalAdmin
+    let update = portalAdmin
       .from('event_members')
       .update({
         planner_synced_at: new Date().toISOString(),
@@ -125,6 +125,11 @@ export async function syncStaffMemberToPlanner(params: {
       })
       .eq('event_id', eventId)
       .eq('user_id', userId);
+    // A 'skipped' sync never replaces the status of someone who still holds a
+    // Planner assignment (e.g. a synced member later made an attendee) —
+    // their access is unchanged, so 'succeeded' stays true (/code-review #5).
+    if (status === 'skipped') update = update.is('planner_assignment_id', null);
+    const { error: markError } = await update;
     if (markError) console.error('syncStaffMemberToPlanner: could not record sync result', markError);
   };
 
@@ -283,6 +288,7 @@ export async function syncStaffMemberToPlanner(params: {
 }
 
 const ORG_ADMIN_ROLES = ['owner', 'admin'];
+const RETRY_AFTER_MS = 10 * 60 * 1000;
 
 /**
  * Feature 017 (US6, FR-027/FR-028) — makes sure one organisation owner/admin
@@ -319,7 +325,7 @@ export async function ensureOrgAdminPlannerAccess(params: {
 
   const { data: member, error: memberError } = await portalAdmin
     .from('event_members')
-    .select('role,planner_sync_status,planner_assignment_id,planner_permissions_configured_at')
+    .select('role,planner_sync_status,planner_synced_at,planner_assignment_id,planner_permissions_configured_at')
     .eq('event_id', eventId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -332,6 +338,16 @@ export async function ensureOrgAdminPlannerAccess(params: {
   }
   if (member?.planner_sync_status === 'succeeded' && member.planner_assignment_id) {
     return { ok: true, status: 'succeeded' };
+  }
+  // Called on every Planner page load (planner-capabilities): after a failed or
+  // skipped attempt, wait before retrying instead of re-running the full sync
+  // on each navigation (/code-review #3).
+  if (
+    (member?.planner_sync_status === 'failed' || member?.planner_sync_status === 'skipped') &&
+    member.planner_synced_at &&
+    Date.now() - Date.parse(member.planner_synced_at) < RETRY_AFTER_MS
+  ) {
+    return { ok: true, status: member.planner_sync_status, reason: 'Recently attempted; retrying later' };
   }
   if (!member) {
     const { error: insertError } = await portalAdmin

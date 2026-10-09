@@ -99,6 +99,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
   }
 
+  // Point the person's "which event am I in" state at this event so the mobile
+  // app resolves them without a manual join step — the same behaviour as
+  // eventTeamProvisioning's pointCurrentEventAt, but server-side: the browser
+  // cannot update another user's profile unless the caller is a platform admin,
+  // so for client org admins that step silently wrote nothing (/code-review #1).
+  // current_organization_id is only backfilled when unset.
+  let currentEventPointer: 'ok' | 'failed' = 'ok';
+  {
+    const { data: target } = await admin.from('profiles').select('current_organization_id').eq('id', account.userId).maybeSingle();
+    const { error: pointerError } = await admin
+      .from('profiles')
+      .update({ current_event_id: eventId, current_organization_id: target?.current_organization_id ?? event.organization_id })
+      .eq('id', account.userId);
+    if (pointerError) {
+      console.error('events/[eventId]/members: current event pointer update failed', pointerError);
+      currentEventPointer = 'failed';
+    }
+  }
+
   // An existing roster row keeps its role (spec FR-012); report what it is.
   let roleOnEvent: string = eventRole;
   if (insertError) {
@@ -118,5 +137,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     organization,
     event: insertError ? 'already_member' : 'added',
     eventRole: roleOnEvent,
+    currentEventPointer,
   });
 }

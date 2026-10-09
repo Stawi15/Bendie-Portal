@@ -259,9 +259,11 @@ async function applyAccessFollowUps(
   eventName: string,
   organizationId: string,
   person: { userId: string; email: string | null },
-  config: EventAccessConfig
+  config: EventAccessConfig,
+  /** Feature 017: the members route already set the pointer server-side (code-review #1). */
+  pointerAlreadySet = false
 ): Promise<void> {
-  outcome.currentEventPointer = await pointCurrentEventAt(person.userId, eventId, organizationId);
+  if (!pointerAlreadySet) outcome.currentEventPointer = await pointCurrentEventAt(person.userId, eventId, organizationId);
 
   if (config.grantBendie) {
     if (!person.email) {
@@ -337,7 +339,8 @@ export async function addPersonToEventByEmail(
     outcome.roleKept = body.eventRole as string;
   }
 
-  await applyAccessFollowUps(outcome, eventId, eventName, organizationId, { userId: outcome.userId, email: (body.email as string) ?? email }, config);
+  outcome.currentEventPointer = body.currentEventPointer === 'failed' ? 'failed' : 'ok';
+  await applyAccessFollowUps(outcome, eventId, eventName, organizationId, { userId: outcome.userId, email: (body.email as string) ?? email }, config, true);
   return outcome;
 }
 

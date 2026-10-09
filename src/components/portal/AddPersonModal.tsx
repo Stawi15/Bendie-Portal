@@ -123,8 +123,15 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
       const body = await res.json().catch(() => ({}));
       const result = isGlobalAdmin ? null : body.results?.[0];
       if (!res.ok || result?.error) {
-        const message = result?.error === 'invalid_email' ? 'Enter a valid email address' : result?.error ?? body.message ?? body.error;
-        toast.error(message ?? 'Failed to create user');
+        // Route error codes → plain language (/code-review #7); anything else is already a sentence.
+        const CODES: Record<string, string> = {
+          invalid_email: 'Enter a valid email address',
+          invalid_name: 'The name is too long — use at most 200 characters',
+          duplicate: 'That email was entered twice',
+          forbidden: 'You do not have permission to add people to this organisation',
+        };
+        const code = result?.error ?? body.error;
+        toast.error(CODES[code] ?? result?.error ?? body.message ?? 'Failed to create user');
         return;
       }
       if (result?.organization === 'already_member') {
@@ -132,7 +139,12 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
         onAdded();
         return;
       }
-      toast.success(`${newName.trim() || newEmail.trim()} created — add them to an event below to grant access.`);
+      const who = newName.trim() || newEmail.trim();
+      toast.success(
+        result?.account === 'existing'
+          ? `${who} already had an account and was added to this organisation — add them to an event below to grant access.`
+          : `${who} created — add them to an event below to grant access.`
+      );
       setNewName('');
       setNewEmail('');
       setNewRole('member');

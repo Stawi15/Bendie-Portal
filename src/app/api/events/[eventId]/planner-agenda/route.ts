@@ -5,6 +5,7 @@ import {
   createAgendaItem,
   listAgendaItems,
   readPortalEventStartDate,
+  resolveTimeZone,
   resolveAgendaCapability,
   validateAgendaInput,
 } from '@/lib/plannerAgenda';
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const body = await request.json().catch(() => null);
     const input = validateAgendaInput(body, false);
-    const item = await createAgendaItem(access.plannerEventId, input, await readPortalEventStartDate(eventId));
+    const item = await createAgendaItem(access.plannerEventId, input, await readPortalEventStartDate(eventId, resolveTimeZone(body?.timeZone)));
     return NextResponse.json({ ok: true, item }, { status: 201 });
   } catch (err) {
     if (err instanceof AgendaValidationError) return NextResponse.json({ error: 'invalid_request', message: err.message }, { status: 400 });
