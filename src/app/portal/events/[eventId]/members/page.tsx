@@ -7,6 +7,13 @@ import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { EditProfileModal } from '@/components/portal/EditProfileModal';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import {
+  EVENT_TEAM_CSV_COLUMNS,
+  ATTENDEE_CSV_SAMPLES,
+  parseEventTeamCsvRow,
+  importEventTeamCsvRow,
+  type EventTeamCsvRow,
+} from '@/lib/eventTeamCsv';
 import { PlannerPermissionsModal } from '@/components/portal/PlannerPermissionsModal';
 import { AddPeopleMenu } from '@/components/portal/AddPeopleMenu';
 import { AddPeopleModal } from '@/components/portal/AddPeopleModal';
@@ -14,7 +21,6 @@ import { AddFromTeamModal } from '@/components/portal/AddFromTeamModal';
 import { AddAllOrgPeopleModal } from '@/components/portal/AddAllOrgPeopleModal';
 import { useEvent } from '@/contexts/EventContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { getField, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { EVENT_MEMBER_ROLE_LABELS } from '@/lib/portalLabels';
@@ -22,37 +28,10 @@ import {
   EVENT_MEMBER_ROLES,
   resolveEventProductContext,
   checkCanAdministerPlanner,
-  addPersonToEventByEmail,
-  type EventAccessConfig,
-  type PlannerAccessChoice,
 } from '@/lib/eventTeamProvisioning';
 import { useLatestRequest } from '@/lib/useLatestRequest';
 import toast from 'react-hot-toast';
 import { friendlyError } from '@/lib/userFacingError';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type NewMemberCsvRow = {
-  rowIndex: number;
-  email: string;
-  full_name: string | null;
-  role: string;
-  bendieAccess: boolean;
-  plannerAccess: PlannerAccessChoice;
-};
-
-const MEMBER_CSV_COLUMNS: ColumnSpec[] = [
-  { key: 'email', label: 'Email', required: true },
-  { key: 'full_name', label: 'Full Name' },
-  { key: 'role', label: `Event Role (${EVENT_MEMBER_ROLES.join(', ')})` },
-  { key: 'bendieAccess', label: 'Bendie Access (yes/no)' },
-  { key: 'plannerAccess', label: 'Planner Access (none/viewer/manager)' },
-];
-
-const MEMBER_CSV_SAMPLES: Record<string, string>[] = [
-  { email: 'jane@example.com', full_name: 'Jane Smith', role: 'attendee', bendieAccess: 'yes', plannerAccess: 'none' },
-  { email: 'david@example.com', full_name: 'David Otieno', role: 'facilitator', bendieAccess: 'yes', plannerAccess: 'none' },
-];
 
 type Member = {
   event_id: string;
@@ -319,52 +298,6 @@ export default function MembersPage() {
     fetchData();
   };
 
-  const parseMemberCsvRow = (raw: Record<string, string>, rowIndex: number): RowResult<NewMemberCsvRow> => {
-    const errors: string[] = [];
-
-    const email = getField(raw, 'email').toLowerCase();
-    if (!email) errors.push('email is required');
-    else if (!EMAIL_RE.test(email)) errors.push('email is not a valid email address');
-
-    const roleRaw = getField(raw, 'role').toLowerCase();
-    const role = roleRaw || 'attendee';
-    if (roleRaw && !(EVENT_MEMBER_ROLES as readonly string[]).includes(roleRaw)) errors.push(`role must be one of: ${EVENT_MEMBER_ROLES.join(', ')}`);
-
-    // Backward-compatible: both new columns are optional. Absent
-    // bendieAccess defaults to false (matching the pre-existing CSV import,
-    // which never auto-issued an access code — codes were always a
-    // separate, deliberate Resend Code action). Absent plannerAccess
-    // defaults to 'none' — a deliberate behavior change from the old
-    // implicit role-based auto-sync (Feature 016: product access must never
-    // be silently inferred from event role).
-    const bendieRaw = getField(raw, 'bendieAccess').toLowerCase();
-    const bendieAccess = bendieRaw ? bendieRaw === 'yes' || bendieRaw === 'true' : false;
-
-    const plannerRaw = getField(raw, 'plannerAccess').toLowerCase();
-    const plannerAccess: PlannerAccessChoice = plannerRaw === 'viewer' || plannerRaw === 'manager' ? plannerRaw : 'none';
-    if (plannerRaw && plannerAccess === 'none' && plannerRaw !== 'none') errors.push('plannerAccess must be one of: none, viewer, manager');
-
-    const data: NewMemberCsvRow = { rowIndex, email, full_name: getField(raw, 'full_name') || null, role, bendieAccess, plannerAccess };
-    return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
-  };
-
-  const importMemberRow = async (row: NewMemberCsvRow) => {
-    const organizationId = productContext?.organizationId ?? currentEvent?.organization_id;
-    if (!organizationId) return { error: 'Could not determine this event\'s organisation' };
-
-    // Feature 017: account, organisation membership and roster row are written
-    // server-side (works for any org owner/admin); an existing member keeps their role.
-    const config: EventAccessConfig = { eventRole: row.role as EventAccessConfig['eventRole'], grantBendie: row.bendieAccess, plannerAccess: row.plannerAccess };
-    const outcome = await addPersonToEventByEmail(eventId, currentEvent?.name ?? 'this event', organizationId, row.email, row.full_name ?? '', config);
-
-    if (outcome.eventMembership === 'failed') return { error: outcome.eventMembershipError ?? 'Failed to add to event' };
-    const problems: string[] = [];
-    if (outcome.bendieAccess === 'failed') problems.push('Bendie access code could not be sent');
-    if (outcome.plannerAccess === 'failed' || outcome.plannerAccess === 'denied') problems.push('Planner access could not be granted');
-    if (problems.length > 0) return { error: `Added to event, but: ${problems.join('; ')}` };
-    return {};
-  };
-
   const existingEventMemberIds = new Set(members.map((m) => m.user_id));
 
   const roles = ['all', ...Array.from(new Set(members.map(m => m.role)))];
@@ -485,16 +418,25 @@ export default function MembersPage() {
         </>
       )}
 
-      <CsvImportModal<NewMemberCsvRow>
+      <CsvImportModal<EventTeamCsvRow>
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
         onImported={fetchData}
         title="Import Attendees"
         templateFilename="event-team-template.csv"
-        columns={MEMBER_CSV_COLUMNS}
-        sampleRows={MEMBER_CSV_SAMPLES}
-        parseRow={parseMemberCsvRow}
-        importRow={importMemberRow}
+        columns={EVENT_TEAM_CSV_COLUMNS}
+        sampleRows={ATTENDEE_CSV_SAMPLES}
+        parseRow={(raw, rowIndex) => parseEventTeamCsvRow(raw, rowIndex, { defaultRole: 'attendee', defaultPlannerAccess: 'none' })}
+        importRow={(row) => {
+          const organizationId = productContext?.organizationId ?? currentEvent?.organization_id;
+          if (!organizationId) return Promise.resolve({ error: "Could not determine this event's organisation" });
+          return importEventTeamCsvRow(row, {
+            eventId,
+            eventName: currentEvent?.name ?? 'this event',
+            organizationId,
+            bendieAvailable: productContext?.bendieAvailable ?? true,
+          });
+        }}
       />
 
       {/* Role breakdown */}

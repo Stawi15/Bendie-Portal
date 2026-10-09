@@ -48,6 +48,10 @@ the client is meant to run their own events. Two gaps stop that today:
   A: No. Only Stawi creates, promotes, demotes or edits organization owners/admins. Client admins
   can manage only non-admin organization roles. This closes a pre-existing gap where the database
   allowed it.
+- Q (2026-10-09, after implementation started): Can team members be added in bulk from a
+  spreadsheet on the Planner event? → A: Yes. Team & Access gets "Import spreadsheet", reusing the
+  existing event spreadsheet format (email, full name, event role, Bendie access, Planner access),
+  with team defaults (role Staff, Planner access Viewer when the columns are blank).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -80,7 +84,10 @@ enabled, and the new person can set a password via "Forgot password" and sign in
    the admin is told their role was kept.
 4. **Given** the person already has Planner access on the event, **When** the admin adds them
    again, **Then** nothing is duplicated and the admin is told they are already set up.
-5. **Given** the event is not yet linked to a Planner event, **When** the admin tries to add a team
+5. **Given** a spreadsheet of team members (new and existing emails, roles, Planner access levels),
+   **When** the admin imports it from Team & Access, **Then** each row is added exactly as a
+   single "Add team member" would be, with a per-row result (including "kept existing role").
+6. **Given** the event is not yet linked to a Planner event, **When** the admin tries to add a team
    member, **Then** the person is still added to the organization and event, and the admin is told
    clearly that Planner access could not be switched on yet and why.
 
@@ -261,6 +268,10 @@ refused. As Stawi, all three succeed.
   access), including partial failures with a plain-language reason.
 - **FR-016**: The Team & Access panel's empty state MUST point to Add team member instead of
   sending the admin to Organisation People.
+- **FR-026**: Team & Access MUST offer "Import spreadsheet" to the same users as Add team member,
+  using the event spreadsheet columns already used on Attendees & Access; blank role defaults to
+  Staff and blank Planner access to Viewer; Bendie access is applied only when the event uses
+  Bendie; each row follows FR-011 to FR-015 and reports its own outcome.
 
 **Other entry points**
 
@@ -333,8 +344,8 @@ refused. As Stawi, all three succeed.
   is acceptable and is the existing behavior when adding by email.
 - The Planner access levels and event roles already offered in the Portal are sufficient; no new
   roles are introduced.
-- Bulk "Add team member" (many people at once from Planner) is out of scope; Organisation People
-  spreadsheet import covers bulk.
+- Bulk team-member import on Planner events is in scope (FR-026, added 2026-10-09); it reuses the
+  existing event spreadsheet format rather than a new one.
 - Out of scope: invite emails, billing or seat limits, Planner-app changes, a Stawi onboarding
   screen, and changes to who can grant Planner permissions.
 - Depends on the Planner Team & Access panel shipped in Feature 016 pass 24 and on constitution

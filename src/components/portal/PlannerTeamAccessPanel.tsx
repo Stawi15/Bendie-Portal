@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { Avatar } from '@/components/portal/Avatar';
 import { PlannerPermissionsModal } from '@/components/portal/PlannerPermissionsModal';
 import { AddPeopleModal } from '@/components/portal/AddPeopleModal';
+import { CsvImportModal } from '@/components/portal/CsvImportModal';
+import { EVENT_TEAM_CSV_COLUMNS, TEAM_CSV_SAMPLES, parseEventTeamCsvRow, importEventTeamCsvRow, type EventTeamCsvRow } from '@/lib/eventTeamCsv';
 import { useEvent } from '@/contexts/EventContext';
 import { resolveEventProductContext } from '@/lib/eventTeamProvisioning';
 import toast from 'react-hot-toast';
@@ -45,8 +47,8 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
   const [includeAttendees, setIncludeAttendees] = useState(false);
   const [visible, setVisible] = useState(PAGE);
   const [managing, setManaging] = useState<Row | null>(null);
-  // Resolved when "Add team member" is clicked, so the panel itself adds no load-time reads.
-  const [addContext, setAddContext] = useState<{ organizationId: string; bendieAvailable: boolean } | null>(null);
+  // Resolved when "Add team member" / "Import spreadsheet" is clicked, so the panel itself adds no load-time reads.
+  const [addContext, setAddContext] = useState<{ mode: 'single' | 'csv'; organizationId: string; bendieAvailable: boolean } | null>(null);
   const [openingAdd, setOpeningAdd] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -85,7 +87,7 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
   const attendeeCount = (rows ?? []).filter((r) => r.role === 'attendee').length;
   const existingMemberIds = useMemo(() => new Set((rows ?? []).map((r) => r.user_id)), [rows]);
 
-  async function openAdd() {
+  async function openAdd(mode: 'single' | 'csv') {
     setOpeningAdd(true);
     const context = await resolveEventProductContext(eventId);
     setOpeningAdd(false);
@@ -93,15 +95,22 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
       toast.error('Couldn’t load this event — refresh and try again.');
       return;
     }
-    setAddContext({ organizationId: context.organizationId, bendieAvailable: context.bendieAvailable });
+    setAddContext({ mode, organizationId: context.organizationId, bendieAvailable: context.bendieAvailable });
   }
 
   const addButton = (
-    <button type="button" className="btn-primary flex-shrink-0" onClick={openAdd} disabled={openingAdd}>
-      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>
-      {openingAdd ? 'Opening…' : 'Add team member'}
-    </button>
+    <div className="flex flex-wrap gap-2">
+      <button type="button" className="btn-secondary flex-shrink-0" onClick={() => openAdd('csv')} disabled={openingAdd}>
+        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span>
+        Import spreadsheet
+      </button>
+      <button type="button" className="btn-primary flex-shrink-0" onClick={() => openAdd('single')} disabled={openingAdd}>
+        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>
+        {openingAdd ? 'Opening…' : 'Add team member'}
+      </button>
+    </div>
   );
+  const eventName = currentEvent?.id === eventId ? currentEvent.name : 'this event';
 
   return (
     <div>
@@ -145,8 +154,8 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
       ) : rows.length === 0 ? (
         <div className="border border-dashed border-outline-variant rounded-xl p-5 text-center space-y-3">
           <p className="text-sm text-on-surface-variant">
-            No one is on this event&apos;s team yet. Add a team member by email — they get an account if they don&apos;t have one, join your
-            organisation, and get Planner access in one step.
+            No one is on this event&apos;s team yet. Add team members by email, one at a time or from a spreadsheet — they get an account if
+            they don&apos;t have one, join your organisation, and get Planner access in one step.
           </p>
           <div className="flex justify-center">{addButton}</div>
         </div>
@@ -192,14 +201,30 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
         />
       )}
 
-      {addContext && (
+      {addContext?.mode === 'csv' && (
+        <CsvImportModal<EventTeamCsvRow>
+          open
+          onClose={() => setAddContext(null)}
+          onImported={() => setReloadKey((k) => k + 1)}
+          title="Import Team Members"
+          templateFilename="planner-team-template.csv"
+          columns={EVENT_TEAM_CSV_COLUMNS}
+          sampleRows={TEAM_CSV_SAMPLES}
+          parseRow={(raw, rowIndex) => parseEventTeamCsvRow(raw, rowIndex, { defaultRole: 'staff', defaultPlannerAccess: 'viewer' })}
+          importRow={(row) =>
+            importEventTeamCsvRow(row, { eventId, eventName, organizationId: addContext.organizationId, bendieAvailable: addContext.bendieAvailable })
+          }
+        />
+      )}
+
+      {addContext?.mode === 'single' && (
         <AddPeopleModal
           open
           mode="invite"
           title="Add Team Member"
           initialConfig={{ eventRole: 'staff', grantBendie: false, plannerAccess: 'viewer' }}
           eventId={eventId}
-          eventName={currentEvent?.id === eventId ? currentEvent.name : 'this event'}
+          eventName={eventName}
           organizationId={addContext.organizationId}
           existingEventMemberIds={existingMemberIds}
           bendieAvailable={addContext.bendieAvailable}

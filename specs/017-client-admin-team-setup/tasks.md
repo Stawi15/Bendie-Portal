@@ -63,6 +63,10 @@ US2 (P2), US5 (P2), US3 (P3).
 - [X] T013 [US1] **No page change needed:** the panel reads the event name from `useEvent()` and resolves organisation + Bendie availability with `resolveEventProductContext` only when "Add team member" is clicked (no new load-time read). Original wording: In src/app/portal/events/[eventId]/planner-overview/page.tsx: pass the event name, organization id and product availability to `<PlannerTeamAccessPanel>` (line ~248) from data the page already loads; do not add a new fetch if the event context already has them.
 - [ ] T014 [US1] Run quickstart rows 1–7 against the running app and the live databases; for row 4 confirm with SQL that `event_members` and Planner `event_user_assignments` have no duplicates; for row 7 call the route directly as a plain member and as another organization's admin. Record results in specs/017-client-admin-team-setup/quickstart.md (Results section).
 
+- [X] T034 [US1] Extract the event spreadsheet format from src/app/portal/events/[eventId]/members/page.tsx (`NewMemberCsvRow`, `MEMBER_CSV_COLUMNS`, samples, `parseMemberCsvRow`, `importMemberRow`) into src/lib/eventTeamCsv.ts with options `{ defaultRole, defaultPlannerAccess, bendieAvailable }`; the row import uses `addPersonToEventByEmail` and returns a `notice` when an existing member's role was kept. Attendees & Access keeps its current defaults (attendee / none) and behaviour.
+- [X] T035 [US1] In src/components/portal/PlannerTeamAccessPanel.tsx add "Import spreadsheet" (next to Add team member and in the empty state) opening `CsvImportModal` with the shared format, defaults Staff / Viewer, Bendie access only when the event uses Bendie (FR-026); refresh the roster afterwards.
+- [ ] T036 [US1] (type-check, lint 28 baseline and isolated build passed 2026-10-09; quickstart row 18 pending in the browser) Validate: type-check, lint (baseline 28 warnings) and a build in an isolated copy (never the live `.next`); quickstart row 18.
+
 **Checkpoint**: MVP — client admins staff their own Planner events.
 
 ---
