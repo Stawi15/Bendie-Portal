@@ -30,6 +30,8 @@
 | 15 | Stawi admin | Make a member an org admin who is an attendee on one event | They become event admin on every org event (attendee raised to admin) | US4-2, US4-3, FR-022 |
 | 16 | Admin A | Via the browser client: insert an org member with role admin; promote a member to admin; change an existing admin to member | All refused, nothing changes | US5-1, US5-2, FR-024, SC-008 |
 | 17 | Admin A | Change a member's org role between non-admin roles | Works | US5-3, FR-025 |
+| 19 | Admin B (no Planner assignment) | Open a Planner event | Planning (Tasks/Vendors/Checklist) appears; can add a task; Planner shows an active admin assignment | US6-2, FR-027 |
+| 20 | Admin A | View a Planner-only event's areas | No Operations tab with only the integration page | US6-4, FR-030 |
 | 18 | Admin B | Team & Access → Import spreadsheet: one new email (blank role/access), one existing member, one attendee with `role=staff`, one bad email | New row added as Staff with Viewer access; existing member "already on event"; attendee row notes "kept existing role"; bad email rejected in preview | US1-5, FR-026 |
 
 ## Repo checks

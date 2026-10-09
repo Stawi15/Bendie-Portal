@@ -1,6 +1,6 @@
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 import { plannerEventCode } from '@/lib/plannerEventCode';
-import { syncStaffMemberToPlanner } from '@/lib/plannerStaffSync';
+import { syncStaffMemberToPlanner, syncOrgAdminsToPlanner } from '@/lib/plannerStaffSync';
 
 export type ProvisioningFailureCode = 'entitlement_inactive' | 'planner_mapping_missing' | 'mapping_drift' | 'provisioning_error';
 
@@ -233,9 +233,21 @@ export async function provisionPlannerEvent(params: {
 
   // Reuse the existing staff-sync capability for the event's original
   // creator, if staff-eligible (research.md §11) — never reimplemented.
-  const { data: createdEvent } = await authClient.from('events').select('created_by').eq('id', eventId).single();
+  // Feature 017 (FR-027/FR-029): every owner/admin of the organisation gets
+  // full Planner access too, and outcomes are logged instead of swallowed.
+  const { data: createdEvent } = await portalAdmin.from('events').select('created_by').eq('id', eventId).maybeSingle();
   if (createdEvent?.created_by) {
-    await syncStaffMemberToPlanner({ authClient, portalAdmin, eventId, userId: createdEvent.created_by }).catch(() => {});
+    const creatorOutcome = await syncStaffMemberToPlanner({ portalAdmin, eventId, userId: createdEvent.created_by }).catch((err: unknown) => {
+      console.error('provisionPlannerEvent: creator Planner sync threw', err);
+      return null;
+    });
+    if (creatorOutcome && creatorOutcome.status === 'failed') {
+      console.error('provisionPlannerEvent: creator Planner sync failed', { eventId, reason: creatorOutcome.reason });
+    }
+  }
+  const adminOutcomes = await syncOrgAdminsToPlanner({ portalAdmin, eventId });
+  for (const { userId, outcome } of adminOutcomes) {
+    if (outcome.status === 'failed') console.error('provisionPlannerEvent: org admin Planner sync failed', { eventId, userId, reason: outcome.reason });
   }
 
   return { ok: true, status: 'succeeded' };

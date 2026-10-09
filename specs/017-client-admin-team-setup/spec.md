@@ -52,6 +52,12 @@ the client is meant to run their own events. Two gaps stop that today:
   spreadsheet on the Planner event? → A: Yes. Team & Access gets "Import spreadsheet", reusing the
   existing event spreadsheet format (email, full name, event role, Bendie access, Planner access),
   with team defaults (role Staff, Planner access Viewer when the columns are blank).
+- Q (2026-10-09, from browser testing): Should organisation admins be able to use every Planner
+  module (Tasks, Vendors, Checklist included) on every event of their organisation? → A: Yes —
+  "we are selling the whole product to the client admin". Every org owner/admin gets full Planner
+  access (a real Planner assignment, all modules view + manage) on every Planner event of their
+  organisation, automatically. The Stawi-only "Bendie Planner" integration page is hidden from
+  everyone else instead of showing them an access-denied page.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -193,6 +199,35 @@ refused. As Stawi, all three succeed.
 
 ---
 
+### User Story 6 - Organisation admins use every Planner module (Priority: P1)
+
+Ann opens any Planner event of Xperia and sees Overview, Participants, Planning (Tasks, Vendors,
+Checklist), Logistics and Production, and can add and manage records in all of them — without
+anyone first granting her Planner access. She does not see the Stawi-only "Bendie Planner"
+integration page.
+
+**Why this priority**: Clients buy the whole product; Tasks/Vendors/Checklist were invisible to
+org admins until someone enabled Planner access per person, and the creator's automatic
+assignment silently did not happen on a real event.
+
+**Independent Test**: As an org admin with no Planner assignment on a Planner event, open the
+event: Planning appears and records can be created; Planner shows an active full-access
+assignment for them. As a client admin, no "Operations" tab containing only the integration page.
+
+**Acceptance Scenarios**:
+
+1. **Given** a new Planner event, **When** provisioning succeeds, **Then** every org owner/admin
+   (not only the creator) has an active full-access Planner assignment for it.
+2. **Given** an org admin without a Planner assignment (added later, older event, or a missed
+   sync), **When** they open the event, **Then** the assignment is created and all Planner modules
+   appear.
+3. **Given** an admin whose Planner access was deliberately configured or disabled by a manager,
+   **When** they open the event, **Then** that configuration is left as it is.
+4. **Given** a client admin on a Planner-only event, **When** they view the event navigation,
+   **Then** the Stawi-only Bendie Planner integration page is not shown.
+
+---
+
 ### Edge Cases
 
 - **Email already has an account in another organization**: the existing account is reused and
@@ -298,6 +333,19 @@ refused. As Stawi, all three succeed.
   MUST be enforced by the data layer, not only by screens.
 - **FR-025**: Client owners/admins MUST still be able to add organization members and change roles
   between non-admin organization roles.
+
+**Organisation admins in Planner (US6)**
+
+- **FR-027**: Every owner/admin of an organisation MUST have an active Planner assignment with
+  full access (all view and manage flags, access role admin) on every Planner event of that
+  organisation — created when the event is provisioned, and on first opening of the event by an
+  admin who lacks one.
+- **FR-028**: An assignment whose permissions were configured or disabled by a manager MUST NOT be
+  overwritten or re-enabled automatically.
+- **FR-029**: Automatic Planner sync outcomes MUST be recorded (succeeded / failed with reason /
+  skipped with reason) instead of being discarded.
+- **FR-030**: The "Bendie Planner" integration section MUST be shown only to platform (Stawi)
+  admins.
 
 **Preservation**
 

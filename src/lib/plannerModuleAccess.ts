@@ -35,7 +35,7 @@ export type PlannerEventAccess =
   | { kind: 'error'; httpStatus: number; error: string }
   /** Stop: a whole-event phase (pending/stale/failed/unavailable/backend_error) returned as `{ ok: true, status }`. */
   | { kind: 'phase'; status: string }
-  | { kind: 'ready'; plannerEventId: number; plannerProfileId: string | null; canAdminister: boolean };
+  | { kind: 'ready'; plannerEventId: number; plannerProfileId: string | null; canAdminister: boolean; userId: string };
 
 export async function resolvePlannerEventAccess(eventId: string, logPrefix: string): Promise<PlannerEventAccess> {
   const cookieStore = await cookies();
@@ -113,7 +113,7 @@ export async function resolvePlannerEventAccess(eventId: string, logPrefix: stri
   if (!activeLink) return { kind: 'phase', status: 'unavailable' };
 
   const canAdminister = await canAdministerPlannerPermissions(eventId, user.id, authClient);
-  return { kind: 'ready', plannerEventId: activeLink.planner_event_id as number, plannerProfileId: profile?.planner_profile_id ?? null, canAdminister };
+  return { kind: 'ready', plannerEventId: activeLink.planner_event_id as number, plannerProfileId: profile?.planner_profile_id ?? null, canAdminister, userId: user.id };
 }
 
 const RESOLVERS: Record<ModuleKey, { resolve: (e: number, p: string) => Promise<Capability>; adminOverride: boolean }> = {

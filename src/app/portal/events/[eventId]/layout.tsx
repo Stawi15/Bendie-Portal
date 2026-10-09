@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEvent } from '@/contexts/EventContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { deriveEventLifecycle, EVENT_LIFECYCLE_LABELS, EVENT_LIFECYCLE_PILL_CLASSES } from '@/lib/eventLifecycle';
 import { EVENT_SECTIONS, EVENT_GROUP_DESCRIPTIONS, OVERVIEW_GROUP, type EventSectionMeta } from '@/lib/eventSectionMeta';
 import { isSectionShownByModules, type ModuleProduct } from '@/lib/eventModules';
@@ -121,6 +122,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
   // Feature 016 — "Manage modules" (display preference only; see ManageModulesModal).
   const [manageModulesOpen, setManageModulesOpen] = useState(false);
   const { organizationId } = useOrganization();
+  const { isGlobalAdmin } = useAuth();
   // Navigation pass (016 continuation 3) — §19: the group-pill row needs the
   // same horizontal-scroll affordance as the child-tab row on narrow
   // screens, not just an overflow that silently runs off-screen. A second,
@@ -261,6 +263,10 @@ export default function EventLayout({ children }: { children: React.ReactNode })
 
   const isSectionAvailable = useCallback(
     (section: EventSectionMeta) => {
+      // Feature 017 (FR-030): the Bendie Planner integration page is a Stawi
+      // (platform admin) tool — its page denies everyone else, so don't list it
+      // for them (it was a Planner-only event's whole "Operations" area).
+      if (section.key === 'bendie-planner') return isGlobalAdmin;
       if (section.key === 'planner-tasks') {
         // 'loading'/'provisioning'/'error' all correctly fall through to
         // `false` here (tab hidden -- acceptable per `/code-review` M2 for
@@ -322,7 +328,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
       }
       return section.product === 'shared' || productAvailability[section.product] === true;
     },
-    [productAvailability, plannerTaskCapability, plannerVendorCapability, plannerChecklistCapability, plannerPeopleCapability, plannerLogisticsCapability, plannerProductionCapability]
+    [isGlobalAdmin, productAvailability, plannerTaskCapability, plannerVendorCapability, plannerChecklistCapability, plannerPeopleCapability, plannerLogisticsCapability, plannerProductionCapability]
   );
 
   const activeSectionKey = pathname.startsWith(`/portal/events/${eventId}/`) ? pathname.slice(`/portal/events/${eventId}/`.length).split('/')[0] : null;

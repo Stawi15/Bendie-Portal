@@ -129,6 +129,15 @@ US2 (P2), US5 (P2), US3 (P3).
 
 ---
 
+## Phase 7b: User Story 6 - Organisation admins use every Planner module (Priority: P1)
+
+- [X] T037 [US6] In src/lib/plannerStaffSync.ts: read the target profile and write `planner_profile_id` with the service client (not the caller's session, which cannot see or update other users' profiles); record `skipped` reasons on `event_members` instead of returning silently (FR-029); add `ensureOrgAdminPlannerAccess` (one admin, skips when already synced or manager-configured) and `syncOrgAdminsToPlanner` (all org owners/admins of an event).
+- [X] T038 [US6] In src/lib/plannerEventProvisioning.ts: after finalizing, sync every org owner/admin (FR-027) as well as the creator, and log non-succeeded outcomes.
+- [X] T039 [US6] In src/lib/plannerModuleAccess.ts + src/app/api/events/[eventId]/planner-capabilities/route.ts: when the caller is an owner/admin of the event's organisation, call `ensureOrgAdminPlannerAccess` before resolving modules, then re-read their Planner identity (self-heal, FR-027).
+- [X] T040 [US6] In src/app/portal/events/[eventId]/layout.tsx: show `bendie-planner` only to platform admins (FR-030).
+- [X] T041 [US6] (Done 2026-10-09: 13 assignments created, 3 skipped — 2 already synced, 1 manager-configured — 0 failed; no new Planner accounts needed.) Backfill: every org owner/admin × every active Planner-linked event of their org gets the full-access assignment (skip manager-configured); verify counts in Planner `event_user_assignments`.
+- [ ] T042 [US6] (type-check, lint 28 baseline, isolated build passed 2026-10-09; quickstart rows 19–20 pending) type-check, lint baseline, isolated build; quickstart rows 19–20.
+
 ## Phase 8: Polish & Cross-Cutting Concerns
 
 - [X] T029 Run the package.json scripts `npm run type-check`, `npm run lint` and `npm run build`; all must pass (lint warnings no worse than the current baseline).

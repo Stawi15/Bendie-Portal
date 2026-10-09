@@ -139,6 +139,22 @@ only to memberships the import just created; `accountProvisioning.ensureOrgMembe
 admin toggle writes `profiles.global_role`, which `enforce_profile_role_immutability` already
 reverts for anyone but platform admins/service role. No client-admin path writes owner/admin.
 
+## R10 — Org admins use every Planner module (US6, 2026-10-09)
+
+- **Finding (browser test)**: on Xperia's Planner-only "test" event the client admin saw an
+  "Operations" area containing only the Stawi-only Bendie Planner integration page (shared section,
+  page denies non-platform-admins), and no Planning area: Tasks/Vendors/Checklist have no Portal-admin
+  override because their writes need a real Planner identity (`created_by_profile_id`, Planner RLS
+  `operational_tasks_write_self_or_manager_or_admin`). Planner had **zero** assignments for event 61;
+  the creator's automatic sync left `planner_sync_status` NULL (an early silent exit — replaying every
+  read step today succeeds, so the exact cause at creation time is not recoverable).
+- **Decision**: give every org owner/admin a real full-access Planner assignment (MANAGER_FLAGS,
+  access_role admin) — at provisioning (all admins, not only the creator), self-healed on opening
+  the event (`planner-capabilities` → `ensureOrgAdminPlannerAccess`), and backfilled. Sync now reads
+  and writes the target profile with the service client (the caller's session cannot update another
+  user's `planner_profile_id`) and records skip reasons (FR-029). `bendie-planner` section listed only
+  for platform admins (FR-030). Manager-configured access is never overwritten (FR-028).
+
 ## R9 — Migration file name
 
 - **Decision**: `supabase/migrations/zz_organization_admin_event_membership_and_role_guard.sql`.
