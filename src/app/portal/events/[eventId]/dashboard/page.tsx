@@ -48,6 +48,7 @@ const SECTION_CHECKS: Record<string, SectionCheck> = {
   'planner-people': { kind: 'none' },
   'planner-logistics': { kind: 'none' },
   'planner-production': { kind: 'none' },
+  'planner-agenda': { kind: 'none' },
   files: { kind: 'none' },
   notifications: { kind: 'count', table: 'event_push_notifications', noun: 'notifications', scored: false },
   'activity-log': { kind: 'none' },

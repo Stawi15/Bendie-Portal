@@ -6,6 +6,19 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 018 — Planner Agenda Authoring ✅ Built (2026-10-09) — browser acceptance pending
+
+Spec/plan/tasks: `specs/018-planner-agenda-authoring/`. New Planner workspace section **Agenda**
+(`planner-agenda`) authors the linked Planner event's programme (`event_agenda_items`) — previously only
+reachable for Bendie+Planner events via the Stawi-only agenda push, so Planner-only events had no way to
+build it from the Portal. Add / edit / delete / spreadsheet import; same permission as Production;
+items pushed from a Bendie Agenda are read-only (409 on write). Files: `src/lib/plannerAgenda.ts`,
+`/api/events/[eventId]/planner-agenda` (+ `/[itemId]`), page, `PlannerAgendaList`, `PlannerAgendaModal`;
+`alwaysIncluded` module so configured events still show it. Verified: type-check, lint baseline, isolated
+build, live create/update/delete round trip on Planner event 61 (cleaned up). No schema change.
+
+---
+
 ## Feature 017 — Client Admins Set Up Their Own Team ✅ Built (2026-10-09) — browser acceptance pending
 
 Spec/plan/tasks: `specs/017-client-admin-team-setup/`. Commits `99cea0a` (planning, constitution

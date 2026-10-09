@@ -17,6 +17,15 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-10-09 — Feature 018: Planner `event_agenda_items` is now Portal-authored (no schema change)
+
+The Planner project's `event_agenda_items` (programme) is now written by the Portal's Planner **Agenda**
+tab, in addition to the Feature 001 Bendie agenda push. Portal-authored rows: `source_portal_session_id`
+NULL, `source_document` NULL, naive local `start_at`/`end_at` + `start_time`/`end_time` + `agenda_date`
+(same shape as Planner-native rows), `day_number` derived from the Portal event's start date when blank,
+`sort_order` appended per date when blank, `updated_at` set explicitly (no trigger). Rows with
+`source_portal_session_id` set (pushed) are never modified by the tab.
+
 ### 2026-10-09 — Feature 017: organization role protection + org admins on every org event (no table/column change)
 
 Migration `supabase/migrations/zz_organization_admin_event_membership_and_role_guard.sql`, applied

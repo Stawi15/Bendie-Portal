@@ -57,6 +57,8 @@ export const EVENT_SECTIONS: EventSectionMeta[] = [
   { key: 'planner-vendors', label: 'Vendors', desc: 'Suppliers, the equipment they provide, and whether it has arrived on site', icon: 'local_shipping', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Planning' },
   { key: 'planner-checklist', label: 'Checklist', desc: 'Items to source and check off before the event and on site', icon: 'checklist', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Planning' },
   { key: 'planner-logistics', label: 'Logistics', desc: 'Participant flights, hotel stays and ground transport (vehicles and movements)', icon: 'luggage', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Logistics' },
+  // Feature 018 — the Planner event's programme (event_agenda_items); same permission as Production.
+  { key: 'planner-agenda', label: 'Agenda', desc: 'The event programme your team sees in Bendie Planner: sessions, breaks, speakers and MCs', icon: 'event_note', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Production' },
   { key: 'planner-production', label: 'Production', desc: 'Run-of-show: what needs to happen, and when, in each session', icon: 'theaters', badgeBg: 'bg-orange-50', badgeFg: 'text-orange-600', product: 'planner', group: 'Production' },
 ];
 

@@ -311,8 +311,9 @@ export default function EventLayout({ children }: { children: React.ReactNode })
           plannerLogisticsCapability.capability.canView === true
         );
       }
-      if (section.key === 'planner-production') {
+      if (section.key === 'planner-production' || section.key === 'planner-agenda') {
         // Feature 014 — identical shape again, a sixth independent branch.
+        // Feature 018 — the Planner Agenda shares Production's permission (spec clarification).
         return (
           plannerProductionCapability.status === 'ready' &&
           plannerProductionCapability.capability.hasPlannerIdentity === true &&
@@ -701,7 +702,9 @@ export default function EventLayout({ children }: { children: React.ReactNode })
     activeSection?.key === 'planner-logistics' && productAvailability.planner === true && plannerLogisticsCapability.status === 'loading';
   // Feature 014 — identical shape, scoped strictly to `planner-production`.
   const plannerProductionCapabilityPending =
-    activeSection?.key === 'planner-production' && productAvailability.planner === true && plannerProductionCapability.status === 'loading';
+    (activeSection?.key === 'planner-production' || activeSection?.key === 'planner-agenda') &&
+    productAvailability.planner === true &&
+    plannerProductionCapability.status === 'loading';
   const productAuthPending =
     !!activeSection &&
     activeSection.product !== 'shared' &&
@@ -739,7 +742,8 @@ export default function EventLayout({ children }: { children: React.ReactNode })
     activeSection?.key === 'planner-logistics' && (plannerLogisticsCapability.status === 'provisioning' || plannerLogisticsCapability.status === 'error');
   // Feature 014 — identical shape, scoped strictly to `planner-production`.
   const plannerProductionDeferToPage =
-    activeSection?.key === 'planner-production' && (plannerProductionCapability.status === 'provisioning' || plannerProductionCapability.status === 'error');
+    (activeSection?.key === 'planner-production' || activeSection?.key === 'planner-agenda') &&
+    (plannerProductionCapability.status === 'provisioning' || plannerProductionCapability.status === 'error');
   const activeSectionUnavailable =
     !!activeSection &&
     productAvailabilityChecked &&
