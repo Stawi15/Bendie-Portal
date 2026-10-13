@@ -31,6 +31,8 @@ type PlannerChecklistListProps = {
   onToggleStage: (item: PlannerChecklistItemClient, stage: 'isSourced' | 'isOnSite', next: boolean) => void;
   onSaveNotes: (item: PlannerChecklistItemClient, notes: string) => Promise<boolean>;
   onDelete: (item: PlannerChecklistItemClient) => void;
+  /** Feature 020 — opens the add form pre-filled for this item. */
+  onEdit: (item: PlannerChecklistItemClient) => void;
   onAdd?: () => void;
   onImportCsv?: () => void;
 };
@@ -40,13 +42,12 @@ type PlannerChecklistListProps = {
  * established shape. `isSourced`/`isOnSite` are independent toggles with no
  * cascade between them (spec Rule 2 — verified, no ordering trigger exists
  * for this table) — deliberately no cascade UI logic here, unlike Vendors'
- * three-stage lifecycle. Category/item name/quantity/specification/sort
- * order/owner/day number/event-day date have no edit affordance anywhere in
- * this component (spec Rule 3/4) — only Sourced, On-site, notes, and delete
- * are ever mutable here. `items` passed in are already scoped correctly
+ * three-stage lifecycle. Item details are edited through the Edit row action,
+ * which opens `PlannerChecklistModal` in edit mode (Feature 020); Sourced,
+ * On-site and notes stay inline here. `items` passed in are already scoped correctly
  * server-side (full list for a Manager, owned-only for a Viewer — spec Rule 1).
  */
-export function PlannerChecklistList({ items, canManage, busyItemId, onToggleStage, onSaveNotes, onDelete, onAdd, onImportCsv }: PlannerChecklistListProps) {
+export function PlannerChecklistList({ items, canManage, busyItemId, onToggleStage, onSaveNotes, onDelete, onEdit, onAdd, onImportCsv }: PlannerChecklistListProps) {
   const [notesDrafts, setNotesDrafts] = useState<Record<number, string>>({});
 
   const getNotesDraft = (item: PlannerChecklistItemClient) => notesDrafts[item.id] ?? item.notes ?? '';
@@ -154,8 +155,11 @@ export function PlannerChecklistList({ items, canManage, busyItemId, onToggleSta
                   )}
                 </td>
                 {canManage && (
-                  <td className="px-4 sm:px-lg py-2.5 text-right">
-                    <button className="row-action-danger" onClick={() => onDelete(item)} disabled={isBusy}>
+                  <td className="px-4 sm:px-lg py-2.5 text-right space-x-2 whitespace-nowrap">
+                    <button className="row-action" onClick={() => onEdit(item)} disabled={isBusy} aria-label={`Edit ${item.itemName}`}>
+                      Edit
+                    </button>
+                    <button className="row-action-danger" onClick={() => onDelete(item)} disabled={isBusy} aria-label={`Delete ${item.itemName}`}>
                       Delete
                     </button>
                   </td>

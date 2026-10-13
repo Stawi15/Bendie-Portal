@@ -13,9 +13,25 @@ import {
 } from '@/lib/csvImport';
 import { knownErrorMessage } from '@/lib/userFacingError';
 import { DismissibleTip } from '@/components/portal/DismissibleTip';
+import { useConfirm } from '@/contexts/ConfirmContext';
 
 // `notice` (Feature 017): an optional note on a row that WAS imported, e.g. a value the importer had to limit.
 type ImportOutcome = { rowIndex: number; success: boolean; error?: string; notice?: string };
+
+/**
+ * Feature 020 — opt-in "Replace existing items". Safe replace: the new rows are imported first and the
+ * items that existed when the import started (`existingIds`, snapshotted then) are deleted only if every
+ * row imported; otherwise everything is kept and the result says so.
+ */
+export type CsvReplaceOption = {
+  existingIds: number[];
+  /** Plural noun for the items, e.g. "checklist items". */
+  itemLabel: string;
+  deleteExisting: (ids: number[]) => Promise<{ deleted?: number; error?: string }>;
+};
+
+type ImportMode = 'add' | 'replace';
+type ReplaceOutcome = { status: 'replaced'; deleted: number } | { status: 'kept'; reason: 'incomplete' | 'failed'; error?: string } | null;
 
 type CsvImportModalProps<T> = {
   open: boolean;
@@ -29,6 +45,8 @@ type CsvImportModalProps<T> = {
   importRow: (data: T) => Promise<{ error?: string; notice?: string }>;
   /** Optional one-time setup run once with all valid rows before the per-row import loop starts (e.g. batching account creation into a single request). */
   beforeImport?: (validData: T[]) => Promise<void>;
+  /** Feature 020 — when given and there are existing items, the preview offers Add (default) / Replace. */
+  replaceOption?: CsvReplaceOption;
 };
 
 type Step = 'pick' | 'preview' | 'result';
@@ -78,7 +96,9 @@ export function CsvImportModal<T>({
   parseRow,
   importRow,
   beforeImport,
+  replaceOption,
 }: CsvImportModalProps<T>) {
+  const confirm = useConfirm();
   const [step, setStep] = useState<Step>('pick');
   const [sourceMode, setSourceMode] = useState<SourceMode>('file');
   const [pasteText, setPasteText] = useState('');
@@ -89,6 +109,8 @@ export function CsvImportModal<T>({
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [outcomes, setOutcomes] = useState<ImportOutcome[]>([]);
+  const [importMode, setImportMode] = useState<ImportMode>('add');
+  const [replaceOutcome, setReplaceOutcome] = useState<ReplaceOutcome>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
@@ -104,6 +126,8 @@ export function CsvImportModal<T>({
     setImporting(false);
     setImportProgress(0);
     setOutcomes([]);
+    setImportMode('add');
+    setReplaceOutcome(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -164,7 +188,23 @@ export function CsvImportModal<T>({
   const validRows = results.filter((r) => r.errors.length === 0 && r.data !== undefined);
   const invalidRows = results.filter((r) => r.errors.length > 0);
 
+  const existingCount = replaceOption?.existingIds.length ?? 0;
+  const canReplace = existingCount > 0;
+  const replacing = canReplace && importMode === 'replace';
+
   const handleImport = async () => {
+    // Snapshot now: only items that existed before this import can be removed by it.
+    const idsToReplace = replacing && replaceOption ? [...replaceOption.existingIds] : [];
+    if (replacing && replaceOption) {
+      const ok = await confirm({
+        title: `Replace existing ${replaceOption.itemLabel}`,
+        message: `Import ${validRows.length} row${validRows.length !== 1 ? 's' : ''} and then delete the ${idsToReplace.length} existing ${replaceOption.itemLabel}? The existing items are only deleted if every row imports — otherwise everything is kept. This cannot be undone.`,
+        confirmLabel: 'Import and replace',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+
     if (beforeImport) {
       setPreparing(true);
       try {
@@ -199,6 +239,21 @@ export function CsvImportModal<T>({
         } as ImportOutcome;
       }
     );
+
+    if (replacing && replaceOption) {
+      const allImported = invalidRows.length === 0 && importOutcomes.length > 0 && importOutcomes.every((o) => o.success);
+      if (!allImported) {
+        setReplaceOutcome({ status: 'kept', reason: 'incomplete' });
+      } else {
+        try {
+          const { deleted, error } = await replaceOption.deleteExisting(idsToReplace);
+          setReplaceOutcome(error ? { status: 'kept', reason: 'failed', error } : { status: 'replaced', deleted: deleted ?? idsToReplace.length });
+        } catch (err) {
+          console.error('[csv import] replace failed', err);
+          setReplaceOutcome({ status: 'kept', reason: 'failed' });
+        }
+      }
+    }
 
     setOutcomes(importOutcomes);
     setImporting(false);
@@ -369,6 +424,34 @@ export function CsvImportModal<T>({
                     </ul>
                   </div>
                 )}
+                {canReplace && replaceOption && (
+                  <fieldset className="rounded-xl border border-outline-variant p-3 space-y-2">
+                    <legend className="px-1 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
+                      This event already has {existingCount} {replaceOption.itemLabel}
+                    </legend>
+                    <label className="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
+                      <input type="radio" name="csv-import-mode" className="mt-0.5 accent-primary" checked={importMode === 'add'} onChange={() => setImportMode('add')} disabled={importing || preparing} />
+                      <span>
+                        <span className="font-medium">Add to existing items</span>
+                        <span className="block text-xs text-on-surface-variant">Keep the current {replaceOption.itemLabel} and add these rows.</span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
+                      <input type="radio" name="csv-import-mode" className="mt-0.5 accent-primary" checked={importMode === 'replace'} onChange={() => setImportMode('replace')} disabled={importing || preparing} />
+                      <span>
+                        <span className="font-medium">Replace existing items</span>
+                        <span className="block text-xs text-on-surface-variant">
+                          Delete the {existingCount} current {replaceOption.itemLabel} once every row has imported. If any row fails, nothing is deleted.
+                        </span>
+                      </span>
+                    </label>
+                    {replacing && invalidRows.length > 0 && (
+                      <p className="text-xs text-amber-900">
+                        {invalidRows.length} row{invalidRows.length !== 1 ? 's need' : ' needs'} attention, so the existing items will be kept. Fix those rows first to replace.
+                      </p>
+                    )}
+                  </fieldset>
+                )}
                 <div className="border border-outline-variant rounded-xl overflow-auto max-h-96">
                   <table className="w-full text-xs min-w-[600px]">
                     <thead className="bg-surface-container-low/50 sticky top-0">
@@ -416,7 +499,7 @@ export function CsvImportModal<T>({
               </button>
               {headerErrors.length === 0 && (
                 <button
-                  className="btn-primary"
+                  className={replacing ? 'btn-danger' : 'btn-primary'}
                   onClick={handleImport}
                   disabled={validRows.length === 0 || importing || preparing}
                 >
@@ -424,7 +507,7 @@ export function CsvImportModal<T>({
                     ? 'Preparing…'
                     : importing
                       ? `Importing… (${importProgress}/${validRows.length})`
-                      : `Import ${validRows.length} ready row${validRows.length !== 1 ? 's' : ''}`}
+                      : `Import ${validRows.length} ready row${validRows.length !== 1 ? 's' : ''}${replacing ? ' and replace' : ''}`}
                 </button>
               )}
             </div>
@@ -457,6 +540,19 @@ export function CsvImportModal<T>({
                 </div>
               );
             })()}
+
+            {replaceOutcome && replaceOption && (
+              <div
+                className={`border rounded-xl p-3 text-sm ${replaceOutcome.status === 'replaced' ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
+                role="status"
+              >
+                {replaceOutcome.status === 'replaced'
+                  ? `Replaced: ${replaceOutcome.deleted} previous ${replaceOption.itemLabel} deleted.`
+                  : replaceOutcome.reason === 'incomplete'
+                    ? `Not every row imported, so the previous ${replaceOption.itemLabel} were kept. Delete them yourself once you're happy with the list.`
+                    : `The rows imported, but the previous ${replaceOption.itemLabel} couldn't be deleted${replaceOutcome.error ? ` (${replaceOutcome.error})` : ''}. Use Delete all or delete them one by one.`}
+              </div>
+            )}
 
             {(invalidRows.length > 0 || failedDuringImport.length > 0) && (
               <div className="border border-outline-variant rounded-xl overflow-auto max-h-64">

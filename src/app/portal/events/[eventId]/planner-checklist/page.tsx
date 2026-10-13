@@ -79,6 +79,9 @@ export default function PlannerChecklistPage() {
   const [modalResetKey, setModalResetKey] = useState(0);
   const [lastChecklistContext, setLastChecklistContext] = useState<PlannerChecklistPresetContext | undefined>(undefined);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
+  // Feature 020 — the item being edited (null = the modal adds a new item).
+  const [editingItem, setEditingItem] = useState<PlannerChecklistItemClient | null>(null);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
@@ -93,10 +96,11 @@ export default function PlannerChecklistPage() {
   // stops holding a same-origin connection after the user moves to another tab.
   const startRequest = useLatestRequest();
 
-  const load = useCallback(async () => {
+  // `silent` (Feature 020) refreshes without the loading skeleton, so open modals (e.g. the import result) stay mounted.
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     const requestId = ++requestIdRef.current;
     const signal = startRequest();
-    setState({ kind: 'loading' });
+    if (!options?.silent) setState({ kind: 'loading' });
     try {
       const res = await fetch(`/api/events/${eventId}/planner-checklist`, { signal });
       if (requestIdRef.current !== requestId) return;
@@ -128,7 +132,14 @@ export default function PlannerChecklistPage() {
 
   const openCreate = () => {
     setModalError(null);
+    setEditingItem(null);
     setLastChecklistContext(undefined);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: PlannerChecklistItemClient) => {
+    setModalError(null);
+    setEditingItem(item);
     setModalOpen(true);
   };
 
@@ -176,6 +187,87 @@ export default function PlannerChecklistPage() {
       setModalError({ category: 'planner_write_failed', message: 'Could not save — try again.' });
     } finally {
       if (mountedRef.current) setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (values: PlannerChecklistCreateValues) => {
+    if (!editingItem) return;
+    setSubmitting(true);
+    setModalError(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/planner-checklist/${editingItem.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemName: values.itemName,
+          category: values.category || null,
+          quantityText: values.quantityText || null,
+          specification: values.specification || null,
+          notes: values.notes || null,
+          dayNumber: values.dayNumber ? Number(values.dayNumber) : null,
+          eventDayDate: values.eventDayDate || null,
+          // An owner is never cleared — only sent when one is chosen.
+          ...(values.ownerProfileId ? { ownerProfileId: values.ownerProfileId } : {}),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!mountedRef.current) return;
+      if (!res.ok) {
+        if (res.status === 404) {
+          toast('This item no longer exists.');
+          setModalOpen(false);
+          await load({ silent: true });
+          return;
+        }
+        setModalError({ category: data.error ?? 'planner_write_failed', message: data.message ?? 'Could not save — try again.' });
+        return;
+      }
+      toast.success('Checklist item updated');
+      setModalOpen(false);
+      await load({ silent: true });
+    } catch (err) {
+      if (!mountedRef.current) return;
+      console.error('Planner Checklist: update failed', err);
+      setModalError({ category: 'planner_write_failed', message: 'Could not save — try again.' });
+    } finally {
+      if (mountedRef.current) setSubmitting(false);
+    }
+  };
+
+  /** Feature 020 — bulk delete through the collection route; `itemIds` limits it to those items (replace-on-import). */
+  const deleteItems = async (body: { all: true } | { itemIds: number[] }): Promise<{ deleted?: number; error?: string }> => {
+    const res = await fetch(`/api/events/${eventId}/planner-checklist`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: data.message ?? 'Could not delete items.' };
+    return { deleted: data.deleted ?? 0 };
+  };
+
+  const handleDeleteAll = async (count: number) => {
+    const ok = await confirm({
+      title: 'Delete all checklist items',
+      message: `Delete all ${count} checklist item${count !== 1 ? 's' : ''} for this event? This removes them from Bendie Planner too and cannot be undone.`,
+      confirmLabel: `Delete all ${count}`,
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setDeletingAll(true);
+    try {
+      const { deleted, error } = await deleteItems({ all: true });
+      if (!mountedRef.current) return;
+      if (error) toast.error(error);
+      else toast.success(`${deleted} checklist item${deleted !== 1 ? 's' : ''} deleted`);
+      await load({ silent: true });
+    } catch (err) {
+      if (!mountedRef.current) return;
+      console.error('Planner Checklist: delete all failed', err);
+      toast.error('Could not delete items.');
+    } finally {
+      if (mountedRef.current) setDeletingAll(false);
     }
   };
 
@@ -380,7 +472,10 @@ export default function PlannerChecklistPage() {
       <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-checklist" />
         {capability.canManage && items.length > 0 && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-danger" onClick={() => handleDeleteAll(items.length)} disabled={deletingAll}>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete_sweep</span> {deletingAll ? 'Deleting…' : 'Delete all'}
+            </button>
             <button className="btn-secondary" onClick={() => setCsvModalOpen(true)}>
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
             </button>
@@ -399,6 +494,7 @@ export default function PlannerChecklistPage() {
           onToggleStage={handleToggleStage}
           onSaveNotes={handleSaveNotes}
           onDelete={handleDelete}
+          onEdit={openEdit}
           onAdd={openCreate}
           onImportCsv={() => setCsvModalOpen(true)}
         />
@@ -411,19 +507,25 @@ export default function PlannerChecklistPage() {
         submitting={submitting}
         serverError={modalError}
         onClose={closeModal}
-        onSubmit={handleCreate}
+        onSubmit={(values, keepOpen) => (editingItem ? handleUpdate(values) : handleCreate(values, keepOpen))}
         presetContext={lastChecklistContext}
+        editing={editingItem}
       />
       <CsvImportModal<ChecklistCsvRow>
         open={csvModalOpen}
         onClose={() => setCsvModalOpen(false)}
-        onImported={load}
+        onImported={() => load({ silent: true })}
         title="Import Checklist Items"
         templateFilename="checklist-template.csv"
         columns={CHECKLIST_CSV_COLUMNS}
         sampleRows={CHECKLIST_CSV_SAMPLES}
         parseRow={parseChecklistCsvRow}
         importRow={importChecklistRow}
+        replaceOption={
+          capability.canManage
+            ? { existingIds: items.map((i) => i.id), itemLabel: 'checklist items', deleteExisting: (ids) => deleteItems({ itemIds: ids }) }
+            : undefined
+        }
       />
     </div>
   );

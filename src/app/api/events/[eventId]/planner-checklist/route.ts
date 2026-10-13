@@ -9,6 +9,7 @@ import {
   listChecklistItems,
   listEligibleOwners,
   createChecklistItem,
+  deleteChecklistItems,
   normalizePlannerChecklistError,
   type ResolvedChecklistCapability,
 } from '@/lib/plannerChecklist';
@@ -16,7 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Feature 010 — Bendie Planner Checklist: collection route (list + capability
- * + eligible owners on GET; manager-only create on POST). Same 8-step
+ * + eligible owners on GET; manager-only create on POST; Feature 020 manager-only bulk delete on DELETE). Same 8-step
  * authorization sequence as `planner-vendors/route.ts`, copied inline per
  * Feature 007/008/009's own precedent.
  */
@@ -204,5 +205,43 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { category, message } = normalizePlannerChecklistError(err);
     const status = category === 'planner_write_failed' ? 500 : 400;
     return NextResponse.json({ error: category, message }, { status });
+  }
+}
+
+/**
+ * Feature 020 — manager-only bulk delete. Body `{ all: true }` removes every item of this event;
+ * `{ itemIds: number[] }` removes only those ids (used by "Replace existing items" after an import).
+ * Always scoped to the linked Planner event.
+ */
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
+  const { eventId } = await params;
+  const context = await resolveAuthorizedContext(eventId);
+  if (context instanceof NextResponse) return context;
+
+  const { plannerEventId, capability } = context;
+
+  if (!capability.canManage) {
+    return NextResponse.json({ error: 'checklist_manage_denied' }, { status: 403 });
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_request', message: 'Malformed request body.' }, { status: 400 });
+  }
+
+  const deleteAll = body.all === true;
+  const itemIds = Array.isArray(body.itemIds) ? body.itemIds : null;
+  if (deleteAll === (itemIds !== null) || (itemIds && !itemIds.every((id) => Number.isInteger(id) && id > 0))) {
+    return NextResponse.json({ error: 'invalid_request', message: 'Send either all: true or a list of item ids.' }, { status: 400 });
+  }
+
+  try {
+    const deleted = await deleteChecklistItems(plannerEventId, deleteAll ? undefined : (itemIds as number[]));
+    return NextResponse.json({ ok: true, deleted });
+  } catch (err) {
+    const { category, message } = normalizePlannerChecklistError(err);
+    return NextResponse.json({ error: category, message }, { status: 500 });
   }
 }

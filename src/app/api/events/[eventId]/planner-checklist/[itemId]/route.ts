@@ -17,7 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Feature 010 — Bendie Planner Checklist: single-item route (manager-only
- * lifecycle/notes update on PATCH; manager-only hard delete on DELETE).
+ * lifecycle/notes update on PATCH — Feature 020 adds item-detail edits; manager-only hard delete on DELETE).
  * Same 8-step sequence as `planner-vendors/[itemId]/route.ts`, plus the same
  * item-scope pre-fetch pattern.
  */
@@ -139,7 +139,8 @@ function parseItemId(raw: string): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-const PATCH_ALLOWED_FIELDS = new Set(['isSourced', 'isOnSite', 'notes']);
+const PATCH_ALLOWED_FIELDS = new Set(['isSourced', 'isOnSite', 'notes', 'itemName', 'category', 'quantityText', 'specification', 'dayNumber', 'eventDayDate', 'ownerProfileId']);
+const NULLABLE_STRING_FIELDS = ['notes', 'category', 'quantityText', 'specification', 'eventDayDate'] as const;
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ eventId: string; itemId: string }> }) {
   const { eventId, itemId: rawItemId } = await params;
@@ -187,8 +188,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('isOnSite' in body && typeof body.isOnSite !== 'boolean') {
     return NextResponse.json({ error: 'invalid_request', message: 'isOnSite must be a boolean.' }, { status: 400 });
   }
-  if ('notes' in body && body.notes !== null && typeof body.notes !== 'string') {
-    return NextResponse.json({ error: 'invalid_request', message: 'notes must be a string or null.' }, { status: 400 });
+  const badStringField = NULLABLE_STRING_FIELDS.find((key) => key in body && body[key] !== null && typeof body[key] !== 'string');
+  if (badStringField) {
+    return NextResponse.json({ error: 'invalid_request', message: `${badStringField} must be a string or null.` }, { status: 400 });
+  }
+  if ('itemName' in body && (typeof body.itemName !== 'string' || !body.itemName.trim())) {
+    return NextResponse.json({ error: 'invalid_request', message: 'Item name is required.' }, { status: 400 });
+  }
+  if ('dayNumber' in body && body.dayNumber !== null && typeof body.dayNumber !== 'number') {
+    return NextResponse.json({ error: 'invalid_request', message: 'dayNumber must be a number.' }, { status: 400 });
+  }
+  if ('ownerProfileId' in body && (typeof body.ownerProfileId !== 'string' || !body.ownerProfileId)) {
+    return NextResponse.json({ error: 'invalid_request', message: 'An owner is required.' }, { status: 400 });
   }
 
   try {
@@ -196,6 +207,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       isSourced: 'isSourced' in body ? (body.isSourced as boolean) : undefined,
       isOnSite: 'isOnSite' in body ? (body.isOnSite as boolean) : undefined,
       ...('notes' in body ? { notes: body.notes as string | null } : {}),
+      ...('itemName' in body ? { itemName: body.itemName as string } : {}),
+      ...('category' in body ? { category: body.category as string | null } : {}),
+      ...('quantityText' in body ? { quantityText: body.quantityText as string | null } : {}),
+      ...('specification' in body ? { specification: body.specification as string | null } : {}),
+      ...('dayNumber' in body ? { dayNumber: body.dayNumber as number | null } : {}),
+      ...('eventDayDate' in body ? { eventDayDate: body.eventDayDate as string | null } : {}),
+      ...('ownerProfileId' in body ? { ownerProfileId: body.ownerProfileId as string } : {}),
     });
     return NextResponse.json({ ok: true, item });
   } catch (err) {

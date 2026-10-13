@@ -41,27 +41,31 @@ type PlannerVendorModalProps = {
   onClose: () => void;
   /** `keepOpen` is true for "Save & Add Another" — the caller creates the record, refreshes the list, and (only then) resets this modal's fields by remounting it with a new `key`, rather than closing it. */
   onSubmit: (values: PlannerVendorCreateValues, keepOpen: boolean) => void;
+  /** Feature 020 — when set, the form is pre-filled from this item and saves changes to it (no "Save & Add Another"). */
+  editing?: PlannerVendorItemClient | null;
 };
 
 /**
- * Create-only form modal — manager-only surface (spec.md FR-021/FR-024).
+ * Add / edit form modal — manager-only surface (spec.md FR-021/FR-024).
  * Reuses `FormModal` and the existing `.input`/`.label`/`.btn-primary`
- * primitives; no new design system. There is deliberately no "edit" mode —
- * this feature never supports changing an existing item's category,
- * description, quantity, unit, or display order after creation (FR-038); the
- * only post-creation edits (notes, lifecycle toggles) are handled inline in
- * `PlannerVendorList.tsx`, not through this modal.
+ * primitives; no new design system. Feature 020 adds edit mode (`editing`),
+ * reversing FR-038: managers can change an item's description, category,
+ * quantity, unit and notes. Lifecycle toggles stay inline in `PlannerVendorList.tsx`.
  */
-export function PlannerVendorModal({ open, submitting, serverError, onClose, onSubmit }: PlannerVendorModalProps) {
+export function PlannerVendorModal({ open, submitting, serverError, onClose, onSubmit, editing = null }: PlannerVendorModalProps) {
   const [values, setValues] = useState<PlannerVendorCreateValues>({ category: '', description: '', quantityText: '', unit: '', notes: '' });
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setValues({ category: '', description: '', quantityText: '', unit: '', notes: '' });
+      setValues(
+        editing
+          ? { category: editing.category ?? '', description: editing.description ?? '', quantityText: editing.quantityText ?? '', unit: editing.unit ?? '', notes: editing.notes ?? '' }
+          : { category: '', description: '', quantityText: '', unit: '', notes: '' },
+      );
       setValidationError(null);
     }
-  }, [open]);
+  }, [open, editing]);
 
   const handleSubmit = (e: React.SyntheticEvent, keepOpen: boolean) => {
     e.preventDefault();
@@ -74,7 +78,7 @@ export function PlannerVendorModal({ open, submitting, serverError, onClose, onS
   };
 
   return (
-    <FormModal open={open} onClose={onClose} title="Add Vendor Item" maxWidthClassName="max-w-lg">
+    <FormModal open={open} onClose={onClose} title={editing ? 'Edit Vendor Item' : 'Add Vendor Item'} maxWidthClassName="max-w-lg">
       <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
         <div>
           <label className="label">Description</label>
@@ -136,11 +140,13 @@ export function PlannerVendorModal({ open, submitting, serverError, onClose, onS
           <button type="button" onClick={onClose} className="btn-secondary" disabled={submitting}>
             Cancel
           </button>
-          <button type="button" onClick={(e) => handleSubmit(e, true)} className="btn-secondary disabled:opacity-50" disabled={submitting}>
-            {submitting ? 'Saving…' : 'Save & Add Another'}
-          </button>
+          {!editing && (
+            <button type="button" onClick={(e) => handleSubmit(e, true)} className="btn-secondary disabled:opacity-50" disabled={submitting}>
+              {submitting ? 'Saving…' : 'Save & Add Another'}
+            </button>
+          )}
           <button type="submit" className="btn-primary disabled:opacity-50" disabled={submitting}>
-            {submitting ? 'Adding…' : 'Add Item'}
+            {editing ? (submitting ? 'Saving…' : 'Save changes') : submitting ? 'Adding…' : 'Add Item'}
           </button>
         </div>
       </form>

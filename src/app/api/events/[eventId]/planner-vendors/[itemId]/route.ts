@@ -143,7 +143,9 @@ function parseItemId(raw: string): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-const PATCH_ALLOWED_FIELDS = new Set(['isPacked', 'isLoaded', 'isOnSite', 'notes']);
+// Feature 020 — item-detail fields (description, category, quantity, unit) are now editable by managers.
+const PATCH_ALLOWED_FIELDS = new Set(['isPacked', 'isLoaded', 'isOnSite', 'notes', 'description', 'category', 'quantityText', 'unit']);
+const NULLABLE_STRING_FIELDS = ['notes', 'category', 'quantityText', 'unit'] as const;
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ eventId: string; itemId: string }> }) {
   const { eventId, itemId: rawItemId } = await params;
@@ -197,8 +199,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('isOnSite' in body && typeof body.isOnSite !== 'boolean') {
     return NextResponse.json({ error: 'invalid_request', message: 'isOnSite must be a boolean.' }, { status: 400 });
   }
-  if ('notes' in body && body.notes !== null && typeof body.notes !== 'string') {
-    return NextResponse.json({ error: 'invalid_request', message: 'notes must be a string or null.' }, { status: 400 });
+  const badStringField = NULLABLE_STRING_FIELDS.find((key) => key in body && body[key] !== null && typeof body[key] !== 'string');
+  if (badStringField) {
+    return NextResponse.json({ error: 'invalid_request', message: `${badStringField} must be a string or null.` }, { status: 400 });
+  }
+  if ('description' in body && (typeof body.description !== 'string' || !body.description.trim())) {
+    return NextResponse.json({ error: 'invalid_request', message: 'Item description is required.' }, { status: 400 });
   }
 
   try {
@@ -207,6 +213,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       isLoaded: 'isLoaded' in body ? (body.isLoaded as boolean) : undefined,
       isOnSite: 'isOnSite' in body ? (body.isOnSite as boolean) : undefined,
       ...('notes' in body ? { notes: body.notes as string | null } : {}),
+      ...('description' in body ? { description: body.description as string } : {}),
+      ...('category' in body ? { category: body.category as string | null } : {}),
+      ...('quantityText' in body ? { quantityText: body.quantityText as string | null } : {}),
+      ...('unit' in body ? { unit: body.unit as string | null } : {}),
     });
     return NextResponse.json({ ok: true, item });
   } catch (err) {

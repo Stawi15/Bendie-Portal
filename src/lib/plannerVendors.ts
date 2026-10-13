@@ -53,8 +53,17 @@ export type VendorItemCreateInput = {
   sortOrder?: number;
 };
 
-/** Never `category`/`description`/`quantityText`/`unit`/`sortOrder`/`event_id` — those are immutable after creation through this feature (FR-038). */
-export type VendorItemPatch = Partial<{ isPacked: boolean; isLoaded: boolean; isOnSite: boolean; notes: string | null }>;
+/** Feature 020 reverses FR-038: managers may now edit item details (Planner's edit guard exempts the Portal server's service-role writes). `sortOrder`/`event_id` stay server-controlled. */
+export type VendorItemPatch = Partial<{
+  isPacked: boolean;
+  isLoaded: boolean;
+  isOnSite: boolean;
+  notes: string | null;
+  description: string;
+  category: string | null;
+  quantityText: string | null;
+  unit: string | null;
+}>;
 
 export class PlannerVendorValidationError extends Error {
   code: 'invalid_request';
@@ -258,6 +267,15 @@ export async function updateVendorItem(plannerEventId: number, itemId: number, p
   if (typeof patch.isLoaded === 'boolean') updates.is_loaded = patch.isLoaded;
   if (typeof patch.isOnSite === 'boolean') updates.is_on_site = patch.isOnSite;
   if ('notes' in patch) updates.notes = patch.notes ?? null;
+  if ('description' in patch) {
+    const description = patch.description?.trim();
+    if (!description) throw new PlannerVendorValidationError('Item description is required.');
+    updates.item_description = description;
+  }
+  // `category` is NOT NULL in Planner — a cleared category falls back to Planner's own default label.
+  if ('category' in patch) updates.category = patch.category?.trim() || 'General';
+  if ('quantityText' in patch) updates.quantity_text = patch.quantityText ?? null;
+  if ('unit' in patch) updates.unit = patch.unit ?? null;
 
   if (Object.keys(updates).length === 0) {
     throw new PlannerVendorValidationError('At least one field is required.');
@@ -282,6 +300,23 @@ export async function deleteVendorItem(plannerEventId: number, itemId: number): 
   const { data, error } = await planner.from('event_vendor_items').delete().eq('vendor_item_id', itemId).eq('event_id', plannerEventId).select('vendor_item_id').maybeSingle();
   if (error) throw error;
   if (!data) throw new PlannerVendorNotFoundError('Vendor item not found.');
+}
+
+/**
+ * Feature 020 — bulk hard delete, manager-only (enforced by the route). Always scoped to
+ * `plannerEventId`; with `itemIds` only those ids (that belong to this event) are removed,
+ * otherwise every item of the event. Returns the number of rows actually deleted.
+ */
+export async function deleteVendorItems(plannerEventId: number, itemIds?: number[]): Promise<number> {
+  const planner = getPlannerAdminClient();
+  let query = planner.from('event_vendor_items').delete().eq('event_id', plannerEventId);
+  if (itemIds) {
+    if (itemIds.length === 0) return 0;
+    query = query.in('vendor_item_id', itemIds);
+  }
+  const { data, error } = await query.select('vendor_item_id');
+  if (error) throw error;
+  return data?.length ?? 0;
 }
 
 /** Maps any thrown error from the functions above to one of the safe, documented contract categories — never returns raw Planner error text/stack traces (SR-012, FR-039). */

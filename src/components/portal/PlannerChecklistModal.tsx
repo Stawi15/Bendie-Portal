@@ -49,6 +49,8 @@ type PlannerChecklistModalProps = {
   onClose: () => void;
   onSubmit: (values: PlannerChecklistCreateValues, keepOpen: boolean) => void;
   presetContext?: PlannerChecklistPresetContext;
+  /** Feature 020 — when set, the form is pre-filled from this item and saves changes to it (no "Save & Add Another"). */
+  editing?: PlannerChecklistItemClient | null;
 };
 
 const EMPTY_CHECKLIST_VALUES: PlannerChecklistCreateValues = {
@@ -62,23 +64,39 @@ const EMPTY_CHECKLIST_VALUES: PlannerChecklistCreateValues = {
   ownerProfileId: '',
 };
 
+function valuesFromItem(item: PlannerChecklistItemClient): PlannerChecklistCreateValues {
+  return {
+    category: item.category ?? '',
+    itemName: item.itemName ?? '',
+    quantityText: item.quantityText ?? '',
+    specification: item.specification ?? '',
+    notes: item.notes ?? '',
+    dayNumber: item.dayNumber != null ? String(item.dayNumber) : '',
+    eventDayDate: item.eventDayDate ?? '',
+    ownerProfileId: item.ownerProfileId ?? '',
+  };
+}
+
 /**
- * Create-only form modal — manager-only surface (spec.md Acceptance Criteria 1).
- * No "edit" mode: category/item name/quantity/specification/sort order/owner/
- * day number/event-day date are all immutable after creation (spec Rule 3/4);
- * the only post-creation edits (notes, Sourced/On-site) are handled inline in
- * `PlannerChecklistList.tsx`.
+ * Add / edit form modal — manager-only surface (spec.md Acceptance Criteria 1).
+ * Feature 020 adds edit mode (`editing`), reversing Feature 010 Rule 3: managers can
+ * change every field below. Sourced/On-site stay inline in `PlannerChecklistList.tsx`.
+ * An owner is never cleared once set (Rule 4).
  */
-export function PlannerChecklistModal({ open, eligibleOwners, submitting, serverError, onClose, onSubmit, presetContext }: PlannerChecklistModalProps) {
+export function PlannerChecklistModal({ open, eligibleOwners, submitting, serverError, onClose, onSubmit, presetContext, editing = null }: PlannerChecklistModalProps) {
   const [values, setValues] = useState<PlannerChecklistCreateValues>(EMPTY_CHECKLIST_VALUES);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setValues({ ...EMPTY_CHECKLIST_VALUES, ...presetContext });
+      setValues(editing ? valuesFromItem(editing) : { ...EMPTY_CHECKLIST_VALUES, ...presetContext });
       setValidationError(null);
     }
-  }, [open, presetContext]);
+  }, [open, presetContext, editing]);
+
+  // The current owner may no longer be active staff on the event — keep them selectable so saving doesn't change ownership.
+  const currentOwnerId = editing?.ownerProfileId ?? null;
+  const currentOwnerMissing = Boolean(currentOwnerId) && !eligibleOwners.some((o) => o.profileId === currentOwnerId);
 
   const handleSubmit = (e: React.SyntheticEvent, keepOpen: boolean) => {
     e.preventDefault();
@@ -91,7 +109,7 @@ export function PlannerChecklistModal({ open, eligibleOwners, submitting, server
   };
 
   return (
-    <FormModal open={open} onClose={onClose} title="Add Checklist Item" maxWidthClassName="max-w-lg">
+    <FormModal open={open} onClose={onClose} title={editing ? 'Edit Checklist Item' : 'Add Checklist Item'} maxWidthClassName="max-w-lg">
       <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
         <div>
           <label className="label">Item Name</label>
@@ -162,7 +180,8 @@ export function PlannerChecklistModal({ open, eligibleOwners, submitting, server
         <div>
           <label className="label">Owner</label>
           <select className="input" value={values.ownerProfileId} onChange={(e) => setValues((prev) => ({ ...prev, ownerProfileId: e.target.value }))} disabled={submitting}>
-            <option value="">Assign to me</option>
+            {!currentOwnerId && <option value="">{editing ? 'Unassigned' : 'Assign to me'}</option>}
+            {currentOwnerMissing && currentOwnerId && <option value={currentOwnerId}>{editing?.ownerName ?? 'Current owner'}</option>}
             {eligibleOwners.map((o) => (
               <option key={o.profileId} value={o.profileId}>
                 {o.name}
@@ -187,11 +206,13 @@ export function PlannerChecklistModal({ open, eligibleOwners, submitting, server
           <button type="button" onClick={onClose} className="btn-secondary" disabled={submitting}>
             Cancel
           </button>
-          <button type="button" onClick={(e) => handleSubmit(e, true)} className="btn-secondary disabled:opacity-50" disabled={submitting}>
-            {submitting ? 'Saving…' : 'Save & Add Another'}
-          </button>
+          {!editing && (
+            <button type="button" onClick={(e) => handleSubmit(e, true)} className="btn-secondary disabled:opacity-50" disabled={submitting}>
+              {submitting ? 'Saving…' : 'Save & Add Another'}
+            </button>
+          )}
           <button type="submit" className="btn-primary disabled:opacity-50" disabled={submitting}>
-            {submitting ? 'Adding…' : 'Add Item'}
+            {editing ? (submitting ? 'Saving…' : 'Save changes') : submitting ? 'Adding…' : 'Add Item'}
           </button>
         </div>
       </form>

@@ -75,6 +75,9 @@ export default function PlannerVendorsPage() {
   const [modalResetKey, setModalResetKey] = useState(0);
   const [busyItemId, setBusyItemId] = useState<number | null>(null);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
+  // Feature 020 — the item being edited (null = the modal adds a new item).
+  const [editingItem, setEditingItem] = useState<PlannerVendorItemClient | null>(null);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   // Same ABA/stale-response guard as `planner-tasks/page.tsx` — a response for
   // a superseded request (previous eventId, or an earlier reload of this same
@@ -92,10 +95,11 @@ export default function PlannerVendorsPage() {
   // stops holding a same-origin connection after the user moves to another tab.
   const startRequest = useLatestRequest();
 
-  const load = useCallback(async () => {
+  // `silent` (Feature 020) refreshes without the loading skeleton, so open modals (e.g. the import result) stay mounted.
+  const load = useCallback(async (options?: { silent?: boolean }) => {
     const requestId = ++requestIdRef.current;
     const signal = startRequest();
-    setState({ kind: 'loading' });
+    if (!options?.silent) setState({ kind: 'loading' });
     try {
       const res = await fetch(`/api/events/${eventId}/planner-vendors`, { signal });
       if (requestIdRef.current !== requestId) return;
@@ -127,6 +131,13 @@ export default function PlannerVendorsPage() {
 
   const openCreate = () => {
     setModalError(null);
+    setEditingItem(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (item: PlannerVendorItemClient) => {
+    setModalError(null);
+    setEditingItem(item);
     setModalOpen(true);
   };
 
@@ -188,6 +199,83 @@ export default function PlannerVendorsPage() {
       setModalError({ category: 'planner_write_failed', message: 'Could not save — try again.' });
     } finally {
       if (mountedRef.current) setSubmitting(false);
+    }
+  };
+
+  const handleUpdate = async (values: PlannerVendorCreateValues) => {
+    if (!editingItem) return;
+    setSubmitting(true);
+    setModalError(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/planner-vendors/${editingItem.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: values.description,
+          category: values.category || null,
+          quantityText: values.quantityText || null,
+          unit: values.unit || null,
+          notes: values.notes || null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!mountedRef.current) return;
+      if (!res.ok) {
+        if (res.status === 404) {
+          toast('This item no longer exists.');
+          setModalOpen(false);
+          await load({ silent: true });
+          return;
+        }
+        setModalError({ category: data.error ?? 'planner_write_failed', message: data.message ?? 'Could not save — try again.' });
+        return;
+      }
+      toast.success('Vendor item updated');
+      setModalOpen(false);
+      await load({ silent: true });
+    } catch (err) {
+      if (!mountedRef.current) return;
+      console.error('Planner Vendors: update failed', err);
+      setModalError({ category: 'planner_write_failed', message: 'Could not save — try again.' });
+    } finally {
+      if (mountedRef.current) setSubmitting(false);
+    }
+  };
+
+  /** Feature 020 — bulk delete through the collection route; `itemIds` limits it to those items (replace-on-import). */
+  const deleteItems = async (body: { all: true } | { itemIds: number[] }): Promise<{ deleted?: number; error?: string }> => {
+    const res = await fetch(`/api/events/${eventId}/planner-vendors`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: data.message ?? 'Could not delete items.' };
+    return { deleted: data.deleted ?? 0 };
+  };
+
+  const handleDeleteAll = async (count: number) => {
+    const ok = await confirm({
+      title: 'Delete all vendor items',
+      message: `Delete all ${count} vendor item${count !== 1 ? 's' : ''} for this event? This removes them from Bendie Planner too and cannot be undone.`,
+      confirmLabel: `Delete all ${count}`,
+      destructive: true,
+    });
+    if (!ok) return;
+
+    setDeletingAll(true);
+    try {
+      const { deleted, error } = await deleteItems({ all: true });
+      if (!mountedRef.current) return;
+      if (error) toast.error(error);
+      else toast.success(`${deleted} vendor item${deleted !== 1 ? 's' : ''} deleted`);
+      await load({ silent: true });
+    } catch (err) {
+      if (!mountedRef.current) return;
+      console.error('Planner Vendors: delete all failed', err);
+      toast.error('Could not delete items.');
+    } finally {
+      if (mountedRef.current) setDeletingAll(false);
     }
   };
 
@@ -342,7 +430,10 @@ export default function PlannerVendorsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
         <SectionHeader sectionKey="planner-vendors" />
         {capability.canManage && items.length > 0 && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-danger" onClick={() => handleDeleteAll(items.length)} disabled={deletingAll}>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete_sweep</span> {deletingAll ? 'Deleting…' : 'Delete all'}
+            </button>
             <button className="btn-secondary" onClick={() => setCsvModalOpen(true)}>
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
             </button>
@@ -361,22 +452,36 @@ export default function PlannerVendorsPage() {
           onToggleStage={handleToggleStage}
           onSaveNotes={handleSaveNotes}
           onDelete={handleDelete}
+          onEdit={openEdit}
           onAdd={openCreate}
           onImportCsv={() => setCsvModalOpen(true)}
         />
       </div>
 
-      <PlannerVendorModal key={`vendor-modal-${modalResetKey}`} open={modalOpen} submitting={submitting} serverError={modalError} onClose={closeModal} onSubmit={handleCreate} />
+      <PlannerVendorModal
+        key={`vendor-modal-${modalResetKey}`}
+        open={modalOpen}
+        submitting={submitting}
+        serverError={modalError}
+        onClose={closeModal}
+        onSubmit={(values, keepOpen) => (editingItem ? handleUpdate(values) : handleCreate(values, keepOpen))}
+        editing={editingItem}
+      />
       <CsvImportModal<VendorCsvRow>
         open={csvModalOpen}
         onClose={() => setCsvModalOpen(false)}
-        onImported={load}
+        onImported={() => load({ silent: true })}
         title="Import Vendor Items"
         templateFilename="vendors-template.csv"
         columns={VENDOR_CSV_COLUMNS}
         sampleRows={VENDOR_CSV_SAMPLES}
         parseRow={parseVendorCsvRow}
         importRow={importVendorRow}
+        replaceOption={
+          capability.canManage
+            ? { existingIds: items.map((i) => i.id), itemLabel: 'vendor items', deleteExisting: (ids) => deleteItems({ itemIds: ids }) }
+            : undefined
+        }
       />
     </div>
   );

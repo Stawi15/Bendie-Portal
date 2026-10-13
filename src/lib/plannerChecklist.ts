@@ -61,8 +61,19 @@ export type ChecklistItemCreateInput = {
   sortOrder?: number;
 };
 
-/** Never `category`/`itemName`/`quantityText`/`specification`/`sortOrder`/`ownerProfileId`/`dayNumber`/`eventDayDate` — all immutable after creation (spec Rule 3). */
-export type ChecklistItemPatch = Partial<{ isSourced: boolean; isOnSite: boolean; notes: string | null }>;
+/** Feature 020 reverses Feature 010 Rule 3: managers may now edit item details (Planner's edit guard exempts the Portal server's service-role writes). `sortOrder` stays server-controlled. */
+export type ChecklistItemPatch = Partial<{
+  isSourced: boolean;
+  isOnSite: boolean;
+  notes: string | null;
+  itemName: string;
+  category: string | null;
+  quantityText: string | null;
+  specification: string | null;
+  dayNumber: number | null;
+  eventDayDate: string | null;
+  ownerProfileId: string;
+}>;
 
 export class PlannerChecklistValidationError extends Error {
   code: 'invalid_request';
@@ -270,6 +281,19 @@ export async function updateChecklistItem(plannerEventId: number, itemId: number
   if (typeof patch.isSourced === 'boolean') updates.is_sourced = patch.isSourced;
   if (typeof patch.isOnSite === 'boolean') updates.is_on_site = patch.isOnSite;
   if ('notes' in patch) updates.notes = patch.notes ?? null;
+  if ('itemName' in patch) {
+    const itemName = patch.itemName?.trim();
+    if (!itemName) throw new PlannerChecklistValidationError('Item name is required.');
+    updates.item_name = itemName;
+  }
+  // `category` is NOT NULL in Planner — a cleared category falls back to Planner's own default label.
+  if ('category' in patch) updates.category = patch.category?.trim() || 'General';
+  if ('quantityText' in patch) updates.quantity_text = patch.quantityText ?? null;
+  if ('specification' in patch) updates.specification = patch.specification ?? null;
+  if ('dayNumber' in patch) updates.day_number = patch.dayNumber ?? null;
+  if ('eventDayDate' in patch) updates.event_day_date = patch.eventDayDate ?? null;
+  // Owner is never cleared: Planner-app status toggles refuse owner-less items (spec Rule 4).
+  if (patch.ownerProfileId) updates.owner_profile_id = patch.ownerProfileId;
 
   if (Object.keys(updates).length === 0) {
     throw new PlannerChecklistValidationError('At least one field is required.');
@@ -294,6 +318,23 @@ export async function deleteChecklistItem(plannerEventId: number, itemId: number
   const { data, error } = await planner.from('event_checklist_items').delete().eq('checklist_item_id', itemId).eq('event_id', plannerEventId).select('checklist_item_id').maybeSingle();
   if (error) throw error;
   if (!data) throw new PlannerChecklistNotFoundError('Checklist item not found.');
+}
+
+/**
+ * Feature 020 — bulk hard delete, manager-only (enforced by the route). Always scoped to
+ * `plannerEventId`; with `itemIds` only those ids (that belong to this event) are removed,
+ * otherwise every item of the event. Returns the number of rows actually deleted.
+ */
+export async function deleteChecklistItems(plannerEventId: number, itemIds?: number[]): Promise<number> {
+  const planner = getPlannerAdminClient();
+  let query = planner.from('event_checklist_items').delete().eq('event_id', plannerEventId);
+  if (itemIds) {
+    if (itemIds.length === 0) return 0;
+    query = query.in('checklist_item_id', itemIds);
+  }
+  const { data, error } = await query.select('checklist_item_id');
+  if (error) throw error;
+  return data?.length ?? 0;
 }
 
 /**

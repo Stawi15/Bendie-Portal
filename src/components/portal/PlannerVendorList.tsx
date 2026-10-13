@@ -31,6 +31,8 @@ type PlannerVendorListProps = {
   onToggleStage: (item: PlannerVendorItemClient, stage: 'isPacked' | 'isLoaded' | 'isOnSite', next: boolean) => void;
   onSaveNotes: (item: PlannerVendorItemClient, notes: string) => Promise<boolean>;
   onDelete: (item: PlannerVendorItemClient) => void;
+  /** Feature 020 — opens the add form pre-filled for this item. */
+  onEdit: (item: PlannerVendorItemClient) => void;
   /** Portal UX pass (016) — empty-state CTAs, manager-only, same actions already in the page header. */
   onAdd?: () => void;
   onImportCsv?: () => void;
@@ -39,12 +41,11 @@ type PlannerVendorListProps = {
 /**
  * Presentational vendor-item table, mirroring `PlannerTaskList.tsx`'s
  * established shape. Management controls (`canManage`) are driven exclusively
- * by server-derived capability — never a client-side inference. Category/
- * description/quantity/unit/sort-order have no edit affordance anywhere in
- * this component (spec.md FR-038) — only lifecycle toggles, notes, and
- * delete are ever mutable here.
+ * by server-derived capability — never a client-side inference. Item details
+ * are edited through the Edit row action, which opens `PlannerVendorModal` in
+ * edit mode (Feature 020); lifecycle toggles and notes stay inline here.
  */
-export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage, onSaveNotes, onDelete, onAdd, onImportCsv }: PlannerVendorListProps) {
+export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage, onSaveNotes, onDelete, onEdit, onAdd, onImportCsv }: PlannerVendorListProps) {
   const [notesDrafts, setNotesDrafts] = useState<Record<number, string>>({});
 
   const getNotesDraft = (item: PlannerVendorItemClient) => notesDrafts[item.id] ?? item.notes ?? '';
@@ -150,8 +151,11 @@ export function PlannerVendorList({ items, canManage, busyItemId, onToggleStage,
                   )}
                 </td>
                 {canManage && (
-                  <td className="px-4 sm:px-lg py-2.5 text-right">
-                    <button className="row-action-danger" onClick={() => onDelete(item)} disabled={isBusy}>
+                  <td className="px-4 sm:px-lg py-2.5 text-right space-x-2 whitespace-nowrap">
+                    <button className="row-action" onClick={() => onEdit(item)} disabled={isBusy} aria-label={`Edit ${item.description}`}>
+                      Edit
+                    </button>
+                    <button className="row-action-danger" onClick={() => onDelete(item)} disabled={isBusy} aria-label={`Delete ${item.description}`}>
                       Delete
                     </button>
                   </td>
