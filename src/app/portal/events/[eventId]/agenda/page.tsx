@@ -11,8 +11,24 @@ import { FormModal } from '@/components/portal/FormModal';
 import { getField, parseFlexibleDate, type ColumnSpec, type RowResult } from '@/lib/csvImport';
 import { moveItem } from '@/lib/reorder';
 import { useConfirm } from '@/contexts/ConfirmContext';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { friendlyError } from '@/lib/userFacingError';
+import { BreakoutRoomsEditor } from '@/components/portal/BreakoutRoomsEditor';
+import { BreakoutAssignmentsModal } from '@/components/portal/BreakoutAssignmentsModal';
+import {
+  BREAKOUT_MODE_LABELS,
+  newRoomForm,
+  normalizeName,
+  roomsFromRows,
+  sessionMatchKey,
+  toSaveRoomsPayload,
+  validateRoomForms,
+  type BreakoutRoomForm,
+  type BreakoutRoomItemRow,
+  type BreakoutRoomRow,
+} from '@/lib/breakoutRooms';
+import type { BreakoutMode, SaveBreakoutRoomsResult } from '@/types/database';
 
 type Session = {
   id: string;
@@ -26,8 +42,10 @@ type Session = {
   facilitator_id: string | null;
   accent_color: string | null;
   display_order: number;
-  breakout_rooms: unknown;
+  breakout_mode: BreakoutMode;
 };
+
+type AssignmentRow = { session_id: string; room_id: string; user_id: string };
 
 type Facilitator = { id: string; full_name: string | null; email: string | null };
 
@@ -67,56 +85,6 @@ type SessionSpeaker = {
   speaker_type: string;
 };
 
-// ─── Breakout rooms (agenda_sessions.breakout_rooms jsonb) ─────────────────
-
-type BreakoutAgendaItem = {
-  id: string;
-  title: string;
-  description: string;
-  starts_at: string; // datetime-local string while in form state, ISO when persisted
-  ends_at: string;
-  location: string;
-};
-
-type BreakoutRoom = {
-  id: string;
-  name: string;
-  description: string;
-  facilitator_name: string;
-  agenda: BreakoutAgendaItem[];
-};
-
-function parseBreakoutRooms(raw: unknown): BreakoutRoom[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((r) => ({
-    id: r?.id ?? crypto.randomUUID(),
-    name: r?.name ?? '',
-    description: r?.description ?? '',
-    facilitator_name: r?.facilitator_name ?? '',
-    agenda: Array.isArray(r?.agenda)
-      ? r.agenda.map((a: Partial<BreakoutAgendaItem>) => ({
-          id: a?.id ?? crypto.randomUUID(),
-          title: a?.title ?? '',
-          description: a?.description ?? '',
-          starts_at: toLocal(a?.starts_at || null),
-          ends_at: toLocal(a?.ends_at || null),
-          location: a?.location ?? '',
-        }))
-      : [],
-  }));
-}
-
-function serializeBreakoutRooms(rooms: BreakoutRoom[]): BreakoutRoom[] {
-  return rooms.map((r) => ({
-    ...r,
-    agenda: r.agenda.map((a) => ({
-      ...a,
-      starts_at: a.starts_at ? new Date(a.starts_at).toISOString() : '',
-      ends_at: a.ends_at ? new Date(a.ends_at).toISOString() : '',
-    })),
-  }));
-}
-
 type AgendaCsvRow = {
   rowIndex: number;
   title: string;
@@ -124,11 +92,15 @@ type AgendaCsvRow = {
   starts_at: string;
   ends_at: string;
   location: string | null;
-  block_type: string;
-  audience: string;
+  /** null = left blank (new sessions default to 'session'; updates keep the current value). */
+  block_type: string | null;
+  /** null = left blank (new sessions default to 'everyone'; updates keep the current value). */
+  audience: string | null;
   facilitator_id: string | null;
   facilitator_ids: string[];
   accent_color: string | null;
+  /** Feature 021 — set when this row is one room of a breakout session. */
+  room: { name: string; capacity?: number; facilitatorId?: string } | null;
 };
 
 const AGENDA_CSV_COLUMNS: ColumnSpec[] = [
@@ -142,6 +114,10 @@ const AGENDA_CSV_COLUMNS: ColumnSpec[] = [
   { key: 'speakers', label: 'Speaker(s) (name or email; semicolon-separated for multiple)' },
   { key: 'accent_color', label: 'Accent Color' },
   { key: 'description', label: 'Description' },
+  // Feature 021 — a breakout session is one row per room with the same title and times.
+  { key: 'breakout_room', label: 'Breakout room (blank = regular session)' },
+  { key: 'room_capacity', label: 'Room capacity (blank = no limit)' },
+  { key: 'room_facilitator', label: 'Room facilitator (speaker name or email)' },
 ];
 
 const AGENDA_CSV_SAMPLES: Record<string, string>[] = [
@@ -166,6 +142,34 @@ const AGENDA_CSV_SAMPLES: Record<string, string>[] = [
     speakers: '',
     accent_color: '',
     description: '',
+  },
+  {
+    title: 'Afternoon Breakouts',
+    starts_at: '2026-09-01 14:00',
+    ends_at: '2026-09-01 16:00',
+    location: '',
+    block_type: 'session',
+    audience: 'everyone',
+    speakers: '',
+    accent_color: '',
+    description: 'Choose one room.',
+    breakout_room: 'Room A: Innovation Lab',
+    room_capacity: '30',
+    room_facilitator: 'Jane Smith',
+  },
+  {
+    title: 'Afternoon Breakouts',
+    starts_at: '2026-09-01 14:00',
+    ends_at: '2026-09-01 16:00',
+    location: '',
+    block_type: 'session',
+    audience: 'everyone',
+    speakers: '',
+    accent_color: '',
+    description: '',
+    breakout_room: 'Room B: Leadership Circle',
+    room_capacity: '25',
+    room_facilitator: '',
   },
 ];
 
@@ -222,6 +226,7 @@ const BLOCK_ACCENT: Record<string, string> = {
 export default function AgendaPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const confirm = useConfirm();
+  const { isGlobalAdmin, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [facilitators, setFacilitators] = useState<Facilitator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,7 +235,17 @@ export default function AgendaPage() {
   const [form, setForm] = useState<SessionForm>(EMPTY_FORM);
   const [speakers, setSpeakers] = useState<SessionSpeaker[]>([]);
   const [originalSpeakerIds, setOriginalSpeakerIds] = useState<Set<string>>(new Set());
-  const [breakoutRooms, setBreakoutRooms] = useState<BreakoutRoom[]>([]);
+  // Feature 021 — rooms live in agenda_breakout_rooms/_items; assignments drive headcounts.
+  const [roomRows, setRoomRows] = useState<BreakoutRoomRow[]>([]);
+  const [itemRows, setItemRows] = useState<BreakoutRoomItemRow[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
+  const [attendeeIds, setAttendeeIds] = useState<Set<string>>(new Set());
+  const [breakoutRooms, setBreakoutRooms] = useState<BreakoutRoomForm[]>([]);
+  const [breakoutMode, setBreakoutMode] = useState<BreakoutMode>('attendee_choice');
+  const [isBreakout, setIsBreakout] = useState(false);
+  const [peopleSession, setPeopleSession] = useState<Session | null>(null);
+  // Feature 021 FR-034 — which controls this person can use (null while checking; fails closed).
+  const [rights, setRights] = useState<{ canEditSessions: boolean; canManageBreakouts: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [csvOpen, setCsvOpen] = useState(false);
@@ -240,17 +255,69 @@ export default function AgendaPage() {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const fetchData = async () => {
-    const [sessRes, facRes] = await Promise.all([
-      supabase.from('agenda_sessions').select('id,title,description,starts_at,ends_at,location,block_type,audience,facilitator_id,accent_color,display_order,breakout_rooms').eq('event_id', eventId).order('starts_at'),
+    const [sessRes, facRes, roomRes, itemRes, assignRes, attendeeRes] = await Promise.all([
+      supabase.from('agenda_sessions').select('id,title,description,starts_at,ends_at,location,block_type,audience,facilitator_id,accent_color,display_order,breakout_mode').eq('event_id', eventId).order('starts_at'),
       supabase.from('facilitators').select('id,full_name,email').eq('event_id', eventId).order('display_order'),
+      supabase.from('agenda_breakout_rooms').select('id,session_id,name,description,location,facilitator_id,facilitator_name,capacity,display_order').eq('event_id', eventId).order('display_order'),
+      supabase.from('agenda_breakout_room_items').select('id,room_id,title,description,starts_at,ends_at,location,display_order').eq('event_id', eventId).order('display_order'),
+      supabase.from('agenda_breakout_assignments').select('session_id,room_id,user_id').eq('event_id', eventId),
+      supabase.from('event_members').select('user_id').eq('event_id', eventId).eq('role', 'attendee'),
     ]);
     if (sessRes.error) toast.error('Failed to load agenda');
     else setSessions(sessRes.data ?? []);
     setFacilitators(facRes.data ?? []);
+    if (roomRes.error || itemRes.error) toast.error('Failed to load breakout rooms');
+    // Headcounts and the remove-room warning depend on these; say so rather than showing 0.
+    if (assignRes.error || attendeeRes.error) toast.error('We couldn’t load who is in each room, so room headcounts may be wrong. Refresh to try again.');
+    if (facRes.error) toast.error('Failed to load speakers');
+    setRoomRows(roomRes.data ?? []);
+    setItemRows(itemRes.data ?? []);
+    setAssignments(assignRes.data ?? []);
+    setAttendeeIds(new Set((attendeeRes.data ?? []).map((m) => m.user_id)));
     setLoading(false);
   };
 
   useEffect(() => { if (eventId) fetchData(); }, [eventId]);
+
+  // FR-034: platform admin or organisation admin edits sessions; event hosts/organisers also manage breakouts.
+  useEffect(() => {
+    if (!eventId || authLoading) return;
+    if (isGlobalAdmin) {
+      setRights({ canEditSessions: true, canManageBreakouts: true });
+      return;
+    }
+    let cancelled = false;
+    setRights(null);
+    Promise.all([
+      supabase.rpc('is_event_org_admin', { ev_id: eventId }),
+      supabase.rpc('is_event_host_or_organizer', { ev_id: eventId }),
+    ]).then(([orgAdmin, organizer]) => {
+      if (cancelled) return;
+      if (orgAdmin.error || organizer.error) {
+        toast.error('We couldn’t check your permissions, so the agenda is read-only. Refresh to try again.');
+        setRights({ canEditSessions: false, canManageBreakouts: false });
+        return;
+      }
+      const canEditSessions = orgAdmin.data === true;
+      setRights({ canEditSessions, canManageBreakouts: canEditSessions || organizer.data === true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, isGlobalAdmin, authLoading]);
+
+  const canEditSessions = rights?.canEditSessions === true;
+  const canManageBreakouts = rights?.canManageBreakouts === true;
+
+  const roomsBySession = new Map<string, BreakoutRoomRow[]>();
+  for (const r of roomRows) roomsBySession.set(r.session_id, [...(roomsBySession.get(r.session_id) ?? []), r]);
+  // Headcount = current attendees only; the delete warning counts every assignment (Feature 021 R6).
+  const headcountByRoom: Record<string, number> = {};
+  const assignedTotalByRoom: Record<string, number> = {};
+  for (const a of assignments) {
+    assignedTotalByRoom[a.room_id] = (assignedTotalByRoom[a.room_id] ?? 0) + 1;
+    if (attendeeIds.has(a.user_id)) headcountByRoom[a.room_id] = (headcountByRoom[a.room_id] ?? 0) + 1;
+  }
 
   const openAdd = () => {
     setEditing(null);
@@ -258,9 +325,34 @@ export default function AgendaPage() {
     setSpeakers([]);
     setOriginalSpeakerIds(new Set());
     setBreakoutRooms([]);
+    setBreakoutMode('attendee_choice');
+    setIsBreakout(false);
     setFieldErrors({});
     setMoreOpen(false);
     setShowForm(true);
+  };
+
+  const handleFormatChange = async (toBreakout: boolean) => {
+    if (toBreakout === isBreakout) return;
+    if (toBreakout) {
+      setIsBreakout(true);
+      if (breakoutRooms.length === 0) setBreakoutRooms([newRoomForm()]);
+      return;
+    }
+    if (breakoutRooms.length > 0) {
+      const people = breakoutRooms.reduce((n, r) => n + (r.isNew ? 0 : assignedTotalByRoom[r.id] ?? 0), 0);
+      const ok = await confirm({
+        title: 'Make this a regular session',
+        message: `This removes its ${breakoutRooms.length} breakout room${breakoutRooms.length !== 1 ? 's' : ''}${
+          people > 0 ? ` and unassigns ${people} ${people === 1 ? 'person' : 'people'}` : ''
+        } when you save.`,
+        confirmLabel: 'Remove rooms',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    setBreakoutRooms([]);
+    setIsBreakout(false);
   };
 
   const openEdit = async (s: Session) => {
@@ -271,10 +363,13 @@ export default function AgendaPage() {
       block_type: s.block_type ?? 'session', audience: s.audience,
       accent_color: s.accent_color ?? '',
     });
-    setBreakoutRooms(parseBreakoutRooms(s.breakout_rooms));
+    const sessionRooms = roomsBySession.get(s.id) ?? [];
+    setBreakoutRooms(roomsFromRows(sessionRooms, itemRows.filter((i) => sessionRooms.some((r) => r.id === i.room_id))));
+    setBreakoutMode(s.breakout_mode ?? 'attendee_choice');
+    setIsBreakout(sessionRooms.length > 0);
     setFieldErrors({});
     // Never hide settings this session already uses.
-    setMoreOpen((s.audience && s.audience !== 'everyone') || !!s.accent_color || parseBreakoutRooms(s.breakout_rooms).length > 0);
+    setMoreOpen((s.audience && s.audience !== 'everyone') || !!s.accent_color);
     setSpeakers([]);
     setOriginalSpeakerIds(new Set());
     setShowForm(true);
@@ -305,29 +400,6 @@ export default function AgendaPage() {
   const handleChangeSpeakerType = (key: string, speakerType: string) =>
     setSpeakers(prev => prev.map(s => (s.key === key ? { ...s, speaker_type: speakerType } : s)));
 
-  // Breakout room handlers
-  const handleAddRoom = () =>
-    setBreakoutRooms(prev => [...prev, { id: crypto.randomUUID(), name: '', description: '', facilitator_name: '', agenda: [] }]);
-  const handleRemoveRoom = (roomId: string) => setBreakoutRooms(prev => prev.filter(r => r.id !== roomId));
-  const handleMoveRoom = (roomId: string, direction: 'up' | 'down') =>
-    setBreakoutRooms(prev => moveItem(prev, prev.findIndex(r => r.id === roomId), direction));
-  const handleChangeRoomField = (roomId: string, field: 'name' | 'description' | 'facilitator_name', value: string) =>
-    setBreakoutRooms(prev => prev.map(r => (r.id === roomId ? { ...r, [field]: value } : r)));
-  const handleAddAgendaItem = (roomId: string) =>
-    setBreakoutRooms(prev => prev.map(r => (r.id === roomId
-      ? { ...r, agenda: [...r.agenda, { id: crypto.randomUUID(), title: '', description: '', starts_at: '', ends_at: '', location: '' }] }
-      : r)));
-  const handleRemoveAgendaItem = (roomId: string, itemId: string) =>
-    setBreakoutRooms(prev => prev.map(r => (r.id === roomId ? { ...r, agenda: r.agenda.filter(a => a.id !== itemId) } : r)));
-  const handleMoveAgendaItem = (roomId: string, itemId: string, direction: 'up' | 'down') =>
-    setBreakoutRooms(prev => prev.map(r => (r.id === roomId
-      ? { ...r, agenda: moveItem(r.agenda, r.agenda.findIndex(a => a.id === itemId), direction) }
-      : r)));
-  const handleChangeAgendaItemField = (roomId: string, itemId: string, field: keyof BreakoutAgendaItem, value: string) =>
-    setBreakoutRooms(prev => prev.map(r => (r.id === roomId
-      ? { ...r, agenda: r.agenda.map(a => (a.id === itemId ? { ...a, [field]: value } : a)) }
-      : r)));
-
   const handleSave = async (keepOpen = false) => {
     const errors: { title?: string; starts_at?: string; ends_at?: string } = {};
     if (!form.title.trim()) errors.title = 'Give the session a title.';
@@ -336,12 +408,12 @@ export default function AgendaPage() {
     else if (form.starts_at && new Date(form.ends_at) <= new Date(form.starts_at)) errors.ends_at = 'The end must be after the start.';
     setFieldErrors(errors);
     if (errors.title || errors.starts_at || errors.ends_at) return;
-    for (const room of breakoutRooms) {
-      if (!room.name.trim()) { setMoreOpen(true); toast.error('Every breakout room needs a name'); return; }
-      for (const item of room.agenda) {
-        if (!item.title.trim()) { setMoreOpen(true); toast.error(`Every time block in "${room.name}" needs a title`); return; }
-      }
+    if (isBreakout && breakoutRooms.length === 0) {
+      toast.error('A breakout session needs at least one room — add a room, or choose Regular session.');
+      return;
     }
+    const roomProblem = validateRoomForms(breakoutRooms);
+    if (roomProblem) { toast.error(roomProblem); return; }
 
     setSaving(true);
 
@@ -355,7 +427,9 @@ export default function AgendaPage() {
       audience: form.audience || 'everyone',
       facilitator_id: speakers[0]?.facilitator_id ?? null,
       accent_color: form.accent_color || null,
-      breakout_rooms: breakoutRooms.length > 0 ? serializeBreakoutRooms(breakoutRooms) : null,
+      // Rooms themselves are saved below through save_breakout_rooms (Feature 021); the
+      // session's breakout_rooms JSON is derived by the database and never written here.
+      breakout_mode: breakoutRooms.length > 0 ? breakoutMode : 'attendee_choice',
     };
 
     let sessionId: string | null = editing?.id ?? null;
@@ -392,7 +466,49 @@ export default function AgendaPage() {
       }
     }
 
-    toast.success(editing ? 'Session updated' : 'Session added');
+    let removedPeople = 0;
+    const hadRooms = !!editing && (roomsBySession.get(editing.id)?.length ?? 0) > 0;
+    if (sessionId && (breakoutRooms.length > 0 || hadRooms)) {
+      const { data, error } = await supabase.rpc('save_breakout_rooms', {
+        p_session_id: sessionId,
+        p_rooms: toSaveRoomsPayload(breakoutRooms),
+        p_prune: true,
+      });
+      const result = data as SaveBreakoutRoomsResult | null;
+      if (error || !result || !result.ok) {
+        const failure = result && !result.ok ? result : null;
+        const message = error
+          ? friendlyError(error, 'The breakout rooms couldn’t be saved — try again.')
+          : failure?.reason === 'no_event'
+            ? 'Breakout rooms need a session that belongs to an event.'
+            : failure?.message ?? 'The breakout rooms couldn’t be saved — try again.';
+        toast.error(`Session saved, but the rooms weren’t: ${message}`);
+        // Keep the form open with the organiser's room edits; the session row now exists.
+        if (!editing && sessionId) {
+          const { data: created } = await supabase.from('agenda_sessions').select('id,title,description,starts_at,ends_at,location,block_type,audience,facilitator_id,accent_color,display_order,breakout_mode').eq('id', sessionId).maybeSingle();
+          if (created) setEditing(created);
+          // Speakers were inserted already; reload them so a retry updates instead of re-adding.
+          const { data: savedSpeakers } = await supabase
+            .from('agenda_session_speakers')
+            .select('id,facilitator_id,speaker_type,display_order')
+            .eq('session_id', sessionId)
+            .order('display_order');
+          const loaded: SessionSpeaker[] = (savedSpeakers ?? []).map((row) => ({
+            key: row.id, dbId: row.id, facilitator_id: row.facilitator_id, speaker_type: row.speaker_type,
+          }));
+          setSpeakers(loaded);
+          setOriginalSpeakerIds(new Set(loaded.map((l) => l.dbId as string)));
+        }
+        fetchData();
+        setSaving(false);
+        return;
+      }
+      removedPeople = result.removed_assignments;
+    }
+
+    toast.success(
+      `${editing ? 'Session updated' : 'Session added'}${removedPeople > 0 ? ` — ${removedPeople} ${removedPeople === 1 ? 'person' : 'people'} unassigned from removed rooms` : ''}`
+    );
     if (keepOpen && !editing) {
       // Feature 016 — Save & Add Another: the next session usually follows this one in the
       // same place, so it starts when this one ended (same length) with the same type and
@@ -403,6 +519,8 @@ export default function AgendaPage() {
       setSpeakers([]);
       setOriginalSpeakerIds(new Set());
       setBreakoutRooms([]);
+      setBreakoutMode('attendee_choice');
+      setIsBreakout(false);
       setFieldErrors({});
     } else {
       setShowForm(false);
@@ -433,7 +551,6 @@ export default function AgendaPage() {
     if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) errors.push('ends_at must be after starts_at');
 
     const blockTypeRaw = getField(raw, 'block_type').toLowerCase();
-    const blockType = blockTypeRaw || 'session';
     if (blockTypeRaw && !BLOCK_TYPES.includes(blockTypeRaw)) {
       errors.push(`block_type must be one of: ${BLOCK_TYPES.join(', ')}`);
     }
@@ -458,6 +575,29 @@ export default function AgendaPage() {
       }
     }
 
+    // Feature 021 — breakout room columns (one row per room; same title and times on each row).
+    let room: AgendaCsvRow['room'] = null;
+    const roomName = getField(raw, 'breakout_room');
+    const roomCapacityRaw = getField(raw, 'room_capacity');
+    const roomFacilitatorRaw = getField(raw, 'room_facilitator');
+    if (roomName) {
+      if (roomName.length > 200) errors.push('breakout_room must be 200 characters or fewer');
+      room = { name: roomName };
+      if (roomCapacityRaw) {
+        if (!/^[1-9]\d*$/.test(roomCapacityRaw)) errors.push('room_capacity must be a whole number of 1 or more (or blank for no limit)');
+        else room.capacity = Number(roomCapacityRaw);
+      }
+      if (roomFacilitatorRaw) {
+        const f = facilitators.find(
+          (x) => normalizeName(x.full_name ?? '') === normalizeName(roomFacilitatorRaw) || normalizeName(x.email ?? '') === normalizeName(roomFacilitatorRaw)
+        );
+        if (!f) errors.push(`Room facilitator "${roomFacilitatorRaw}" not found — add them on the Speakers tab first`);
+        else room.facilitatorId = f.id;
+      }
+    } else if (roomCapacityRaw || roomFacilitatorRaw) {
+      errors.push('breakout_room is required when room_capacity or room_facilitator is filled');
+    }
+
     const data: AgendaCsvRow = {
       rowIndex,
       title,
@@ -465,35 +605,185 @@ export default function AgendaPage() {
       starts_at: startsAt?.toISOString() ?? '',
       ends_at: endsAt?.toISOString() ?? '',
       location: getField(raw, 'location') || null,
-      block_type: blockType,
-      audience: getField(raw, 'audience') || 'everyone',
+      block_type: blockTypeRaw || null,
+      audience: getField(raw, 'audience') || null,
       facilitator_id: facilitatorIds[0] ?? null,
       facilitator_ids: facilitatorIds,
       accent_color: accentColor || null,
+      room,
     };
 
     return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
   };
 
-  const importAgendaRow = async (row: AgendaCsvRow) => {
-    const { rowIndex, facilitator_ids, ...rest } = row;
-    const { data, error } = await supabase.from('agenda_sessions').insert({
-      event_id: eventId,
-      ...rest,
-      display_order: sessions.length + rowIndex,
-    }).select('id').single();
-    if (error) return { error: error.message };
-
-    if (facilitator_ids.length > 0) {
-      const { error: speakerError } = await supabase.from('agenda_session_speakers').insert(
-        facilitator_ids.map((facilitatorId, i) => ({
-          session_id: data.id, facilitator_id: facilitatorId, speaker_type: 'speaker', display_order: i,
-        }))
-      );
-      if (speakerError) return { error: `Session imported but speaker link failed: ${speakerError.message}` };
+  /**
+   * Feature 021 — rows with the same title and start are one session. Several rows only make sense
+   * for a breakout (one row per room); their session details must not disagree.
+   */
+  const refineAgendaCsv = (results: RowResult<AgendaCsvRow>[]): RowResult<AgendaCsvRow>[] => {
+    const groups = new Map<string, RowResult<AgendaCsvRow>[]>();
+    for (const r of results) {
+      if (!r.data) continue;
+      const key = sessionMatchKey(r.data.title, r.data.starts_at);
+      groups.set(key, [...(groups.get(key) ?? []), r]);
     }
+    const extraErrors = new Map<number, string[]>();
+    const add = (rowIndex: number, message: string) => extraErrors.set(rowIndex, [...(extraErrors.get(rowIndex) ?? []), message]);
+    for (const rows of groups.values()) {
+      if (rows.length < 2) continue;
+      if (rows.some((r) => !r.data!.room)) {
+        for (const r of rows) add(r.rowIndex, `"${r.data!.title}" appears more than once at the same start — for a breakout, fill breakout_room on every row; otherwise remove the extra row`);
+        continue;
+      }
+      const seenRooms = new Set<string>();
+      const first = rows[0].data!;
+      // Compare each detail with the first row that fills it in (T035), not only the first row.
+      const firstFilled: Partial<Record<'location' | 'description' | 'block_type' | 'audience' | 'accent_color' | 'speakers', string>> = {};
+      for (const r of rows) {
+        const d = r.data!;
+        const roomKey = normalizeName(d.room!.name);
+        if (seenRooms.has(roomKey)) add(r.rowIndex, `Room "${d.room!.name}" is listed twice for "${d.title}"`);
+        seenRooms.add(roomKey);
+        if (d.ends_at !== first.ends_at) add(r.rowIndex, `ends_at differs from the first row of "${d.title}" — every room of a breakout shares the session's times`);
+        for (const field of ['location', 'description', 'block_type', 'audience', 'accent_color'] as const) {
+          const value = d[field];
+          if (!value) continue;
+          if (firstFilled[field] === undefined) firstFilled[field] = value;
+          else if (firstFilled[field] !== value) add(r.rowIndex, `${field} differs from an earlier row of "${d.title}" — fill it in on one row only`);
+        }
+        if (d.facilitator_ids.length > 0) {
+          const speakers = d.facilitator_ids.join();
+          if (firstFilled.speakers === undefined) firstFilled.speakers = speakers;
+          else if (firstFilled.speakers !== speakers) add(r.rowIndex, `speakers differ from an earlier row of "${d.title}" — fill them in on one row only`);
+        }
+      }
+    }
+    return results.map((r) => (extraErrors.has(r.rowIndex) ? { ...r, data: undefined, errors: [...r.errors, ...extraErrors.get(r.rowIndex)!] } : r));
+  };
 
-    return { error: undefined };
+  /**
+   * Sets a session's speakers to `speakerIds` (in order) for a spreadsheet update. Existing links
+   * are kept (and re-ordered), new ones inserted, and only after that succeeds are the links that
+   * are no longer listed deleted — a failure part-way leaves the old speakers in place.
+   * Returns an error message, or null.
+   */
+  const replaceSessionSpeakers = async (sessionId: string, speakerIds: string[]): Promise<string | null> => {
+    const { data: existing, error: loadError } = await supabase
+      .from('agenda_session_speakers')
+      .select('id,facilitator_id')
+      .eq('session_id', sessionId);
+    if (loadError) return friendlyError(loadError);
+    const byFacilitator = new Map((existing ?? []).map((row) => [row.facilitator_id, row.id]));
+    for (let i = 0; i < speakerIds.length; i++) {
+      const linkId = byFacilitator.get(speakerIds[i]);
+      const { error } = linkId
+        ? await supabase.from('agenda_session_speakers').update({ display_order: i }).eq('id', linkId)
+        : await supabase.from('agenda_session_speakers').insert({ session_id: sessionId, facilitator_id: speakerIds[i], speaker_type: 'speaker', display_order: i });
+      if (error) return friendlyError(error);
+    }
+    const toRemove = (existing ?? []).filter((row) => !speakerIds.includes(row.facilitator_id)).map((row) => row.id);
+    if (toRemove.length > 0) {
+      const { error } = await supabase.from('agenda_session_speakers').delete().in('id', toRemove);
+      if (error) return friendlyError(error);
+    }
+    return null;
+  };
+
+  /**
+   * Feature 021 — imports the agenda spreadsheet session by session. A session whose title and start
+   * match an existing one is updated (blank cells keep current values) instead of duplicated; rows
+   * with breakout_room become that session's rooms.
+   */
+  const importAgendaAll = async (rows: AgendaCsvRow[]) => {
+    const groups = new Map<string, AgendaCsvRow[]>();
+    for (const r of rows) {
+      const key = sessionMatchKey(r.title, r.starts_at);
+      groups.set(key, [...(groups.get(key) ?? []), r]);
+    }
+    const outcomes: { rowIndex: number; error?: string; notice?: string }[] = [];
+    let newCount = 0;
+    for (const [key, groupRows] of groups) {
+      const report = (error?: string, notice?: string) => groupRows.forEach((r) => outcomes.push({ rowIndex: r.rowIndex, error, notice }));
+      // Session details come from the first row that fills each field.
+      const pick = <K extends keyof AgendaCsvRow>(field: K) => groupRows.find((r) => r[field])?.[field] ?? null;
+      const first = groupRows[0];
+      const speakerIds = groupRows.find((r) => r.facilitator_ids.length > 0)?.facilitator_ids ?? [];
+      const matches = sessions.filter((s) => sessionMatchKey(s.title, s.starts_at) === key);
+      if (matches.length > 1) {
+        report(`More than one session "${first.title}" already starts at this time — rename one in the agenda so they can be told apart`);
+        continue;
+      }
+
+      let sessionId: string;
+      let notice: string | undefined;
+      if (matches.length === 1) {
+        const patch: Record<string, unknown> = { ends_at: first.ends_at };
+        for (const field of ['description', 'location', 'block_type', 'audience', 'accent_color'] as const) {
+          const value = pick(field);
+          if (value) patch[field] = value;
+        }
+        if (speakerIds.length > 0) patch.facilitator_id = speakerIds[0];
+        const { error } = await supabase.from('agenda_sessions').update(patch).eq('id', matches[0].id);
+        if (error) { report(friendlyError(error, 'This session couldn’t be updated.')); continue; }
+        sessionId = matches[0].id;
+        notice = 'Updated the existing session';
+        if (speakerIds.length > 0) {
+          // Replace speakers without ever leaving the session speakerless: keep/reorder the links that
+          // stay, add the new ones, and only then remove links that are no longer listed.
+          const speakerError = await replaceSessionSpeakers(sessionId, speakerIds);
+          if (speakerError) { report(`Session updated but its speakers couldn’t be: ${speakerError}`); continue; }
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('agenda_sessions')
+          .insert({
+            event_id: eventId,
+            title: first.title,
+            starts_at: first.starts_at,
+            ends_at: first.ends_at,
+            description: pick('description'),
+            location: pick('location'),
+            block_type: pick('block_type') ?? 'session',
+            audience: pick('audience') ?? 'everyone',
+            accent_color: pick('accent_color'),
+            facilitator_id: speakerIds[0] ?? null,
+            display_order: sessions.length + newCount,
+          })
+          .select('id')
+          .single();
+        if (error) { report(friendlyError(error, 'This session couldn’t be added.')); continue; }
+        sessionId = data.id;
+        newCount += 1;
+        if (speakerIds.length > 0) {
+          const { error: speakerError } = await supabase.from('agenda_session_speakers').insert(
+            speakerIds.map((facilitatorId, i) => ({ session_id: sessionId, facilitator_id: facilitatorId, speaker_type: 'speaker', display_order: i }))
+          );
+          if (speakerError) { report(`Session added but its speakers couldn’t be: ${friendlyError(speakerError)}`); continue; }
+        }
+      }
+
+      const roomRowsInFile = groupRows.filter((r) => r.room);
+      if (roomRowsInFile.length > 0) {
+        const { data, error } = await supabase.rpc('save_breakout_rooms', {
+          p_session_id: sessionId,
+          p_rooms: roomRowsInFile.map((r) => ({
+            name: r.room!.name,
+            ...(r.room!.capacity !== undefined ? { capacity: r.room!.capacity } : {}),
+            ...(r.room!.facilitatorId ? { facilitator_id: r.room!.facilitatorId } : {}),
+          })),
+          p_prune: false,
+        });
+        const result = data as SaveBreakoutRoomsResult | null;
+        const failure = result && !result.ok ? result : null;
+        if (error || !result || failure) {
+          report(`Session saved but its rooms weren’t: ${error ? friendlyError(error) : failure?.message ?? 'try again'}`);
+          continue;
+        }
+        notice = `${notice ? `${notice}; ` : ''}${roomRowsInFile.length} breakout room${roomRowsInFile.length !== 1 ? 's' : ''}`;
+      }
+      report(undefined, notice);
+    }
+    return outcomes;
   };
 
   const searched = sessions.filter(s => {
@@ -533,14 +823,18 @@ export default function AgendaPage() {
           sectionKey="agenda"
           desc={sessions.length === 0 ? undefined : `${sessions.length} session${sessions.length !== 1 ? 's' : ''} across ${allDateCount} day${allDateCount !== 1 ? 's' : ''}`}
         />
-        <div className="flex gap-2 flex-shrink-0">
-          <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
-          </button>
-          <button onClick={openAdd} className="btn-primary">
-            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
-          </button>
-        </div>
+        {rights === null ? (
+          <div className="h-9 w-56 rounded-lg bg-surface-container-low animate-pulse" aria-hidden="true" />
+        ) : canEditSessions ? (
+          <div className="flex gap-2 flex-shrink-0">
+            <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
+            </button>
+            <button onClick={openAdd} className="btn-primary">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {/* Form modal */}
@@ -602,6 +896,48 @@ export default function AgendaPage() {
             </div>
           </div>
 
+          {/* Feature 021 — a session is either regular (everyone together) or a breakout that splits
+              into parallel rooms; the room editor only appears for breakouts. */}
+          <fieldset className="border-t border-outline-variant mt-4 pt-3">
+            <legend className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-2">Session format</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {([
+                { value: false, icon: 'groups', label: 'Regular session', hint: 'Everyone attends together.' },
+                { value: true, icon: 'meeting_room', label: 'Breakout session', hint: 'Splits into parallel rooms; each attendee goes to one.' },
+              ] as const).map((opt) => (
+                <label
+                  key={opt.label}
+                  className={`flex items-start gap-2 rounded-xl border p-3 cursor-pointer transition ${
+                    isBreakout === opt.value ? 'border-primary/40 bg-primary/5' : 'border-outline-variant hover:border-primary/30'
+                  }`}
+                >
+                  <input type="radio" name="session-format" className="mt-1" checked={isBreakout === opt.value} onChange={() => handleFormatChange(opt.value)} />
+                  <span className="material-symbols-outlined text-[20px] text-on-surface-variant mt-0.5" aria-hidden="true">{opt.icon}</span>
+                  <span>
+                    <span className="block text-sm font-medium text-on-surface">{opt.label}</span>
+                    <span className="block text-xs text-on-surface-variant">{opt.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {isBreakout && (
+              <BreakoutRoomsEditor
+                rooms={breakoutRooms}
+                onChange={setBreakoutRooms}
+                facilitators={facilitators}
+                mode={breakoutMode}
+                onModeChange={setBreakoutMode}
+                headcounts={headcountByRoom}
+                assignedTotal={assignedTotalByRoom}
+              />
+            )}
+            {isBreakout && editing && (roomsBySession.get(editing.id)?.length ?? 0) > 0 && (
+              <button type="button" className="btn-secondary text-sm mt-3" onClick={() => setPeopleSession(editing)}>
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">group</span> Manage people in these rooms
+              </button>
+            )}
+          </fieldset>
+
           <SpeakersPanel
             facilitators={facilitators}
             speakers={speakers}
@@ -611,13 +947,13 @@ export default function AgendaPage() {
             onChangeType={handleChangeSpeakerType}
           />
 
-          {/* Feature 016 density pass — rarer settings (audience, accent colour, breakout rooms)
+          {/* Feature 016 density pass — rarer settings (audience, accent colour)
               behind a disclosure; opened automatically when the session already uses them. */}
           <details className="border-t border-outline-variant mt-4 pt-3 group" open={moreOpen} onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)}>
             <summary className="cursor-pointer select-none text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide flex items-center gap-1">
               <span className="material-symbols-outlined text-[18px] transition-transform group-open:rotate-90" aria-hidden="true">chevron_right</span>
               More options
-              <span className="normal-case tracking-normal font-normal text-xs text-on-surface-variant/80 ml-1">Audience, accent colour, breakout rooms</span>
+              <span className="normal-case tracking-normal font-normal text-xs text-on-surface-variant/80 ml-1">Audience, accent colour</span>
             </summary>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 mt-3">
               <div>
@@ -640,17 +976,6 @@ export default function AgendaPage() {
                 />
               </div>
             </div>
-            <BreakoutRoomsPanel
-              rooms={breakoutRooms}
-              onAddRoom={handleAddRoom}
-              onRemoveRoom={handleRemoveRoom}
-              onMoveRoom={handleMoveRoom}
-              onChangeRoomField={handleChangeRoomField}
-              onAddAgendaItem={handleAddAgendaItem}
-              onRemoveAgendaItem={handleRemoveAgendaItem}
-              onMoveAgendaItem={handleMoveAgendaItem}
-              onChangeAgendaItemField={handleChangeAgendaItemField}
-            />
           </details>
 
           <div className="flex gap-3 mt-4 pt-4 border-t border-outline-variant flex-wrap">
@@ -671,16 +996,20 @@ export default function AgendaPage() {
           <p className="material-symbols-outlined text-5xl text-on-surface-variant/30 mb-2" aria-hidden="true">calendar_month</p>
           <p className="font-medium text-on-surface">No sessions yet</p>
           <p className="text-sm text-on-surface-variant mt-1 max-w-md mx-auto">
-            Build the programme attendees see in the app&apos;s Agenda. Add sessions one by one, or bring in your whole schedule from a spreadsheet.
+            {canEditSessions
+              ? 'Build the programme attendees see in the app’s Agenda. Add sessions one by one, or bring in your whole schedule from a spreadsheet.'
+              : 'The programme attendees see in the app’s Agenda will appear here.'}
           </p>
-          <div className="flex flex-wrap justify-center gap-2 mt-4">
-            <button onClick={openAdd} className="btn-primary">
-              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
-            </button>
-            <button onClick={() => setCsvOpen(true)} className="btn-secondary">
-              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
-            </button>
-          </div>
+          {canEditSessions && (
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              <button onClick={openAdd} className="btn-primary">
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span> Add session
+              </button>
+              <button onClick={() => setCsvOpen(true)} className="btn-secondary">
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span> Import spreadsheet
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div>
@@ -740,7 +1069,8 @@ export default function AgendaPage() {
                 {filtered.map(s => {
                   const fac = facilitators.find(f => f.id === s.facilitator_id);
                   const accent = s.accent_color || (s.block_type ? BLOCK_ACCENT[s.block_type] : undefined) || '#3B82F6';
-                  const roomCount = parseBreakoutRooms(s.breakout_rooms).length;
+                  const sessionRooms = roomsBySession.get(s.id) ?? [];
+                  const roomCount = sessionRooms.length;
                   return (
                     <li
                       key={s.id}
@@ -751,14 +1081,18 @@ export default function AgendaPage() {
                         {formatTimeOnly(s.starts_at)}–{formatTimeOnly(s.ends_at)}
                       </p>
                       <div className="min-w-0 row-start-2 col-start-1 md:row-auto md:col-auto">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(s)}
-                          className="text-left text-sm font-semibold text-on-surface hover:text-primary truncate max-w-full block focus-visible:outline-none focus-visible:underline"
-                          title={`Edit ${s.title}`}
-                        >
-                          {s.title}
-                        </button>
+                        {canEditSessions ? (
+                          <button
+                            type="button"
+                            onClick={() => openEdit(s)}
+                            className="text-left text-sm font-semibold text-on-surface hover:text-primary truncate max-w-full block focus-visible:outline-none focus-visible:underline"
+                            title={`Edit ${s.title}`}
+                          >
+                            {s.title}
+                          </button>
+                        ) : (
+                          <p className="text-sm font-semibold text-on-surface truncate">{s.title}</p>
+                        )}
                         <div className="flex items-center gap-1.5 mt-0.5">
                           {s.block_type && (
                             <span className={`inline-block text-[10px] font-bold uppercase tracking-wider px-1.5 py-px rounded ${BLOCK_COLOR[s.block_type] ?? 'bg-surface-container-low text-on-surface-variant'}`}>
@@ -766,15 +1100,25 @@ export default function AgendaPage() {
                             </span>
                           )}
                           {roomCount > 0 && (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider px-1.5 py-px rounded bg-purple-100 text-purple-700">
-                              <span className="material-symbols-outlined text-[12px]" aria-hidden="true">meeting_room</span> {roomCount} room{roomCount !== 1 ? 's' : ''}
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider px-1.5 py-px rounded bg-tertiary-fixed text-on-tertiary-fixed-variant">
+                              <span className="material-symbols-outlined text-[12px]" aria-hidden="true">meeting_room</span> Breakout · {roomCount} room{roomCount !== 1 ? 's' : ''}
                             </span>
                           )}
+                          {roomCount > 0 && (
+                            <span className="text-[11px] text-on-surface-variant">{BREAKOUT_MODE_LABELS[s.breakout_mode]?.label}</span>
+                          )}
                         </div>
+                        {roomCount > 0 && (
+                          <p className="text-xs text-on-surface-variant truncate mt-0.5" title={sessionRooms.map((r) => r.name).join(' · ')}>
+                            {sessionRooms.map((r) => r.name).join(' · ')}
+                          </p>
+                        )}
                       </div>
                       <p className="text-sm text-on-surface-variant truncate row-start-3 col-start-1 md:row-auto md:col-auto">
                         <span className="md:hidden material-symbols-outlined text-[14px] align-[-2px] mr-0.5" aria-hidden="true">location_on</span>
-                        {s.location || <span className="text-on-surface-variant/50">—</span>}
+                        {s.location || (roomCount > 0
+                          ? `${roomCount} room${roomCount !== 1 ? 's' : ''}`
+                          : <span className="text-on-surface-variant/50">—</span>)}
                       </p>
                       <div className="flex items-center gap-2 min-w-0 row-start-4 col-start-1 md:row-auto md:col-auto">
                         {fac ? (
@@ -787,13 +1131,22 @@ export default function AgendaPage() {
                         )}
                       </div>
                       <div className="row-start-1 col-start-2 md:row-auto md:col-auto justify-self-end">
-                        <RowActionsMenu
-                          label={`Actions for ${s.title}`}
-                          actions={[
-                            { label: 'Edit', icon: 'edit', onSelect: () => openEdit(s) },
-                            { label: 'Delete', icon: 'delete', destructive: true, onSelect: () => handleDelete(s.id, s.title) },
-                          ]}
-                        />
+                        {(canEditSessions || (canManageBreakouts && roomCount > 0)) && (
+                          <RowActionsMenu
+                            label={`Actions for ${s.title}`}
+                            actions={[
+                              ...(canManageBreakouts && roomCount > 0
+                                ? [{ label: 'Manage people', icon: 'group', onSelect: () => setPeopleSession(s) }]
+                                : []),
+                              ...(canEditSessions
+                                ? [
+                                    { label: 'Edit', icon: 'edit', onSelect: () => openEdit(s) },
+                                    { label: 'Delete', icon: 'delete', destructive: true, onSelect: () => handleDelete(s.id, s.title) },
+                                  ]
+                                : []),
+                            ]}
+                          />
+                        )}
                       </div>
                     </li>
                   );
@@ -804,6 +1157,14 @@ export default function AgendaPage() {
         </div>
       )}
 
+      <BreakoutAssignmentsModal
+        open={peopleSession !== null}
+        onClose={() => setPeopleSession(null)}
+        onChanged={fetchData}
+        eventId={eventId}
+        session={peopleSession}
+      />
+
       <CsvImportModal<AgendaCsvRow>
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
@@ -813,7 +1174,9 @@ export default function AgendaPage() {
         columns={AGENDA_CSV_COLUMNS}
         sampleRows={AGENDA_CSV_SAMPLES}
         parseRow={parseAgendaCsvRow}
-        importRow={importAgendaRow}
+        refineResults={refineAgendaCsv}
+        importRow={async () => ({ error: 'Sessions are imported together.' })}
+        importAll={importAgendaAll}
       />
     </div>
   );
@@ -898,115 +1261,6 @@ function SpeakersPanel({
           Add
         </button>
       </div>
-    </div>
-  );
-}
-
-// ─── Breakout rooms panel ───────────────────────────────────────────────────
-
-function BreakoutRoomsPanel({
-  rooms,
-  onAddRoom,
-  onRemoveRoom,
-  onMoveRoom,
-  onChangeRoomField,
-  onAddAgendaItem,
-  onRemoveAgendaItem,
-  onMoveAgendaItem,
-  onChangeAgendaItemField,
-}: {
-  rooms: BreakoutRoom[];
-  onAddRoom: () => void;
-  onRemoveRoom: (roomId: string) => void;
-  onMoveRoom: (roomId: string, direction: 'up' | 'down') => void;
-  onChangeRoomField: (roomId: string, field: 'name' | 'description' | 'facilitator_name', value: string) => void;
-  onAddAgendaItem: (roomId: string) => void;
-  onRemoveAgendaItem: (roomId: string, itemId: string) => void;
-  onMoveAgendaItem: (roomId: string, itemId: string, direction: 'up' | 'down') => void;
-  onChangeAgendaItemField: (roomId: string, itemId: string, field: keyof BreakoutAgendaItem, value: string) => void;
-}) {
-  return (
-    <div className="mt-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide">Breakout Rooms</h3>
-        <button type="button" onClick={onAddRoom} className="btn-secondary text-xs py-1.5">
-          <span className="material-symbols-outlined text-[16px]">add</span> Add Room
-        </button>
-      </div>
-      {rooms.length === 0 ? (
-        <p className="text-sm text-on-surface-variant/70 italic">No breakout rooms — attendees will see this as a regular session.</p>
-      ) : (
-        <div className="space-y-4">
-          {rooms.map((room, ri) => (
-            <div key={room.id} className="bg-surface-container-low rounded-xl p-4">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="label text-xs">Room Name *</label>
-                    <input className="input text-sm" value={room.name} onChange={e => onChangeRoomField(room.id, 'name', e.target.value)} placeholder="Room A — Product Track" />
-                  </div>
-                  <div>
-                    <label className="label text-xs">Facilitator Name</label>
-                    <input className="input text-sm" value={room.facilitator_name} onChange={e => onChangeRoomField(room.id, 'facilitator_name', e.target.value)} placeholder="Jane Smith" />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="label text-xs">Description</label>
-                    <input className="input text-sm" value={room.description} onChange={e => onChangeRoomField(room.id, 'description', e.target.value)} placeholder="What happens in this room" />
-                  </div>
-                </div>
-                <div className="flex items-center gap-0.5 flex-shrink-0 pt-6">
-                  <button type="button" onClick={() => onMoveRoom(room.id, 'up')} disabled={ri === 0} className="p-1 rounded text-on-surface-variant hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed">
-                    <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
-                  </button>
-                  <button type="button" onClick={() => onMoveRoom(room.id, 'down')} disabled={ri === rooms.length - 1} className="p-1 rounded text-on-surface-variant hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed">
-                    <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
-                  </button>
-                  <button type="button" onClick={() => onRemoveRoom(room.id)} className="p-1 rounded text-on-surface-variant hover:text-error">
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t border-outline-variant/50 pt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Mini-Agenda</p>
-                  <button type="button" onClick={() => onAddAgendaItem(room.id)} className="text-xs text-primary hover:opacity-80 font-medium">+ Add Time Block</button>
-                </div>
-                {room.agenda.length === 0 ? (
-                  <p className="text-xs text-on-surface-variant/70 italic">No time blocks yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {room.agenda.map((item, ai) => (
-                      <div key={item.id} className="bg-white border border-outline-variant rounded-lg p-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-                          <input className="input text-xs" value={item.title} onChange={e => onChangeAgendaItemField(room.id, item.id, 'title', e.target.value)} placeholder="Time block title" />
-                          <input className="input text-xs" value={item.location} onChange={e => onChangeAgendaItemField(room.id, item.id, 'location', e.target.value)} placeholder="Location" />
-                          <input type="datetime-local" className="input text-xs" value={item.starts_at} onChange={e => onChangeAgendaItemField(room.id, item.id, 'starts_at', e.target.value)} />
-                          <input type="datetime-local" className="input text-xs" value={item.ends_at} onChange={e => onChangeAgendaItemField(room.id, item.id, 'ends_at', e.target.value)} />
-                        </div>
-                        <div className="flex items-start gap-2">
-                          <input className="input text-xs flex-1" value={item.description} onChange={e => onChangeAgendaItemField(room.id, item.id, 'description', e.target.value)} placeholder="Description" />
-                          <div className="flex items-center gap-0.5 flex-shrink-0">
-                            <button type="button" onClick={() => onMoveAgendaItem(room.id, item.id, 'up')} disabled={ai === 0} className="p-1 rounded text-on-surface-variant hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed">
-                              <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
-                            </button>
-                            <button type="button" onClick={() => onMoveAgendaItem(room.id, item.id, 'down')} disabled={ai === room.agenda.length - 1} className="p-1 rounded text-on-surface-variant hover:text-primary disabled:opacity-30 disabled:cursor-not-allowed">
-                              <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
-                            </button>
-                            <button type="button" onClick={() => onRemoveAgendaItem(room.id, item.id)} className="p-1 rounded text-on-surface-variant hover:text-error">
-                              <span className="material-symbols-outlined text-[16px]">close</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

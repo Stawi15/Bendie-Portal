@@ -81,6 +81,7 @@ Two tiers, both real and in use:
 - **Org/event-scoped roles** (`organization_members.role`, `event_members.role`) — `host`/`organizer`/`admin` at the event level, `owner`/`admin` at the org level; checked via helpers in `src/lib/portalAuth.ts` (`canManageEvent`, `isOrgAdmin`, `getUserEventRole`) for finer-grained UI/action gating beyond the blanket global-admin check.
 
 - **Feature 017 (2026-10-09)**: every organization `owner`/`admin` is automatically an event `admin` on every event of their organization (triggers on `events` and `organization_members` + backfill), so event access still comes from `event_members` as Feature 003 requires. Only platform admins (or the service role) can create or change organization `owner`/`admin` memberships — enforced by `organization_members` RLS, not only the UI.
+- **Feature 021 (2026-10-14)**: organization `owner`/`admin`s can create, edit and delete their events' **agenda sessions** (`agenda_sessions` policies `*_org_admin`, helper `is_event_org_admin(ev_id)` resolved from `events.organization_id`). Breakout rooms and room assignments may be managed by platform admins, org admins and event `host`/`organizer`/`admin`s. The agenda page shows controls only to people who can use them (session editing: platform/org admin; breakout tools: those plus event hosts/organizers).
 
 **Middleware pattern** (`src/middleware.ts`):
 
@@ -133,6 +134,14 @@ handleSave() → supabase.from(table).update(payload).eq('id', eventId)
     ↓
 toast.success(...) / toast.error(error.message)
 ```
+
+**Breakout rooms (Feature 021):**
+- **Storage:** rooms live in `agenda_breakout_rooms` / `agenda_breakout_room_items`; attendee placements in `agenda_breakout_assignments`.
+- **The released app's JSON is derived:** the database rebuilds `agenda_sessions.breakout_rooms` from the tables by trigger, so the released attendee app keeps working. Pages must never write that column; a guard trigger refuses direct changes.
+- **Saving rooms:** the agenda page saves a session's rooms atomically with the `save_breakout_rooms` RPC (SECURITY INVOKER).
+- **Attendee picks:** made only through `choose_breakout_room`, which applies mode and capacity under a row lock.
+- **Spreadsheets:** the agenda spreadsheet carries breakouts as one row per room (`breakout_room` column) and updates matching sessions instead of duplicating them. Each breakout's people list is downloaded and uploaded in `BreakoutAssignmentsModal`.
+- **`CsvImportModal` options:** it gained optional `refineResults` (cross-row checks), `previewWarnings` and `importAll` (grouped import) for this.
 
 Image uploads follow the same direct-call shape via `src/lib/assetUpload.ts` (org assets → `org-assets` bucket) — event-content images upload to the `event-assets` bucket (bucket + RLS policies created in `supabase/migrations/004_storage_policies.sql`, gated to `global_role = 'admin'`, public read).
 

@@ -47,6 +47,12 @@ type CsvImportModalProps<T> = {
   beforeImport?: (validData: T[]) => Promise<void>;
   /** Feature 020 — when given and there are existing items, the preview offers Add (default) / Replace. */
   replaceOption?: CsvReplaceOption;
+  /** Feature 021 — cross-row checks after the per-row parse (may add errors, e.g. duplicates across rows). */
+  refineResults?: (results: RowResult<T>[]) => RowResult<T>[];
+  /** Feature 021 — file-level, non-blocking warnings shown in the preview (e.g. a room over capacity). */
+  previewWarnings?: (validData: T[]) => string[];
+  /** Feature 021 — grouped import used instead of the per-row loop; returns one outcome per row it handled. */
+  importAll?: (validData: T[]) => Promise<{ rowIndex: number; error?: string; notice?: string }[]>;
 };
 
 type Step = 'pick' | 'preview' | 'result';
@@ -97,6 +103,9 @@ export function CsvImportModal<T>({
   importRow,
   beforeImport,
   replaceOption,
+  refineResults,
+  previewWarnings,
+  importAll,
 }: CsvImportModalProps<T>) {
   const confirm = useConfirm();
   const [step, setStep] = useState<Step>('pick');
@@ -148,7 +157,8 @@ export function CsvImportModal<T>({
     }
     setHeaderErrors([]);
     setRawColumns(headers);
-    setResults(rows.map((raw, i) => parseRow(raw, i)));
+    const parsed = rows.map((raw, i) => parseRow(raw, i));
+    setResults(refineResults ? refineResults(parsed) : parsed);
     setStep('preview');
   };
 
@@ -187,6 +197,7 @@ export function CsvImportModal<T>({
 
   const validRows = results.filter((r) => r.errors.length === 0 && r.data !== undefined);
   const invalidRows = results.filter((r) => r.errors.length > 0);
+  const fileWarnings = previewWarnings && validRows.length > 0 ? previewWarnings(validRows.map((r) => r.data as T)) : [];
 
   const existingCount = replaceOption?.existingIds.length ?? 0;
   const canReplace = existingCount > 0;
@@ -220,25 +231,47 @@ export function CsvImportModal<T>({
     setImportProgress(0);
     let done = 0;
 
-    const importOutcomes = await runWithConcurrency(
-      validRows,
-      5,
-      async (row) => {
-        const { error, notice } = await importRow(row.data as T);
-        done += 1;
-        setImportProgress(done);
-        return { rowIndex: row.rowIndex, success: !error, error, notice: error ? undefined : notice } as ImportOutcome;
-      },
-      (row, _index, error) => {
-        done += 1;
-        setImportProgress(done);
-        return {
+    let importOutcomes: ImportOutcome[];
+    if (importAll) {
+      // Feature 021 — grouped import (e.g. several rows describe one breakout room).
+      try {
+        const results = await importAll(validRows.map((r) => r.data as T));
+        const byRow = new Map(results.map((r) => [r.rowIndex, r]));
+        importOutcomes = validRows.map((row) => {
+          const r = byRow.get(row.rowIndex);
+          const error = r ? r.error : 'This row wasn’t imported.';
+          return { rowIndex: row.rowIndex, success: !error, error, notice: error ? undefined : r?.notice };
+        });
+      } catch (err) {
+        console.error('[csv import] grouped import failed', err);
+        importOutcomes = validRows.map((row) => ({
           rowIndex: row.rowIndex,
           success: false,
-          error: error instanceof Error ? error.message : 'Unexpected error during import',
-        } as ImportOutcome;
+          error: err instanceof Error ? err.message : 'Unexpected error during import',
+        }));
       }
-    );
+      setImportProgress(validRows.length);
+    } else {
+      importOutcomes = await runWithConcurrency(
+        validRows,
+        5,
+        async (row) => {
+          const { error, notice } = await importRow(row.data as T);
+          done += 1;
+          setImportProgress(done);
+          return { rowIndex: row.rowIndex, success: !error, error, notice: error ? undefined : notice } as ImportOutcome;
+        },
+        (row, _index, error) => {
+          done += 1;
+          setImportProgress(done);
+          return {
+            rowIndex: row.rowIndex,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unexpected error during import',
+          } as ImportOutcome;
+        }
+      );
+    }
 
     if (replacing && replaceOption) {
       const allImported = invalidRows.length === 0 && importOutcomes.length > 0 && importOutcomes.every((o) => o.success);
@@ -421,6 +454,17 @@ export function CsvImportModal<T>({
                           <span className="font-semibold">{rowLabel(r.rowIndex)}:</span> {r.errors.map(humanizeRowError).join(' ')}
                         </li>
                       ))}
+                    </ul>
+                  </div>
+                )}
+                {fileWarnings.length > 0 && (
+                  <div className="rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 max-h-40 overflow-y-auto">
+                    <p className="text-xs font-semibold text-on-tertiary-fixed-variant mb-1 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
+                      Check before importing — these won&apos;t stop the import:
+                    </p>
+                    <ul className="space-y-0.5 text-xs text-on-tertiary-fixed-variant list-disc pl-4">
+                      {fileWarnings.map((w) => <li key={w}>{w}</li>)}
                     </ul>
                   </div>
                 )}

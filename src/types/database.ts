@@ -14,6 +14,17 @@ export type NotificationType = string;
 export type OnboardingStatus = 'pending' | 'in_progress' | 'completed';
 export type OrgMemberRole = 'owner' | 'admin' | 'member' | 'attendee' | 'facilitator' | 'staff';
 export type EventMemberRole = 'host' | 'organizer' | 'admin' | 'attendee' | 'facilitator' | 'staff' | 'speaker';
+/** Feature 021 — who places attendees in a breakout's rooms. */
+export type BreakoutMode = 'attendee_choice' | 'organizer_assigns' | 'preassigned_switchable';
+export type BreakoutAssignmentSource = 'attendee' | 'organizer' | 'csv';
+/** Feature 021 — result of the choose_breakout_room() RPC (attendee app, Release 2). */
+export type ChooseBreakoutRoomResult =
+  | { ok: true; session_id: string; room_id: string }
+  | { ok: false; reason: 'not_authenticated' | 'room_not_found' | 'no_event' | 'not_attendee' | 'organizer_assigns' | 'room_full' };
+/** Feature 021 — result of the save_breakout_rooms() RPC. */
+export type SaveBreakoutRoomsResult =
+  | { ok: true; rooms: { id: string; name: string }[]; removed_assignments: number }
+  | { ok: false; reason: 'validation' | 'no_event'; message?: string };
 
 export interface Database {
   public: {
@@ -225,9 +236,55 @@ export interface Database {
           created_at: string;
           updated_at: string;
           block_type: 'session' | 'activity' | 'meal' | 'transfer' | 'freetime' | 'ceremony' | 'break' | null;
+          /** Feature 021: derived from agenda_breakout_rooms/_items by the database — never write it. */
           breakout_rooms: unknown | null;
+          breakout_mode: BreakoutMode;
           planner_agenda_item_id: number | null;
           planner_synced_at: string | null;
+        };
+      };
+      agenda_breakout_rooms: {
+        Row: {
+          id: string;
+          session_id: string;
+          event_id: string | null;
+          legacy_key: string | null;
+          name: string;
+          description: string | null;
+          location: string | null;
+          facilitator_id: string | null;
+          facilitator_name: string | null;
+          capacity: number | null;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      agenda_breakout_room_items: {
+        Row: {
+          id: string;
+          room_id: string;
+          event_id: string | null;
+          legacy_key: string | null;
+          title: string;
+          description: string | null;
+          starts_at: string | null;
+          ends_at: string | null;
+          location: string | null;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      agenda_breakout_assignments: {
+        Row: {
+          session_id: string;
+          user_id: string;
+          room_id: string;
+          event_id: string;
+          source: BreakoutAssignmentSource;
+          assigned_by: string | null;
+          assigned_at: string;
         };
       };
       agenda_session_speakers: {

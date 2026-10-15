@@ -6,6 +6,37 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 021 — Bendie Breakout Rooms ✅ Release 1 built (2026-10-14) — /review pending; Release 2 (attendee app) to do
+
+Spec/plan/tasks: `specs/021-bendie-breakout-rooms/`.
+
+- **Rooms are their own data.** Breakout rooms are rows with permanent ids, an optional capacity, a facilitator picked from Speakers and a mini-agenda. Each breakout session has a mode: Attendees choose / Organiser assigns / Pre-assigned, can switch.
+- **Assignments are saved:** one room per attendee per breakout, recorded as coming from the attendee, an organiser or a CSV upload.
+- **Migrations, applied to the shared Bendie project 2026-10-14 via the SQL editor:** `bendie_breakout_rooms_and_assignments.sql` and `bendie_breakout_rooms_hardening.sql`. They were recorded in `supabase_migrations.schema_migrations` afterwards (versions 20261014120000 and 20261014130000, with a pointer to the repo files). The 5 existing rooms were backfilled with their old ids, and the released app sees them unchanged (verified).
+- **Session editor:** a "Session format" choice (Regular / Breakout); a breakout shows the room editor (`BreakoutRoomsEditor`). Breakouts are marked in the agenda list ("Breakout · N rooms").
+- **Manage people** (`BreakoutAssignmentsModal`):
+  - headcount against capacity
+  - assign / move / unassign
+  - "No longer attendees" list
+  - Download list / Upload list per breakout
+- **Agenda spreadsheet:**
+  - breakouts are one row per room in a `breakout_room` column, with optional `room_capacity` and `room_facilitator`
+  - re-uploads now **update** sessions with the same title and start instead of duplicating them
+- **Access:**
+  - Organization owners/admins can now edit agenda sessions (FR-033).
+  - Event hosts and organisers can manage breakouts but not sessions.
+  - Controls are hidden from people who can't use them (FR-034).
+- **Attendee room-pick rules:** `choose_breakout_room` and `get_breakout_room_availability` are ready for the app. All rules were verified in a rolled-back SQL run on 2026-10-14. That run was sequential; capacity under simultaneous picks relies on a row lock and was not stress-tested in parallel.
+- **Planner is unchanged.** "Push to Planner" still sends a breakout as one item.
+- **Still to do:**
+  - `/review`, `/speckit.converge`
+  - Release 2 in Evently-App, per `contracts/attendee-app-release-2.md` (a notice was added to Evently-App `docs/MIGRATIONLOG.md`)
+- **Known gaps:**
+  - Room mini-agendas can't be set by spreadsheet.
+  - No waitlists or notifications (out of scope).
+
+---
+
 ## Feature 018 — Planner Agenda Authoring ✅ Built (2026-10-09) — browser acceptance pending
 
 Spec/plan/tasks: `specs/018-planner-agenda-authoring/`. New Planner workspace section **Agenda**

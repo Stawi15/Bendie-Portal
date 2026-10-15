@@ -192,9 +192,60 @@ After building or materially changing any component, update this file with the c
 - **Pattern notes:** Native picker, not `react-color` (still unused). All editing is local draft; persist only on Apply. The discard confirmation uses `useConfirm`. If another page needs a colour picker, reuse `ColourControl`'s overlay approach.
 
 #### Repeatable/nested list panel (Speakers & Breakout Rooms)
-- **File:** `src/app/portal/events/[eventId]/agenda/page.tsx` (`SpeakersPanel`, `BreakoutRoomsPanel` — inline sub-components, not extracted to `components/`)
+- **Files:** `src/app/portal/events/[eventId]/agenda/page.tsx` (`SpeakersPanel`, inline) and `src/components/portal/BreakoutRoomsEditor.tsx` (extracted in Feature 021, 2026-10-14; rooms are now table-backed and saved via the `save_breakout_rooms` RPC, so the "jsonb serialized on save" note below no longer applies to rooms)
 - **Key Classes:** Panel wrapper `border-t border-outline-variant mt-4 pt-4`; each list row `flex items-center gap-3 bg-surface-container-low rounded-xl p-3` (flat list) or `bg-surface-container-low rounded-xl p-4` (card-style, for nested/2-level lists like rooms); reorder controls are a `flex items-center gap-0.5` trio of icon-only buttons (`arrow_upward` / `arrow_downward` / `close` or `delete`, each `p-1 rounded text-on-surface-variant hover:text-primary` or `hover:text-error` for the remove action), `disabled:opacity-30 disabled:cursor-not-allowed` at the first/last position; an "add new" row sits at the bottom of the list, not the top.
 - **Pattern notes:** This is the established shape for any field that's an array of sub-records edited inline within a parent form (session speakers, breakout rooms, and each room's own mini-agenda). State lives in the parent page as a plain array with a stable client-side `id`/`key` per item (`crypto.randomUUID()` for new entries); reordering is a `moveItem<T>(list, index, direction)` array-swap helper — **no `@dnd-kit`**, matches the codebase-wide "not yet adopted" status for that dependency (`code-standards.md`). For a jsonb-backed field (no DB rows, e.g. `breakout_rooms`), the whole array just gets serialized on save. For a join-table-backed field (e.g. `agenda_session_speakers`), track each item's real DB id separately from its list key (`dbId: string | null`) and diff on save: delete ids no longer present, update the ones that still exist, insert the ones with `dbId === null`.
+
+#### Choice cards (radio options that explain themselves)
+- **Files:** `src/app/portal/events/[eventId]/agenda/page.tsx` ("Session format": Regular / Breakout), `src/components/portal/BreakoutRoomsEditor.tsx` ("Who places attendees": 3 modes). Added in Feature 021, 2026-10-14.
+- **Key Classes:**
+  - **Wrapper:** `<fieldset>` with a `<legend>` (`text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-2` or `.label`); grid `grid grid-cols-1 sm:grid-cols-2|3 gap-2`.
+  - **Each option:** `<label>` `flex items-start gap-2 rounded-xl border p-3 cursor-pointer transition`. Selected: `border-primary/40 bg-primary/5`. Otherwise: `border-outline-variant hover:border-primary/30`.
+  - **Inside the option:**
+    - the native radio, `mt-1`
+    - an optional Material icon, `text-[20px] text-on-surface-variant mt-0.5`
+    - the title, `text-sm font-medium text-on-surface`
+    - a one-line hint, `text-xs text-on-surface-variant`
+- **Pattern notes:**
+  - Use this instead of a `<select>` when each choice needs a one-line explanation (it changes behaviour, not just a value).
+  - Keep the native radio for keyboard and screen-reader support; the whole card is the label.
+  - Labels and hints live in a constant (e.g. `BREAKOUT_MODE_LABELS` in `src/lib/breakoutRooms.ts`), so the list row and other screens use the same words.
+
+#### Breakout marker on agenda list rows
+- **File:** `src/app/portal/events/[eventId]/agenda/page.tsx` (session list). Added in Feature 021.
+- **Key Classes:**
+  - **Badge:** `inline-flex items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider px-1.5 py-px rounded bg-tertiary-fixed text-on-tertiary-fixed-variant` + `meeting_room` icon (`text-[12px]`) + "Breakout · N rooms". Token classes; the earlier raw `bg-purple-100 text-purple-700` was replaced in convergence task T032.
+  - **Mode label after the badge:** `text-[11px] text-on-surface-variant`.
+  - **Room names under the title:** `text-xs text-on-surface-variant truncate mt-0.5`, joined with " · ", with the full list in `title`.
+- **Pattern notes:**
+  - The Location column falls back to "N rooms" when the session has no location of its own.
+  - Regular sessions render exactly as before.
+
+#### Room assignment window (Manage people)
+- **File:** `src/components/portal/BreakoutAssignmentsModal.tsx` (Feature 021, 2026-10-14). Uses `FormModal` with `confirmDiscard={false}` and `maxWidthClassName="max-w-5xl"`, because each change saves immediately.
+- **Key Classes:**
+  - **Room card:** `section` `border border-outline-variant rounded-xl p-3`; heading `text-sm font-semibold text-on-surface truncate`; room location `text-[11px] text-on-surface-variant`.
+  - **Headcount pill:** `text-xs font-bold px-2 py-0.5 rounded-full tabular-nums`. Normal: `bg-surface-container-low text-on-surface-variant`. Over capacity: `bg-error/10 text-error` + " · over capacity". Text: "N / cap", or "N · no limit".
+  - **Person row:** `flex items-center gap-2 py-1.5`.
+    - Name: `text-sm text-on-surface truncate`.
+    - Meta line: `text-[11px] text-on-surface-variant` (email · source · time).
+    - Action: an inline `input text-xs py-1 w-auto` `<select>` of rooms with "Unassign" / "Assign to…".
+  - **Lists:** `divide-y divide-outline-variant/40 max-h-64 overflow-y-auto custom-scrollbar pr-1`.
+- **States:**
+  - **Loading:** a skeleton grid of `h-40 bg-surface-container-low rounded-xl`.
+  - **Error:** an icon, a message and a `btn-secondary` "Try again".
+  - **Empty:** messages for "no rooms" and "no attendees".
+- **Pattern notes:**
+  - Changes are optimistic and roll back with a toast on error.
+  - Bulk edits go through **Download list / Upload list** (`btn-secondary text-sm py-1.5`). The upload is a `CsvImportModal` rendered as a *sibling* of the `FormModal` (not inside it), so it stacks on top and Escape doesn't close both.
+  - The search box carries `data-ignore-dirty`.
+
+#### CsvImportModal: optional grouped import and file warnings
+- **File:** `src/components/portal/CsvImportModal.tsx`. Options added in Feature 021.
+- **Pattern notes:**
+  - **`refineResults(results)`:** cross-row checks after the per-row parse, e.g. duplicates, or rows that must agree.
+  - **`previewWarnings(validData)`:** non-blocking warnings, shown in the preview in a token-styled box: `rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3`, `text-xs text-on-tertiary-fixed-variant`, with a `warning` icon. Use this for any "won't stop the import" notice. The older "Needs attention" error block in the same file still uses raw amber classes (pre-existing, not changed here).
+  - **`importAll(validData)`:** replaces the per-row loop when several rows form one record. The agenda spreadsheet uses it: one session per title and start, one row per breakout room. It returns one outcome per row, and a success `notice` (e.g. "Updated the existing session") appears in the results table.
 
 ### Global Form Primitives (defined in `globals.css`, not React components)
 
@@ -206,4 +257,4 @@ After building or materially changing any component, update this file with the c
 
 These exist and are in active use but haven't had their classes extracted into this registry yet — capture with `/imprint [filepath]` the next time each is touched:
 
-`CsvImportModal`, `AssetPickerModal`, `Avatar`, `CreateEventModal`, `CreateOrganizationModal`, `CreateTeamModal`, `AddPersonModal`, `EditProfileModal`, `TeamMembersModal`, `EventAssignmentsDropdown`, `ComingSoonPanel` (currently unused dead code — confirm before deleting or wiring it up).
+`CsvImportModal` (only its Feature 021 options are captured above), `AssetPickerModal`, `Avatar`, `CreateEventModal`, `CreateOrganizationModal`, `CreateTeamModal`, `AddPersonModal`, `EditProfileModal`, `TeamMembersModal`, `EventAssignmentsDropdown`, `ComingSoonPanel` (currently unused dead code — confirm before deleting or wiring it up).
