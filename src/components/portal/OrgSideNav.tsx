@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 
@@ -25,6 +26,19 @@ export function OrgSideNav({ open, onClose }: OrgSideNavProps) {
   const router = useRouter();
   const { logout } = useAuth();
   const { organization, loading: orgLoading } = useOrganization();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    setCollapsed(window.localStorage.getItem('bendie-sidebar-collapsed:v1') === 'true');
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      window.localStorage.setItem('bendie-sidebar-collapsed:v1', String(next));
+      return next;
+    });
+  };
 
   // Feature 006: /portal and /portal/events now redirect to the resolved
   // product's home/events route, so "Overview"/"Events" must still highlight
@@ -73,14 +87,9 @@ export function OrgSideNav({ open, onClose }: OrgSideNavProps) {
     'relative flex items-center gap-3 px-3 py-3 rounded-xl whitespace-nowrap transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary';
   const itemIdle = 'text-on-surface-variant hover:bg-on-surface/[0.05] hover:text-on-surface';
 
-  // Feature 016 hover-expand sidebar. On hover-capable desktops (`desk`) the
-  // <aside> is a fixed 72px rail in the layout; `.sidebar-panel` inside it
-  // widens over the content on hover / keyboard focus (pure CSS, see
-  // globals.css), so nothing here re-renders and the page never reflows.
-  // Icon positions are fixed (brand px-4 + 40px logo; nav px-3 + border-l-4 +
-  // pl-2 + 24px icon) so every icon sits on the rail's 36px centre line in
-  // both states — only labels fade in. Below `desk` (phones, touch tablets)
-  // it's the unchanged off-canvas drawer.
+  // Feature 020: navigation labels are visible by default on desktop. The
+  // user can collapse the rail explicitly and that preference is local to
+  // this browser. Phones and touch tablets keep the off-canvas drawer.
   return (
     <>
       {open && (
@@ -92,11 +101,11 @@ export function OrgSideNav({ open, onClose }: OrgSideNavProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 transform transition-transform duration-200 ease-in-out
-          desk:relative desk:z-40 desk:w-[72px] desk:translate-x-0 desk:transition-none
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] flex-shrink-0 transform transition-all duration-200 ease-in-out
+          desk:relative desk:z-40 desk:translate-x-0 ${collapsed ? 'desk:w-[72px]' : 'desk:w-[280px]'}
           ${open ? 'translate-x-0' : '-translate-x-full desk:translate-x-0'}`}
       >
-        <div className="sidebar-panel h-full w-full bg-surface-container-lowest border-r border-outline-variant flex flex-col py-6">
+        <div data-collapsed={collapsed} className="sidebar-panel h-full w-full bg-surface-container-lowest border-r border-outline-variant flex flex-col py-6">
           <div className="px-4 mb-8 flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/bendie.png" alt="Bendie" className="w-10 h-10 object-contain flex-shrink-0" />
@@ -130,6 +139,18 @@ export function OrgSideNav({ open, onClose }: OrgSideNavProps) {
           </nav>
 
           <div className="mt-auto px-3 space-y-1">
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              className={`${itemClass} ${itemIdle} hidden desk:flex w-full text-left`}
+            >
+              <span className="material-symbols-outlined flex-shrink-0" aria-hidden="true">
+                {collapsed ? 'right_panel_open' : 'left_panel_close'}
+              </span>
+              <span className="sidebar-label font-label-sm text-label-sm">Collapse navigation</span>
+            </button>
             <a
               href="mailto:devteam@stawiexperiences.com"
               aria-label="Help"

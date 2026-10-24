@@ -10,7 +10,7 @@
 | Styling        | Tailwind CSS 3, custom Material-style tokens | See `ui-tokens.md`                                              |
 | Forms          | Plain `useState` + direct Supabase calls | The dominant pattern in this codebase — see `code-standards.md`; `react-hook-form` + `zod` are installed but not currently used anywhere in `src/` |
 | Notifications  | `react-hot-toast`                      | Save/error feedback on every mutation                                 |
-| CSV            | `papaparse`                            | Facilitator bulk import (`src/lib/csvImport.ts`)                      |
+| Spreadsheets   | `papaparse` + `exceljs`                | Client-side CSV/XLSX parsing, worksheet selection, and schema mapping (`src/lib/spreadsheetImport.ts`) |
 | Drag & drop    | `@dnd-kit/*`                           | Installed, not yet wired up — intended for the Networking Questionnaire Builder's reorderable options |
 | Color picker   | `react-color`                          | Installed, not yet wired up — Theme Colors currently uses plain `<input type="color">` + hex text field |
 | State          | `zustand`                              | Installed, not yet used — state today is React Context (`AuthContext`, `EventContext`, `OrganizationContext`, `ConfirmContext`) |
@@ -39,7 +39,7 @@ src/
 │       ├── settings/page.tsx, activity-log/page.tsx
 ├── components/portal/          → all reusable portal UI (flat, no further nesting yet)
 ├── contexts/                   → AuthContext, EventContext, OrganizationContext, ConfirmContext
-├── lib/                        → supabaseClient.ts, portalAuth.ts, csvImport.ts, assetUpload.ts,
+├── lib/                        → supabaseClient.ts, portalAuth.ts, csvImport.ts, spreadsheetImport.ts, assetUpload.ts,
 │                                   eventSectionMeta.ts, eventStats.ts, portalLabels.ts,
 │                                   portalBreadcrumb.ts, formatRelativeTime.ts, reorder.ts,
 │                                   useOrgEvents.ts, useOrgPeople.ts, useTeams.ts, useRecentActivity.ts
@@ -61,7 +61,7 @@ There is no `agent/`, `actions/`, or `services/` layer — this is a much flatte
 | `app/api/events/**`, `app/api/organizations/**` | Organization-scoped privileged operations (constitution v1.1.0). Each route re-verifies, per request, that the caller is a platform admin **or** an owner/admin of the organization that owns the target record — resolved server-side (e.g. `events.organization_id`, or the route's organization verified against `organization_members`), never from a client-supplied or "currently selected" org id. Precedent: Feature 008 `planner-permissions/*` via `canAdministerPlannerPermissions`. Must never escalate (no platform admin, no org owner/admin grants unless a spec allows it, no cross-organization access). |
 | `components/portal` | Presentational + lightly-stateful UI (modals, cards, badges). Can call Supabase directly (e.g. `AssetPickerModal`) — this project does not enforce "components never touch the DB." |
 | `contexts/`         | Cross-page state: current user/profile, current event, current organization, a shared confirm-dialog. |
-| `lib/`              | Supabase client singleton, auth/role helpers, CSV parsing, asset upload, and small per-domain hooks (`useOrgEvents`, `useTeams`, etc.). |
+| `lib/`              | Supabase client singleton, auth/role helpers, CSV/XLSX parsing and schema mapping, asset upload, and small per-domain hooks (`useOrgEvents`, `useTeams`, etc.). |
 | `middleware.ts`     | The only route-level auth gate. |
 
 ---
@@ -196,4 +196,4 @@ see `specs/001-bendie-planner-integration/` for the full spec/plan/tasks.
 - Every Supabase write from the client stamps `event_id` (or `organization_id`) to the current context — never a user-editable field.
 - Privileged (service-role) operations only ever happen server-side in route handlers, gated by a fresh per-request authorization check, never by trusting a client-supplied "I'm an admin" flag: platform-wide operations in `app/api/admin/*` (platform admin only), organization-scoped ones elsewhere (platform admin or owner/admin of the target's own organization) — constitution v1.1.0, Principle II.
 - No hardcoded hex values or raw Tailwind color classes in components — use the tokens in `ui-tokens.md`.
-- Facilitators are populated via CSV import as the primary path — if you add fields to the facilitators form/table, verify the CSV template/parser (`src/lib/csvImport.ts` + `CsvImportModal.tsx`) covers them, per schema-reference.md's 2026-08-18 note that new fields have gone live without CSV support before.
+- Facilitators are populated via spreadsheet import as the primary path — if you add fields to the facilitators form/table, verify the template, aliases, mapper, and parser (`src/lib/csvImport.ts`, `src/lib/spreadsheetImport.ts`, and `CsvImportModal.tsx`) cover them, per schema-reference.md's 2026-08-18 note that new fields have gone live without import support before.

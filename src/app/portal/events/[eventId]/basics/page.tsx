@@ -257,7 +257,7 @@ export default function BasicsPage() {
           <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-1">Attendee app menu — hide items</h3>
           <p className="hint mb-3">
             Ticked items are hidden from attendees in the Bendie app for this event. Gallery and Help/FAQs always stay in the app&apos;s bottom bar; Networking follows Networking Mode above.
-            This is separate from <span className="font-medium">Manage modules</span> (top of the event), which only changes what your team sees here in the Portal.
+            This is separate from <span className="font-medium">Choose features</span> (top of the event), which only changes what your team sees here in the Portal.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {MENU_ITEM_KEYS.map(key => (

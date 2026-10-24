@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -279,6 +280,17 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
     refetchPeople();
   };
 
+  const productIntroduction =
+    product === 'bendie'
+      ? {
+          title: 'Build the attendee experience',
+          description: 'Bendie brings event details, branding, agenda, speakers, content, media and attendee access into one workspace.',
+        }
+      : {
+          title: 'Run event operations',
+          description: 'Bendie Planner brings participants, tasks, suppliers, logistics and production into the same studio.',
+        };
+
   if (!orgLoading && !organizationId) {
     return (
       <div className="bg-white p-8 rounded-[20px] border border-[#E4EAF0] panel-shadow text-center">
@@ -320,6 +332,28 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
           </div>
         </div>
       </section>
+
+      {!eventsLoading && events.length === 0 && (
+        <section className="bg-white border border-outline-variant rounded-2xl panel-shadow p-5 sm:p-6 mb-md" aria-labelledby="product-introduction-title">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="text-xs font-bold uppercase tracking-wide text-primary">Bendie Studio</p>
+              <h3 id="product-introduction-title" className="text-headline-sm font-headline-sm text-on-surface mt-1">
+                {productIntroduction.title}
+              </h3>
+              <p className="text-sm text-on-surface-variant mt-1">{productIntroduction.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {canCreateEvent && (
+                <button type="button" className="btn-primary" onClick={() => openCreateEvent(product)}>
+                  <span className="material-symbols-outlined text-[18px]">add</span> Create first event
+                </button>
+              )}
+              <Link href="/portal/people" className="btn-secondary">Organisation people</Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-md">
         <MetricCard

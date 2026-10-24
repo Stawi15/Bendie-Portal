@@ -6,6 +6,14 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 020 — UX Foundations and Smart Spreadsheet Import ✅ Built (2026-10-24) — browser acceptance pending
+
+Spec/plan/tasks: `specs/020-ux-foundations-smart-spreadsheet-import/`. The shared import modal now accepts CSV and modern Excel workbooks, offers worksheet selection, deterministically maps unfamiliar headings to each module's existing template, preserves the existing per-row write/authorization paths, and provides schema-ready CSV and error-report downloads. Spreadsheet processing stays in the browser; optional Qwen/Ollama-assisted matching remains a documented follow-up until an endpoint and data policy are approved. The desktop sidebar is expanded by default with a remembered collapse control, event search and workspace configuration use clearer language, and product home guidance appears only for an empty product workspace to avoid adding routine visual noise.
+
+Verified: 8 focused Vitest cases, TypeScript, lint (pre-existing warnings only), changed importer-file formatting, and Webpack production compilation. The full repository Prettier check remains red on 232 pre-existing files; the build's page-data phase requires Supabase environment values that are not present in this checkout. Authenticated browser acceptance is therefore still pending.
+
+---
+
 ## Feature 018 — Planner Agenda Authoring ✅ Built (2026-10-09) — browser acceptance pending
 
 Spec/plan/tasks: `specs/018-planner-agenda-authoring/`. New Planner workspace section **Agenda**

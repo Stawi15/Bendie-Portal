@@ -329,7 +329,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
           </span>
           <input
             className={`w-full h-10 pl-10 pr-4 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
-            placeholder="Search experiences..."
+            placeholder="Search events..."
             type="text"
             value={eventSearch}
             onChange={(e) => {
@@ -369,7 +369,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
             <button
               onClick={() => setMobileSearchOpen((v) => !v)}
               className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
-              aria-label="Search experiences"
+              aria-label="Search events"
             >
               <span className="material-symbols-outlined">search</span>
             </button>
@@ -380,7 +380,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                   <input
                     autoFocus
                     className={`w-full h-10 px-3 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
-                    placeholder="Search experiences..."
+                    placeholder="Search events..."
                     type="text"
                     value={eventSearch}
                     onChange={(e) => setEventSearch(e.target.value)}
