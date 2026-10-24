@@ -833,7 +833,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
                   className="inline-flex items-center gap-1.5 rounded-full border border-outline-variant px-3 py-1 text-xs font-medium text-on-surface-variant hover:border-primary hover:text-primary transition-colors"
                 >
                   <span className="material-symbols-outlined text-[16px]" aria-hidden="true">tune</span>
-                  Manage modules
+                  Choose features
                 </button>
               )}
               <span

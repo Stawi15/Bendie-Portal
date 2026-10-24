@@ -316,7 +316,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
       toast.success('Event created');
     }
     if (result.modulesSaved === false) {
-      toast.error('Your module choices couldn’t be saved — every module is shown for now. Use “Manage modules” at the top of the event.');
+      toast.error('Your workspace choices couldn’t be saved — every feature is shown for now. Use “Choose features” at the top of the event.');
     }
 
     // Corrective fix (2026-09-23, live bug report): the event is already
@@ -519,7 +519,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
               {step === 'modules' && (
                 <div className="space-y-4">
                   <p className="text-sm text-on-surface-variant">
-                    Choose what your team will manage. Only these appear in your event&apos;s Portal navigation (attendees aren&apos;t affected) — change it anytime with Manage modules at the top of the event.
+                    Choose what your team will manage. Only these appear in your event&apos;s Portal navigation (attendees aren&apos;t affected) — change it anytime with Choose features at the top of the event.
                   </p>
                   {products.length === 0 ? (
                     <p className="hint">Checking which products your organisation can use…</p>
@@ -557,7 +557,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
                     <p className="text-on-surface-variant">
                       <span className="font-medium text-on-surface">Modules:</span>{' '}
                       {modulesSkipped
-                        ? 'All modules (you skipped choosing — change this anytime with Manage modules)'
+                        ? 'All workspace features (you skipped choosing — change this anytime with Choose features)'
                         : submittedModules.length === 0
                           ? 'Only the essentials'
                           : submittedModules.map((k) => getModule(k)?.label ?? k).join(', ')}
@@ -583,7 +583,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
           )}
           <div className="ml-auto flex gap-3">
             {!noEntitlement && !pendingDraft && step === 'modules' && (
-              <button type="button" className="btn-secondary" onClick={handleSkipModules} title="Show every module for now — you can choose later with Manage modules">
+              <button type="button" className="btn-secondary" onClick={handleSkipModules} title="Show every feature for now — you can choose later with Choose features">
                 Skip for now
               </button>
             )}

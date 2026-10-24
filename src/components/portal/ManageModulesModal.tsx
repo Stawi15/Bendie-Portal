@@ -51,14 +51,14 @@ export function ManageModulesModal({ eventId, products, current, onClose, onSave
       toast.error('Only the event’s hosts, organisers or admins can change its modules.');
       return;
     }
-    toast.success('Modules updated');
+    toast.success('Workspace features updated');
     onSaved(next);
   };
 
   return (
-    <FormModal open onClose={saving ? () => undefined : onClose} title="Manage modules" maxWidthClassName="max-w-3xl">
+    <FormModal open onClose={saving ? () => undefined : onClose} title="Choose workspace features" maxWidthClassName="max-w-3xl">
       <p className="text-sm text-on-surface-variant mb-4">
-        <span className="font-medium text-on-surface">Workspace modules</span> — choose what your team manages for this event here in the Portal. It doesn&apos;t change access, and hiding a module never deletes its data.
+        Choose which parts of this event your team manages in the Portal. This doesn&apos;t change anyone&apos;s access, and hiding a feature never deletes its data.
         To hide something from attendees in the Bendie app, use <span className="font-medium">Event Setup → Basics → Attendee app menu</span>.
       </p>
       <ModulePicker products={products} selected={selected} onChange={setSelected} previouslySelected={initial} />
@@ -67,7 +67,7 @@ export function ManageModulesModal({ eventId, products, current, onClose, onSave
           Cancel
         </button>
         <button type="button" className="btn-primary" onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving…' : 'Save modules'}
+          {saving ? 'Saving…' : 'Save workspace features'}
         </button>
       </div>
     </FormModal>

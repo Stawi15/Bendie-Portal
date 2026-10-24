@@ -52,7 +52,7 @@ Global admins (`profiles.global_role = 'admin'`) see and manage **every** organi
 /portal/events/[eventId]/hero              → Hero image, title, banner
 /portal/events/[eventId]/theme             → Primary/secondary/tertiary theme colors
 /portal/events/[eventId]/terminology       → Labels, icons, feature toggles
-/portal/events/[eventId]/facilitators      → Speakers/coaches (CSV import)
+/portal/events/[eventId]/facilitators      → Speakers/coaches (CSV/XLSX import)
 /portal/events/[eventId]/agenda            → Session schedule
 /portal/events/[eventId]/attendee-travel   → Per-attendee flight/ground-transfer details (event + attendee picker)
 /portal/events/[eventId]/activities        → Activities
@@ -89,7 +89,7 @@ The 16 event tabs are defined once in `src/lib/eventSectionMeta.ts` (`EVENT_SECT
 3. Admin opens an event (or creates one via `CreateEventModal`) and works through the 16 content tabs.
 4. Each tab loads the relevant Supabase row(s) directly in a client component, edits via a plain form, and saves with `supabase.from(...).update()/.insert()`, confirmed by a toast (`react-hot-toast`).
 5. Images (hero, avatars, activity photos, etc.) upload to the `event-assets` bucket; org-level files (logos, shared docs) upload to `org-assets` via `src/lib/assetUpload.ts` and are picked via `AssetPickerModal`.
-6. Facilitators are populated primarily via CSV import (`CsvImportModal` + `src/lib/csvImport.ts`, built on `papaparse`) rather than one-by-one forms.
+6. Facilitators are populated primarily via CSV/XLSX import (`CsvImportModal` + `src/lib/spreadsheetImport.ts`, built on `papaparse` and `exceljs`) rather than one-by-one forms. Non-template column names are confirmed through deterministic mapping before import, and users can download a schema-ready CSV or row-level error report.
 7. Every mutation is expected to show up in the Activity Log (`event_content_audit_log` / `organization_audit_log`, surfaced at `/portal/activity-log` and `/portal/events/[eventId]/activity-log`).
 
 ---
@@ -99,7 +99,7 @@ The 16 event tabs are defined once in `src/lib/eventSectionMeta.ts` (`EVENT_SECT
 - Organizations, teams, and people management (org-level roles)
 - Event switcher / events list, scoped to what the signed-in admin can see
 - All 16 event content sections listed above, each with full CRUD
-- CSV import for facilitators
+- CSV/XLSX import for facilitators, including worksheet selection, column mapping, and schema-ready/error-report downloads
 - Image upload (event assets + org assets) with a public-read, admin-write bucket
 - Org-wide and per-event activity log (audit trail)
 - Role-gated access (`global_role = 'admin'` only, enforced in middleware + RLS)

@@ -4,6 +4,8 @@ export type ColumnSpec = {
   key: string;
   label: string;
   required?: boolean;
+  /** Optional human header variants used by the shared spreadsheet mapper. */
+  aliases?: string[];
 };
 
 export type RowResult<T> = {
@@ -26,6 +28,10 @@ export function parseCsvFile(file: File): Promise<ParsedCsv> {
       transformHeader: (h) => h.trim(),
       transform: (value) => value.trim(),
       complete: (result) => {
+        if (result.errors.length > 0) {
+          reject(result.errors[0]);
+          return;
+        }
         resolve({ headers: result.meta.fields ?? [], rows: result.data });
       },
       error: (error) => reject(error),
@@ -56,7 +62,9 @@ export function parseCsvText(text: string): ParsedCsv {
 /** Case-insensitive/trimmed header matching. Returns the labels of any required columns missing from the CSV. */
 export function validateHeaders(headers: string[], columns: ColumnSpec[]): string[] {
   const normalized = new Set(headers.map((h) => h.toLowerCase().trim()));
-  return columns.filter((c) => c.required && !normalized.has(c.key.toLowerCase())).map((c) => c.label);
+  return columns
+    .filter((c) => c.required && !normalized.has(c.key.toLowerCase()))
+    .map((c) => c.label);
 }
 
 /** Case-insensitive lookup of a raw CSV row's value by column key, regardless of the exact header casing supplied. */
@@ -66,7 +74,10 @@ export function getField(raw: Record<string, string>, key: string): string {
 }
 
 /** Builds a downloadable CSV template Blob from a column spec + example rows. */
-export function buildCsvTemplate(columns: ColumnSpec[], sampleRows: Record<string, string>[]): Blob {
+export function buildCsvTemplate(
+  columns: ColumnSpec[],
+  sampleRows: Record<string, string>[]
+): Blob {
   const csv = Papa.unparse({
     fields: columns.map((c) => c.key),
     data: sampleRows.map((row) => columns.map((c) => row[c.key] ?? '')),
@@ -74,7 +85,11 @@ export function buildCsvTemplate(columns: ColumnSpec[], sampleRows: Record<strin
   return new Blob([csv], { type: 'text/csv;charset=utf-8;' });
 }
 
-export function downloadCsvTemplate(filename: string, columns: ColumnSpec[], sampleRows: Record<string, string>[]) {
+export function downloadCsvTemplate(
+  filename: string,
+  columns: ColumnSpec[],
+  sampleRows: Record<string, string>[]
+) {
   const blob = buildCsvTemplate(columns, sampleRows);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -88,7 +103,9 @@ const TRUE_VALUES = new Set(['true', 'yes', '1']);
 const FALSE_VALUES = new Set(['false', 'no', '0', '']);
 
 /** Feature 016 CSV coverage expansion — a shared true/false/blank parser for the several new optional boolean columns (isFeatured, isExhibitor, ...). Blank means "not specified" (ok, defaults handled by the caller); anything else unrecognized is reported as `ok: false` so callers can surface a validation error rather than silently guessing. */
-export function parseFlexibleBoolean(value: string): { ok: true; value: boolean | null } | { ok: false } {
+export function parseFlexibleBoolean(
+  value: string
+): { ok: true; value: boolean | null } | { ok: false } {
   const normalized = value.trim().toLowerCase();
   if (normalized === '') return { ok: true, value: null };
   if (TRUE_VALUES.has(normalized)) return { ok: true, value: true };

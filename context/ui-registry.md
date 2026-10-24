@@ -155,6 +155,16 @@ After building or materially changing any component, update this file with the c
 - **Shape:** grouped `fieldset`s (the `MODULE_CATEGORIES` order), two-column checkbox cards (`rounded-xl border p-3`; checked `border-primary bg-primary/5`; always-included cards are disabled with an "Always included" chip). "Select all" / "Clear optional" sit above. An amber "Nothing is deleted" note appears when a previously-on module is unticked.
 - **Pattern notes:** display preference only. Saving is one `events` update with `.select('id')`, because an RLS-denied update returns zero rows rather than an error. The result is applied with `EventContext.patchCurrentEvent`: no refetch, no loading state, no remount.
 
+#### CsvImportModal — spreadsheet mapping flow (Feature 020)
+- **File:** `src/components/portal/CsvImportModal.tsx`; parsing and deterministic suggestions live in `src/lib/spreadsheetImport.ts`.
+- **Shape:** one focused modal flow: Choose file → Choose sheet (only for multi-sheet workbooks) → Match columns (only when the uploaded headings are not already the template keys) → Preview → Result. The modal uses the existing white surface, `border-outline-variant`, `rounded-xl`, `.input`, `.btn-primary`, and `.btn-secondary` primitives; compact guidance sits beside the action it explains instead of adding dashboard-level cards.
+- **Mapping rows:** `grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]`, with the template field on the left, an arrow at the centre, and a native select on the right. Suggested matches are preselected but remain user-confirmable. A source column cannot be assigned twice, and required template fields must be mapped before preview.
+- **Pattern notes:** Keep parsing client-side, preserve the existing importer callbacks and per-row partial-success behavior, and never silently invent data. Exact template files skip the mapping step. Optional model-assisted mapping is a future enhancement only after an approved endpoint and data-handling policy exist; deterministic aliases remain the dependable default.
+
+### Desktop sidebar disclosure (Feature 020)
+- **Files:** `src/components/portal/OrgSideNav.tsx`, `src/globals.css`.
+- **Pattern notes:** labels are visible by default on desktop. The user may explicitly collapse the sidebar with the labelled control; the preference is stored as versioned browser state (`bendie-sidebar-collapsed:v1`). Mobile remains a drawer and does not inherit the desktop collapsed state. Do not reintroduce hover-only label disclosure.
+
 #### FormModal
 - **File:** `src/components/portal/FormModal.tsx`
 - **Key Classes:** Backdrop `fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4` (click closes); card `bg-white rounded-[20px] panel-shadow p-6 w-full {maxWidthClassName} max-h-[90vh] overflow-y-auto` (click inside stops propagation so it doesn't close); header row `flex items-start justify-between gap-4 mb-4` with the title (`font-headline-sm text-headline-sm text-on-surface`) and a top-right close button (`p-1.5 -m-1.5 rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface`, `close` icon).
@@ -206,4 +216,4 @@ After building or materially changing any component, update this file with the c
 
 These exist and are in active use but haven't had their classes extracted into this registry yet — capture with `/imprint [filepath]` the next time each is touched:
 
-`CsvImportModal`, `AssetPickerModal`, `Avatar`, `CreateEventModal`, `CreateOrganizationModal`, `CreateTeamModal`, `AddPersonModal`, `EditProfileModal`, `TeamMembersModal`, `EventAssignmentsDropdown`, `ComingSoonPanel` (currently unused dead code — confirm before deleting or wiring it up).
+`AssetPickerModal`, `Avatar`, `CreateEventModal`, `CreateOrganizationModal`, `CreateTeamModal`, `AddPersonModal`, `EditProfileModal`, `TeamMembersModal`, `EventAssignmentsDropdown`, `ComingSoonPanel` (currently unused dead code — confirm before deleting or wiring it up).
