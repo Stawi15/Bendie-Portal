@@ -11,6 +11,9 @@ export type ColumnMapping = {
   targetKey: string;
   sourceHeader: string | null;
   confidence: 'exact' | 'suggested' | 'unmapped';
+  origin?: 'ai' | 'manual';
+  aiConfidence?: number;
+  aiReason?: string;
 };
 
 export class SpreadsheetImportError extends Error {

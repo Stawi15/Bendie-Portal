@@ -20,6 +20,11 @@ import {
   suggestColumnMappings,
   validateSpreadsheetTable,
 } from '@/lib/spreadsheetImport';
+import {
+  type AiColumnSuggestion,
+  mergeAiColumnSuggestions,
+  profileSpreadsheetColumns,
+} from '@/lib/aiSpreadsheetMapping';
 import { knownErrorMessage } from '@/lib/userFacingError';
 import { DismissibleTip } from '@/components/portal/DismissibleTip';
 
@@ -41,6 +46,10 @@ type CsvImportModalProps<T> = {
 };
 
 type Step = 'pick' | 'sheet' | 'map' | 'preview' | 'result';
+type AiMappingStatus = 'idle' | 'loading' | 'applied' | 'fallback';
+
+const AI_SPREADSHEET_MAPPING_ENABLED =
+  process.env.NEXT_PUBLIC_AI_SPREADSHEET_MAPPING_ENABLED === 'true';
 
 /**
  * Row number for a parsed row, counting the header as row 1 (so the first data row
@@ -97,12 +106,14 @@ export function CsvImportModal<T>({
   const [sheets, setSheets] = useState<ParsedSheet[]>([]);
   const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
+  const [aiMappingStatus, setAiMappingStatus] = useState<AiMappingStatus>('idle');
   const [results, setResults] = useState<RowResult<T>[]>([]);
   const [preparing, setPreparing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [outcomes, setOutcomes] = useState<ImportOutcome[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const aiRequestIdRef = useRef(0);
 
   if (!open) return null;
 
@@ -116,11 +127,13 @@ export function CsvImportModal<T>({
     setSheets([]);
     setSelectedSheetIndex(0);
     setMappings([]);
+    setAiMappingStatus('idle');
     setResults([]);
     setPreparing(false);
     setImporting(false);
     setImportProgress(0);
     setOutcomes([]);
+    aiRequestIdRef.current += 1;
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -149,6 +162,41 @@ export function CsvImportModal<T>({
     setStep('preview');
   };
 
+  const requestAiSuggestions = async (headers: string[], rows: Record<string, string>[]) => {
+    if (!AI_SPREADSHEET_MAPPING_ENABLED) return;
+    const requestId = aiRequestIdRef.current + 1;
+    aiRequestIdRef.current = requestId;
+    setAiMappingStatus('loading');
+    try {
+      const response = await fetch('/api/ai/spreadsheet-mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headers,
+          profiles: profileSpreadsheetColumns(headers, rows),
+          columns,
+        }),
+      });
+      if (!response.ok) throw new Error('AI mapping is unavailable');
+      const payload = (await response.json()) as { mappings?: AiColumnSuggestion[] };
+      if (requestId !== aiRequestIdRef.current || !Array.isArray(payload.mappings)) return;
+
+      setMappings((current) =>
+        mergeAiColumnSuggestions(
+          current,
+          payload.mappings as AiColumnSuggestion[],
+          headers,
+          columns
+        )
+      );
+      setAiMappingStatus(payload.mappings.length > 0 ? 'applied' : 'idle');
+    } catch (error) {
+      if (requestId !== aiRequestIdRef.current) return;
+      console.warn('[spreadsheet mapping] AI suggestions unavailable', error);
+      setAiMappingStatus('fallback');
+    }
+  };
+
   const applyParsedRows = (headers: string[], rows: Record<string, string>[]) => {
     const nextMappings = suggestColumnMappings(headers, columns);
     const needsReview = nextMappings.some((mapping) => mapping.confidence !== 'exact');
@@ -157,6 +205,7 @@ export function CsvImportModal<T>({
     setMappings(nextMappings);
     if (needsReview) {
       setStep('map');
+      void requestAiSuggestions(headers, rows);
       return;
     }
     finalizeMappedRows(rows, nextMappings);
@@ -191,7 +240,14 @@ export function CsvImportModal<T>({
     setMappings((current) =>
       current.map((mapping) =>
         mapping.targetKey === targetKey
-          ? { ...mapping, sourceHeader, confidence: sourceHeader ? 'suggested' : 'unmapped' }
+          ? {
+              ...mapping,
+              sourceHeader,
+              confidence: sourceHeader ? 'suggested' : 'unmapped',
+              origin: 'manual',
+              aiConfidence: undefined,
+              aiReason: undefined,
+            }
           : mapping
       )
     );
@@ -489,6 +545,32 @@ export function CsvImportModal<T>({
               </p>
             </div>
 
+            {aiMappingStatus === 'loading' && (
+              <p
+                className="text-xs text-on-surface-variant inline-flex items-center gap-2"
+                role="status"
+              >
+                <span
+                  className="material-symbols-outlined text-[16px] animate-spin"
+                  aria-hidden="true"
+                >
+                  progress_activity
+                </span>
+                Checking unclear headings with the private mapping assistant…
+              </p>
+            )}
+            {aiMappingStatus === 'applied' && (
+              <p className="text-xs text-primary" role="status">
+                AI suggestions are ready. Check each one before continuing.
+              </p>
+            )}
+            {aiMappingStatus === 'fallback' && (
+              <p className="text-xs text-on-surface-variant" role="status">
+                AI suggestions are unavailable. Standard matches are shown and can be adjusted
+                manually.
+              </p>
+            )}
+
             <div className="border border-outline-variant rounded-xl overflow-hidden divide-y divide-outline-variant/40">
               {columns.map((column) => {
                 const mapping = mappings.find((entry) => entry.targetKey === column.key);
@@ -511,9 +593,18 @@ export function CsvImportModal<T>({
                           {column.required ? 'Required' : 'Optional'}
                         </span>
                       </p>
-                      {mapping?.confidence === 'suggested' && mapping.sourceHeader && (
+                      {mapping?.origin === 'ai' && mapping.sourceHeader ? (
+                        <p className="text-xs text-primary mt-0.5" title={mapping.aiReason}>
+                          AI suggestion · {Math.round((mapping.aiConfidence ?? 0) * 100)}%
+                          confidence
+                        </p>
+                      ) : mapping?.origin === 'manual' && mapping.sourceHeader ? (
+                        <p className="text-xs text-on-surface-variant mt-0.5">Selected by you</p>
+                      ) : mapping?.confidence === 'exact' && mapping.sourceHeader ? (
+                        <p className="text-xs text-green-700 mt-0.5">Exact match</p>
+                      ) : mapping?.confidence === 'suggested' && mapping.sourceHeader ? (
                         <p className="text-xs text-primary mt-0.5">Suggested match</p>
-                      )}
+                      ) : null}
                     </div>
                     <select
                       className="input"
