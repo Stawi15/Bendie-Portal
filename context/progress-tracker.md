@@ -10,6 +10,10 @@ Update this file after every completed feature. Any AI agent reading this should
 
 Spec/plan/tasks: `specs/020-ux-foundations-smart-spreadsheet-import/`. The shared import modal now accepts CSV and modern Excel workbooks, offers worksheet selection, deterministically maps unfamiliar headings to each module's existing template, preserves the existing per-row write/authorization paths, and provides schema-ready CSV and error-report downloads. Spreadsheet processing stays in the browser; optional Qwen/Ollama-assisted matching remains a documented follow-up until an endpoint and data policy are approved. The desktop sidebar is expanded by default with a remembered collapse control, event search and workspace configuration use clearer language, and product home guidance appears only for an empty product workspace to avoid adding routine visual noise.
 
+Feature 021 follow-up (`specs/021-ai-spreadsheet-column-mapping/`) adds that approved optional Qwen/Ollama suggestion layer. Only headings, inferred types, and template metadata are sent through an authenticated server route; row values remain in the browser. Exact deterministic matches are preserved, AI output is schema- and allowlist-validated, confidence is shown in the existing mapping step, and any disabled/failed/invalid model response falls back to manual deterministic mapping.
+
+Feature 021 verification: 12 focused Vitest cases passed, TypeScript passed, Next.js lint passed with pre-existing warnings only, and the full production build completed successfully with placeholder public Supabase values. Review also covered late-response/manual-edit races, duplicate source assignments, disabled-service fallback, server-only configuration, and client/server bundle separation.
+
 Verified: 8 focused Vitest cases, TypeScript, lint (pre-existing warnings only), changed importer-file formatting, and Webpack production compilation. The full repository Prettier check remains red on 232 pre-existing files; the build's page-data phase requires Supabase environment values that are not present in this checkout. Authenticated browser acceptance is therefore still pending.
 
 ---
