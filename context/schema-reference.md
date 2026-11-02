@@ -511,6 +511,12 @@ the former to exist first).
 same rows. An event using both products does not, by itself, create or imply a link — that remains
 feature 001's separate, manual mechanism.
 
+**Feature 022 (2026-10-16) — organisation products management** (`supabase/migrations/organization_products_admin.sql`):
+- `organization_products` gains `status_changed_at` / `status_changed_by` (stamped by trigger `stamp_organization_product_status` when `is_active` changes); `organization_planner_links` gains `planner_app_paused_at` / `planner_app_paused_by` (set when the Planner organisation's `is_active` is switched off from the Portal).
+- History: trigger `log_organization_product_change` writes `organization_audit_log` rows for `organization_products` (row_id = product_key) and `organization_planner_links` (row_id = Planner organisation id); "product added to an event" is written by the route as `table_name = 'event_products'`, `action = 'INSERT'`. `organization_audit_log.action` only accepts INSERT/UPDATE/DELETE.
+- `admin_create_organization(p_name, p_slug, p_products, p_planner_organization_id, p_planner_organization_name)` — SECURITY INVOKER, platform admins only, creates the organisation, its products and its Planner link in one transaction.
+- Planner side (separate project): `is_org_active(bigint)` / `is_event_org_active(bigint)` and gated access helpers, policies and RPCs — see `specs/022-org-products-admin/planner-sql/`.
+
 **Documentation note, flagged not resolved (unchanged from the 2026-09-11 entry):** this changelog
 entry also duplicates into `context/updatedmobilefeatures.md` — not resolved here either.
 

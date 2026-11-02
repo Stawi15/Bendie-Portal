@@ -132,6 +132,10 @@ export async function middleware(request: NextRequest) {
   // could never reach the page explaining why.
   if (user && request.nextUrl.pathname.startsWith('/portal') && request.nextUrl.pathname !== '/portal/no-access') {
     const role = await getRole(user.id);
+    // Feature 022 — the Organisations area manages every organisation's products: platform admins only.
+    if (role !== 'admin' && (request.nextUrl.pathname === '/portal/admin' || request.nextUrl.pathname.startsWith('/portal/admin/'))) {
+      return redirectTo('/unauthorized');
+    }
     if (role !== 'admin') {
       const hasMembership = await getHasOrgMembership(user.id);
       if (!hasMembership) {

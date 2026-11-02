@@ -3,6 +3,7 @@
 import { OrganizationHome } from '@/components/portal/OrganizationHome';
 import { useProductGuard } from '@/lib/useProductGuard';
 import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
+import { PausedProductNotice } from '@/components/portal/PausedProductNotice';
 import { PortalLoadingSkeleton, PortalEntitlementError } from '@/components/portal/PortalLoadingSkeleton';
 
 export default function PlannerHomePage() {
@@ -11,6 +12,7 @@ export default function PlannerHomePage() {
 
   if (entitlement.status === 'loading') return <PortalLoadingSkeleton />;
   if (entitlement.status === 'error') return <PortalEntitlementError />;
+  if (entitlement.states.planner === 'paused') return <PausedProductNotice product="planner" />;
   if (!entitlement.available.planner) return <PortalLoadingSkeleton />;
 
   return <OrganizationHome product="planner" />;

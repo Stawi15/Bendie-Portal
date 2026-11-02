@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { getAvailableProducts } from '@/lib/eventAuth';
+import { getProductStates, type ProductKey } from '@/lib/eventAuth';
+import type { ProductState } from '@/types/database';
 import type { AvailableProducts } from '@/lib/productNavigation';
 
 /**
@@ -14,7 +15,7 @@ import type { AvailableProducts } from '@/lib/productNavigation';
  */
 export type AvailableProductsState =
   | { status: 'loading' }
-  | { status: 'ready'; available: AvailableProducts }
+  | { status: 'ready'; available: AvailableProducts; states: Record<ProductKey, ProductState> }
   | { status: 'error' };
 
 /**
@@ -40,9 +41,12 @@ export function useAvailableProducts(organizationId: string | null, orgLoading: 
     const generation = ++generationRef.current;
     setState({ status: 'loading' });
     try {
-      const available = await getAvailableProducts(organizationId);
+      // Feature 022: one read of all rows gives both the entitlement (`available`,
+      // unchanged meaning: is_active = true) and the presentation states (paused/none).
+      const states = await getProductStates(organizationId);
       if (generationRef.current !== generation) return;
-      setState({ status: 'ready', available });
+      const available = { bendie: states.bendie === 'active', planner: states.planner === 'active' };
+      setState({ status: 'ready', available, states });
     } catch (err) {
       if (generationRef.current !== generation) return;
       console.error('useAvailableProducts: entitlement lookup failed', err);

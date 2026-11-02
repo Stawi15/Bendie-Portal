@@ -15,6 +15,8 @@ export type OnboardingStatus = 'pending' | 'in_progress' | 'completed';
 export type OrgMemberRole = 'owner' | 'admin' | 'member' | 'attendee' | 'facilitator' | 'staff';
 export type EventMemberRole = 'host' | 'organizer' | 'admin' | 'attendee' | 'facilitator' | 'staff' | 'speaker';
 /** Feature 021 — who places attendees in a breakout's rooms. */
+/** Feature 022 — an organisation's product: Active, Paused (switched off) or not included. */
+export type ProductState = 'active' | 'paused' | 'none';
 export type BreakoutMode = 'attendee_choice' | 'organizer_assigns' | 'preassigned_switchable';
 export type BreakoutAssignmentSource = 'attendee' | 'organizer' | 'csv';
 /** Feature 021 — result of the choose_breakout_room() RPC (attendee app, Release 2). */
@@ -489,6 +491,9 @@ export interface Database {
           is_active: boolean;
           enabled_at: string;
           enabled_by: string | null;
+          /** Feature 022 — when / by whom is_active last changed (set by trigger). */
+          status_changed_at: string | null;
+          status_changed_by: string | null;
         };
         Insert: {
           organization_id: string;
@@ -522,6 +527,9 @@ export interface Database {
           linked_by: string | null;
           created_at: string;
           updated_at: string;
+          /** Feature 022 — mirrors the Planner organisation being switched off (app access paused). */
+          planner_app_paused_at: string | null;
+          planner_app_paused_by: string | null;
         };
         Insert: {
           organization_id: string;

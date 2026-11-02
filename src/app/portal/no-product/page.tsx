@@ -1,6 +1,7 @@
 'use client';
 
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
 
 /**
  * Safe no-product state (Feature 006 FR-011/FR-016/FR-047). Reached when the
@@ -13,6 +14,24 @@ import { useOrganization } from '@/contexts/OrganizationContext';
  */
 export default function NoProductPage() {
   const { organization } = useOrganization();
+  const entitlement = useProductEntitlement();
+  // Feature 022: every product the organisation has is paused (none simply "not included").
+  const allPaused =
+    entitlement.status === 'ready' &&
+    Object.values(entitlement.states).some((s) => s === 'paused') &&
+    Object.values(entitlement.states).every((s) => s !== 'active');
+
+  if (allPaused) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center px-4">
+        <span className="material-symbols-outlined text-5xl text-on-tertiary-fixed-variant mb-3" aria-hidden="true">pause_circle</span>
+        <h1 className="font-headline-sm text-headline-sm text-on-surface mb-1">Products paused</h1>
+        <p className="text-body-md font-body-md text-on-surface-variant max-w-sm">
+          {organization?.name ?? 'Your organisation'}&apos;s products are paused. Contact Stawi to resume them.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-4">

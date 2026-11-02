@@ -82,6 +82,7 @@ Two tiers, both real and in use:
 
 - **Feature 017 (2026-10-09)**: every organization `owner`/`admin` is automatically an event `admin` on every event of their organization (triggers on `events` and `organization_members` + backfill), so event access still comes from `event_members` as Feature 003 requires. Only platform admins (or the service role) can create or change organization `owner`/`admin` memberships — enforced by `organization_members` RLS, not only the UI.
 - **Feature 021 (2026-10-14)**: organization `owner`/`admin`s can create, edit and delete their events' **agenda sessions** (`agenda_sessions` policies `*_org_admin`, helper `is_event_org_admin(ev_id)` resolved from `events.organization_id`). Breakout rooms and room assignments may be managed by platform admins, org admins and event `host`/`organizer`/`admin`s. The agenda page shows controls only to people who can use them (session editing: platform/org admin; breakout tools: those plus event hosts/organizers).
+- **Feature 022 (2026-10-16)**: `/portal/admin/**` (the Organisations area) is platform-admin only — the middleware redirects anyone else to `/unauthorized`, the pages re-check `isGlobalAdmin`, and its routes live under `app/api/admin/organizations/**` and `app/api/admin/planner-organizations` (each calls `requirePlatformAdmin()` from `src/lib/orgProductsAdminServer.ts`). Organisation owners/admins can see their products' state (a paused notice) but never change it.
 
 **Middleware pattern** (`src/middleware.ts`):
 
@@ -198,6 +199,8 @@ see `specs/001-bendie-planner-integration/` for the full spec/plan/tasks.
 - **A Planner-side failure never fails a successful Portal operation** — member sync is
   fire-and-forget from the caller's perspective; its outcome is recorded and surfaced to admins,
   not treated as blocking.
+
+- **Planner organisation switch (Feature 022)**: Planner's `organizations.is_active` is enforced by Planner's own access checks (`is_org_active` / `is_event_org_active`, installed by `specs/022-org-products-admin/planner-sql/enforce_planner_organization_active.sql`). When the Portal pauses an organisation's "Planner app access", it switches that flag off: the organisation's people and staff assigned to its events lose Planner access, Planner platform admins keep it. Resuming Planner in the Portal switches it back on. The Portal only offers this once `is_org_active` exists in Planner.
 
 ## Invariants
 

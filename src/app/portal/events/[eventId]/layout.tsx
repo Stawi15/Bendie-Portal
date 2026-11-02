@@ -11,6 +11,8 @@ import { EVENT_SECTIONS, EVENT_GROUP_DESCRIPTIONS, OVERVIEW_GROUP, type EventSec
 import { isSectionShownByModules, type ModuleProduct } from '@/lib/eventModules';
 import { PRODUCT_PRESENTATION } from '@/lib/productPresentation';
 import { ManageModulesModal } from '@/components/portal/ManageModulesModal';
+import { PausedProductNotice } from '@/components/portal/PausedProductNotice';
+import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
 import { isProductAvailableForEvent, getAvailableProducts, type ProductKey } from '@/lib/eventAuth';
 import { parseEventOriginSignal, resolveEventTabProduct, resolveDefaultProduct } from '@/lib/productNavigation';
 
@@ -333,6 +335,13 @@ export default function EventLayout({ children }: { children: React.ReactNode })
 
   const activeSectionKey = pathname.startsWith(`/portal/events/${eventId}/`) ? pathname.slice(`/portal/events/${eventId}/`.length).split('/')[0] : null;
   const activeSection = useMemo(() => EVENT_SECTIONS.find((s) => s.key === activeSectionKey), [activeSectionKey]);
+  // Feature 022: the organisation's product states (shared provider, no extra read). A tab whose
+  // product is paused shows the paused notice instead of being redirected away.
+  const entitlement = useProductEntitlement();
+  const pausedActiveProduct: ProductKey | null =
+    activeSection && activeSection.product !== 'shared' && entitlement.status === 'ready' && entitlement.states[activeSection.product] === 'paused'
+      ? activeSection.product
+      : null;
   // Feature 016 — setup-module preference (events.portal_setup_modules). DISPLAY
   // ONLY, layered after the access check: it can only hide an otherwise-available
   // tab from the bar, never make one available, and never blocks the route itself
@@ -484,6 +493,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
     if (activeSection && isSectionAvailable(activeSection)) {
       // fall through to the no-signal backfill below, never to a mismatch redirect
     } else if (activeSection && activeSection.product !== 'shared' && productAvailability[activeSection.product] !== true) {
+      if (pausedActiveProduct) return; // Feature 022: show the paused notice, don't redirect
       const otherProduct: ProductKey = activeSection.product === 'bendie' ? 'planner' : 'bendie';
       if (productAvailability[otherProduct] === true) {
         const entryTab = otherProduct === 'planner' ? 'planner-overview' : 'dashboard';
@@ -514,7 +524,7 @@ export default function EventLayout({ children }: { children: React.ReactNode })
         router.replace(`/portal/events/${eventId}/${activeSectionKey}?product=${entryProduct}`);
       }
     }
-  }, [activeSectionKey, activeSection, productAvailability, productAvailabilityChecked, originSignal, eventId, router, isSectionAvailable]);
+  }, [activeSectionKey, activeSection, productAvailability, productAvailabilityChecked, originSignal, eventId, router, isSectionAvailable, pausedActiveProduct]);
 
   // Corrected 2026-09-17 (manual-recheck regression): the product every
   // internal tab link should carry. ONLY `dashboard`/`planner-overview`
@@ -1042,6 +1052,8 @@ export default function EventLayout({ children }: { children: React.ReactNode })
               <div key={i} className="h-14 bg-surface-container-low rounded-xl animate-pulse" />
             ))}
           </div>
+        ) : activeSectionUnavailable && pausedActiveProduct ? (
+          <PausedProductNotice product={pausedActiveProduct} />
         ) : activeSectionUnavailable ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">block</span>

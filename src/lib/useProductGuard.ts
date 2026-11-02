@@ -24,6 +24,8 @@ export function useProductGuard(desiredProduct: ProductKey) {
   useEffect(() => {
     if (entitlement.status !== 'ready') return;
     if (entitlement.available[desiredProduct]) return;
+    // Feature 022: a paused product stays put — its page shows the paused notice instead.
+    if (entitlement.states[desiredProduct] === 'paused') return;
 
     const resolved = resolveProductFallback(desiredProduct, entitlement.available);
     const suffix = typeof window !== 'undefined' && window.location.pathname.endsWith('/events') ? '/events' : '';

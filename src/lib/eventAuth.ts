@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+import type { ProductState } from '@/types/database';
 
 export type ProductKey = 'bendie' | 'planner';
 
@@ -144,6 +145,34 @@ export async function getAvailableProducts(
     bendie: rows.some((r) => r.product_key === 'bendie'),
     planner: rows.some((r) => r.product_key === 'planner'),
   };
+}
+
+/**
+ * Feature 022 — every product's state for an organisation, from ALL its
+ * `organization_products` rows: active, paused (row exists, switched off) or
+ * none (never included). Used only for presentation (the paused notice);
+ * entitlement decisions keep using `available` / `getAvailableProducts`.
+ * Throws on error, like `getAvailableProducts`.
+ */
+export async function getProductStates(
+  organizationId: string,
+  client: SupabaseClient = supabase
+): Promise<Record<ProductKey, ProductState>> {
+  const { data, error } = await client
+    .from('organization_products')
+    .select('product_key, is_active')
+    .eq('organization_id', organizationId);
+  if (error) {
+    console.error('getProductStates: organization_products lookup failed', error);
+    throw error;
+  }
+
+  const stateOf = (key: ProductKey): ProductState => {
+    const row = (data ?? []).find((r) => r.product_key === key);
+    if (!row) return 'none';
+    return row.is_active ? 'active' : 'paused';
+  };
+  return { bendie: stateOf('bendie'), planner: stateOf('planner') };
 }
 
 /**

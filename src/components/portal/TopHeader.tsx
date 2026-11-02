@@ -10,13 +10,14 @@ import { useProduct } from '@/contexts/ProductContext';
 import { useCreateEvent } from '@/contexts/CreateEventContext';
 import { PRODUCT_PRESENTATION, NEUTRAL_PRESENTATION } from '@/lib/productPresentation';
 import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
+import { pausedProductMessage } from '@/components/portal/PausedProductNotice';
 import { useOrgEvents } from '@/lib/useOrgEvents';
 import { useRecentActivity } from '@/lib/useRecentActivity';
 import { isProductAvailableForEvent } from '@/lib/eventAuth';
 import { resolveProductSwitchDestination, parseEventOriginSignal, resolveEventTabProduct, type ProductKey } from '@/lib/productNavigation';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import { Avatar } from '@/components/portal/Avatar';
-import { CreateOrganizationModal } from '@/components/portal/CreateOrganizationModal';
+import { CreateOrganizationFlow } from '@/components/portal/admin/CreateOrganizationFlow';
 
 const PRODUCT_LABEL: Record<ProductKey, string> = { bendie: 'Bendie', planner: 'Bendie Planner' };
 
@@ -39,6 +40,12 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
   // offers nothing while that shared state is still 'loading'/'error'.
   const entitlement = useProductEntitlement();
   const availableProducts = entitlement.status === 'ready' ? entitlement.available : { bendie: false, planner: false };
+  // Feature 022: a paused product stays in the switcher (disabled, "Paused" pill) instead of vanishing.
+  const isProductPaused = (key: ProductKey) => entitlement.status === 'ready' && entitlement.states[key] === 'paused';
+  const switcherProducts = {
+    bendie: availableProducts.bendie || isProductPaused('bendie'),
+    planner: availableProducts.planner || isProductPaused('planner'),
+  };
   const { currentEventId } = useEvent();
   const { canCreateEvent, openCreateEvent } = useCreateEvent();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -229,6 +236,16 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                     >
                       <span className="material-symbols-outlined text-base">add</span> New Organisation
                     </button>
+                    {/* Feature 022 — platform-admin Organisations area (products and Planner connections). */}
+                    <button
+                      onClick={() => {
+                        setOrgMenuOpen(false);
+                        router.push('/portal/admin/organisations');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base">domain</span> Manage organisations
+                    </button>
                   </div>
                 )}
               </div>
@@ -249,19 +266,22 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
           </button>
         )}
 
-        {(availableProducts.bendie || availableProducts.planner) && (
+        {(switcherProducts.bendie || switcherProducts.planner) && (
           <>
             <span className="h-6 w-px bg-outline-variant flex-shrink-0 hidden sm:block" aria-hidden="true" />
-            {availableProducts.bendie && availableProducts.planner ? (
+            {switcherProducts.bendie && switcherProducts.planner ? (
               <div className={`hidden sm:flex items-center gap-0.5 h-10 rounded-xl p-1 flex-shrink-0 backdrop-blur-sm ${NEUTRAL_PRESENTATION.controlSurface}`} role="group" aria-label="Product">
                 {(['bendie', 'planner'] as const).map((key) => {
                   const selected = key === breadcrumbProduct;
+                  const paused = isProductPaused(key);
                   return (
                     <button
                       key={key}
                       onClick={() => handleProductSwitch(key)}
                       aria-pressed={selected}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm font-label-sm font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                      disabled={paused}
+                      title={paused ? pausedProductMessage(key) : undefined}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm font-label-sm font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-70 ${
                         selected ? PRODUCT_PRESENTATION[key].switcherSelected : NEUTRAL_PRESENTATION.switcherUnselected
                       }`}
                     >
@@ -269,21 +289,28 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                           never relies on colour alone, and the control's size never changes between products. */}
                       <span className={`w-1.5 h-1.5 rounded-full transition-opacity ${PRODUCT_PRESENTATION[key].dot} ${selected ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />
                       {PRODUCT_LABEL[key]}
+                      {paused && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold">Paused</span>}
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0 text-label-sm font-label-sm text-on-surface-variant">
+              <div
+                className="hidden sm:flex items-center gap-1.5 flex-shrink-0 text-label-sm font-label-sm text-on-surface-variant"
+                title={isProductPaused(switcherProducts.bendie ? 'bendie' : 'planner') ? pausedProductMessage(switcherProducts.bendie ? 'bendie' : 'planner') : undefined}
+              >
                 <span className="material-symbols-outlined text-[16px]">
-                  {availableProducts.bendie ? 'celebration' : 'event_note'}
+                  {switcherProducts.bendie ? 'celebration' : 'event_note'}
                 </span>
-                {availableProducts.bendie ? PRODUCT_LABEL.bendie : PRODUCT_LABEL.planner}
+                {switcherProducts.bendie ? PRODUCT_LABEL.bendie : PRODUCT_LABEL.planner}
+                {isProductPaused(switcherProducts.bendie ? 'bendie' : 'planner') && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold">Paused</span>
+                )}
               </div>
             )}
 
             {/* Narrow-screen fallback (§22) — a compact icon-triggered dropdown, never breadcrumb arrows, and only rendered at all when there's a real choice to make. */}
-            {availableProducts.bendie && availableProducts.planner && (
+            {switcherProducts.bendie && switcherProducts.planner && (
               <div className="relative sm:hidden">
                 <button
                   onClick={() => setProductMenuOpen((v) => !v)}
@@ -302,11 +329,14 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                           key={key}
                           onClick={() => handleProductSwitch(key)}
                           aria-current={key === breadcrumbProduct ? 'true' : undefined}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 ${
+                          disabled={isProductPaused(key)}
+                          title={isProductPaused(key) ? pausedProductMessage(key) : undefined}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 disabled:cursor-not-allowed disabled:opacity-70 ${
                             key === breadcrumbProduct ? `${PRODUCT_PRESENTATION[key].accentText} font-bold` : 'text-on-surface'
                           }`}
                         >
                           <span className="truncate">{PRODUCT_LABEL[key]}</span>
+                          {isProductPaused(key) && <span className="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold flex-shrink-0">Paused</span>}
                           {key === breadcrumbProduct && (
                             <span className="material-symbols-outlined text-base flex-shrink-0">check</span>
                           )}
@@ -512,7 +542,7 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
         </div>
       </div>
 
-      <CreateOrganizationModal
+      <CreateOrganizationFlow
         open={createOrgOpen}
         onClose={() => setCreateOrgOpen(false)}
         onCreated={(org) => {

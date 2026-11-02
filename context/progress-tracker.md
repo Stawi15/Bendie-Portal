@@ -6,6 +6,21 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 022 — Organisation Products Management 🚧 built (2026-10-16) — migrations not yet applied; validation, /review pending
+
+Spec/plan/tasks: `specs/022-org-products-admin/`.
+
+- **New platform-admin-only area** `/portal/admin/organisations` (top menu → "Manage organisations"). `src/middleware.ts` sends non-admins on `/portal/admin*` to `/unauthorized`; every page and `api/admin/**` route re-checks platform admin.
+- **List:** every organisation with each product's state (Active / Paused / Not included), Planner connection, events, members, created date. **Create organisation** moved here (`CreateOrganizationFlow`, replacing `CreateOrganizationModal`) and now takes products and a Planner connection (existing unconnected Planner organisation, or a new one) — one atomic `admin_create_organization` RPC.
+- **Organisation page:** Products card (switch on / resume / pause with who-and-when; Planner needs a connection first; pausing shows the impact; "Add Bendie/Planner" to existing events, with Planner set-up retry), Overview, History (from `organization_audit_log`).
+- **Pause = nothing deleted.** Optional "Also pause Planner app access" switches the Planner organisation's `is_active` off; offered only once Planner enforces it.
+- **Organisation users** see "{Product} is paused for your organisation. Contact Stawi to resume it." (product pages, event tabs, header switcher pill, no-product page) instead of the product vanishing. Entitlement checks are unchanged.
+- **To apply (developer, SQL editor):**
+  - Bendie project `droaamagpsojkzznywgd`: `supabase/migrations/organization_products_admin.sql` (T003), then record it in migration history.
+  - Planner project `zghoaawgrmvqdlksuiam`: `specs/022-org-products-admin/planner-sql/enforce_planner_organization_active.sql` (T023); `revert_enforce_planner_organization_active.sql` undoes it in one paste.
+
+---
+
 ## Feature 021 — Bendie Breakout Rooms ✅ Release 1 built (2026-10-14) — /review pending; Release 2 (attendee app) to do
 
 Spec/plan/tasks: `specs/021-bendie-breakout-rooms/`.
