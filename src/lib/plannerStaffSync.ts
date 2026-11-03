@@ -67,6 +67,77 @@ export async function findOrCreatePlannerProfile(
   return { id: created.user.id };
 }
 
+export type PlannerOrgPlacement = 'placed' | 'promoted' | 'unchanged' | 'skipped';
+
+/**
+ * Feature 022 follow-up (2026-11-02): puts a client organisation's owner/admin in that organisation's
+ * Planner organisation, so the Planner app doesn't say "not assigned to any organization" while
+ * they already have event access. Runs after the event assignment, from every path that gives
+ * Planner access.
+ *
+ * - Only for OWNERS/ADMINS of the event's own Portal organisation (decided 2026-11-03), and only
+ *   when that organisation is connected to Planner (organization_planner_links). Ordinary members
+ *   are not placed: Stawi staff are often plain members of client organisations in the Portal,
+ *   and nothing in the Portal tells them apart from the client's own members.
+ * - They become Planner org admins of that organisation (never demoted).
+ * - Only FILLS an empty Planner organisation — never moves anyone. Stawi staff keep their home
+ *   organisation (Planner org 1) and keep getting per-event access.
+ * - Portal platform admins and Planner platform admins are left alone.
+ * Never throws: a failure here must not undo the event access that already succeeded.
+ */
+export async function ensurePlannerOrgPlacement(params: {
+  planner: ReturnType<typeof getPlannerAdminClient>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  portalAdmin: any;
+  eventId: string;
+  userId: string;
+  plannerProfileId: string;
+}): Promise<PlannerOrgPlacement> {
+  const { planner, portalAdmin, eventId, userId, plannerProfileId } = params;
+  try {
+    const { data: event } = await portalAdmin.from('events').select('organization_id').eq('id', eventId).maybeSingle();
+    if (!event?.organization_id) return 'skipped';
+
+    const [{ data: link }, { data: orgMember }, { data: portalProfile }] = await Promise.all([
+      portalAdmin.from('organization_planner_links').select('planner_organization_id').eq('organization_id', event.organization_id).maybeSingle(),
+      portalAdmin.from('organization_members').select('role').eq('organization_id', event.organization_id).eq('user_id', userId).maybeSingle(),
+      portalAdmin.from('profiles').select('global_role').eq('id', userId).maybeSingle(),
+    ]);
+    if (!link || !orgMember || !ORG_ADMIN_ROLES.includes(orgMember.role)) return 'skipped';
+    if (!portalProfile || portalProfile.global_role === 'admin') return 'skipped';
+
+    const plannerOrgId = Number(link.planner_organization_id);
+
+    const { data: profile, error: profileError } = await planner
+      .from('profiles')
+      .select('organization_id,is_org_admin,is_platform_admin')
+      .eq('id', plannerProfileId)
+      .maybeSingle();
+    if (profileError || !profile || profile.is_platform_admin) return 'skipped';
+
+    if (profile.organization_id === null) {
+      const { error } = await planner
+        .from('profiles')
+        .update({ organization_id: plannerOrgId, is_org_admin: true })
+        .eq('id', plannerProfileId)
+        .is('organization_id', null);
+      if (error) throw error;
+      return 'placed';
+    }
+
+    if (Number(profile.organization_id) === plannerOrgId && !profile.is_org_admin) {
+      const { error } = await planner.from('profiles').update({ is_org_admin: true }).eq('id', plannerProfileId).eq('organization_id', plannerOrgId);
+      if (error) throw error;
+      return 'promoted';
+    }
+
+    return 'unchanged';
+  } catch (err) {
+    console.error('ensurePlannerOrgPlacement: could not place the Planner profile in its organisation', err);
+    return 'skipped';
+  }
+}
+
 // Behavior-identical refactor (Feature 008 research.md R6): the role
 // classification and flag shapes themselves now live in
 // plannerPermissionPresets.ts as the single canonical
@@ -283,6 +354,8 @@ export async function syncStaffMemberToPlanner(params: {
     })
     .eq('event_id', eventId)
     .eq('user_id', userId);
+
+  await ensurePlannerOrgPlacement({ planner, portalAdmin, eventId, userId, plannerProfileId });
 
   return { ok: true, status: 'succeeded' };
 }

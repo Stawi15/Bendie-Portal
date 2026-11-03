@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { requireEventWorkspaceAccess, isProductAvailableForEvent, canAdministerPlannerPermissions } from '@/lib/eventAuth';
 import { resolveProvisioningPhase } from '@/lib/plannerOverview';
-import { findOrCreatePlannerProfile } from '@/lib/plannerStaffSync';
+import { ensurePlannerOrgPlacement, findOrCreatePlannerProfile } from '@/lib/plannerStaffSync';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 import { enableAssignment, snapshotFromAssignment, recordAuditEntry } from '@/lib/plannerPermissions';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -205,6 +205,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       context.member.role,
       !!context.member.plannerPermissionsConfiguredAt
     );
+
+    // Feature 022 follow-up: a client organisation's member also belongs to its Planner organisation.
+    await ensurePlannerOrgPlacement({ planner: getPlannerAdminClient(), portalAdmin: context.portalAdmin, eventId, userId: memberId, plannerProfileId });
 
     if (branch !== 'noop') {
       await recordAuditEntry(context.portalAdmin, {
