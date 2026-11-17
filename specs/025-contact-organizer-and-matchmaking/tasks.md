@@ -1,6 +1,6 @@
 # Tasks: Contact Organizer Toggle and Matchmaking Checks
 
-- [ ] T001 Confirm live: `support_contacts.show_on_access_screen` (boolean, not null, default false) and the index `support_contacts_one_access_contact_per_event` (developer, SQL in `specs/024-event-timezone/research.md`'s gate plus this one). Gates the merge, not the coding.
+- [X] T001 Confirm live: `support_contacts.show_on_access_screen` (boolean, not null, default false) and the index `support_contacts_one_access_contact_per_event` (developer, SQL in `specs/024-event-timezone/research.md`'s gate plus this one). Gates the merge, not the coding.
 - [X] T002 [P] Add `show_on_access_screen: boolean` to the `support_contacts` Row in `src/types/database.ts`.
 - [X] T003 [US1] `src/app/portal/events/[eventId]/info-center/page.tsx`:
   - select `show_on_access_screen`;
@@ -22,3 +22,8 @@
 ## Verification note
 
 **2026-11-17:** `tsc` and lint exit 0 (no new warnings; the two pages' existing `fetchData` hook warnings are unchanged), `npm test` 60/60, and the placeholder-env build passes. Still open: T001 (live column and index check), T007 (browser pass) and T008.
+
+- **T001, live verification: PASS (2026-11-17, via the Supabase MCP, read-only):**
+  - `support_contacts.show_on_access_screen` is `boolean NOT NULL DEFAULT false`;
+  - the index is `CREATE UNIQUE INDEX support_contacts_one_access_contact_per_event ON public.support_contacts (event_id) WHERE show_on_access_screen`;
+  - 11 contacts are ticked, and no event has more than one.

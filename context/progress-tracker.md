@@ -6,7 +6,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
-## Feature 025 — Contact Organizer Toggle & Matchmaking Checks 🚧 built (2026-11-17) — live column check, browser pass, /review pending
+## Feature 025 — Contact Organizer Toggle & Matchmaking Checks 🚧 built (2026-11-17), live schema verified — browser pass, /review pending
 
 Spec/plan/tasks: `specs/025-contact-organizer-and-matchmaking/`. Branch `025-contact-organizer-and-matchmaking` (stacked on 024). Bendie Events brief items 6 and 10.
 
@@ -15,7 +15,7 @@ Spec/plan/tasks: `specs/025-contact-organizer-and-matchmaking/`. Branch `025-con
 
 ---
 
-## Feature 024 — Event Time Zone 🚧 built (2026-11-17) — live grant check (T001), browser pass, /review pending
+## Feature 024 — Event Time Zone 🚧 built (2026-11-17), live schema verified — browser pass, /review pending
 
 Spec/plan/tasks: `specs/024-event-timezone/`. Branch `024-event-timezone` (stacked on 023).
 
@@ -26,7 +26,7 @@ Spec/plan/tasks: `specs/024-event-timezone/`. Branch `024-event-timezone` (stack
   - Planner start/end dates are computed in the zone, which fixes a latent day-early bug.
   - Agenda day numbers use the event's zone.
 - **Also:** the feedback-link hint mentions the 18:00 last-day push. New `src/lib/eventTimeZone.ts` (10 tests) and `components/portal/TimeZoneField.tsx`.
-- **Before merge:** run research R9's SQL on both projects. Adding `timezone` to `EVENTS_SELECT_COLUMNS` breaks every event read if the `authenticated` grant is missing.
+- **Live check, passed 2026-11-17:** the column, the `authenticated` grant (anon has none), the check constraint and Planner's default and trigger are all as the briefs say. 30 live events have no zone yet.
 
 ---
 

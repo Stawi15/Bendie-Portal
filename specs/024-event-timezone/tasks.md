@@ -10,7 +10,7 @@ description: "Task list for Feature 024 — Event Time Zone"
 
 ## Phase 1: Setup
 
-- [ ] T001 Confirm the live facts in research R9 before merge: the `events.timezone` column, its `authenticated` grant, `events_timezone_valid`, and Planner's `events.timezone` default. **The developer runs the SQL**; record the result in the Verification note. Implementation may proceed first, but the branch must not be merged until this passes.
+- [X] T001 Confirm the live facts in research R9 before merge: the `events.timezone` column, its `authenticated` grant, `events_timezone_valid`, and Planner's `events.timezone` default. **The developer runs the SQL**; record the result in the Verification note. Implementation may proceed first, but the branch must not be merged until this passes.
 
 ## Phase 2: Foundational
 
@@ -103,3 +103,12 @@ description: "Task list for Feature 024 — Event Time Zone"
   - **T001:** run the live grant and constraint SQL. Required before merge.
   - **T013:** the browser pass (developer).
   - **T014:** `/review`, converge and remember.
+
+- **T001, live verification: PASS (2026-11-17, via the Supabase MCP, read-only):**
+  - **Bendie `droaamagpsojkzznywgd`:**
+    - `events.timezone` is nullable `text`, granted `SELECT, INSERT, UPDATE, REFERENCES` to `authenticated`;
+    - `anon` has only `REFERENCES`, so no read, which is correct;
+    - `events_timezone_valid` = `CHECK (timezone IS NULL OR is_valid_timezone(timezone))`, where `is_valid_timezone` tests `AT TIME ZONE`.
+  - **Planner `zghoaawgrmvqdlksuiam`:** `events.timezone` is `text NOT NULL DEFAULT 'Africa/Nairobi'`. Trigger `trg_validate_event_timezone` checks `pg_timezone_names` and raises "Unknown timezone …", which the provisioning retry regex `/time ?zone/i` matches.
+  - **Picker vs Planner:** of the 419 picker zones, only `America/Coyhaique` (added 2025) is missing from Planner's `pg_timezone_names`. It's covered by the FR-010 fallback.
+  - **Data:** 32 events, of which 2 have a zone and 30 live events have none, so they'll show the "reminders are off" notice.
