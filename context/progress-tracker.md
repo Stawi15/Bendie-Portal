@@ -6,6 +6,20 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 023 — Smart Spreadsheet Import ✅ Built and accepted (2026-11-17)
+
+Spec/plan/tasks: `specs/023-smart-spreadsheet-import/`. Branch `023-smart-spreadsheet-import`. A selective port of the unmerged Codex branch `codex/ux-foundations-smart-import` (`45a2a91`), import capability only; its sidebar/wording/home-page changes and the AI-mapping commit (`d013ddf`) were deliberately left out. The Codex branches are untouched.
+
+- **Every import screen (19) now takes Excel `.xlsx`** as well as CSV and pasted rows, with a sheet picker for multi-sheet workbooks. `.xls` is rejected with re-save guidance; Excel files are limited to 10 MB / 5,000 rows per sheet. CSV and paste keep today's behaviour and limits.
+- **"Match your columns" step** when headings don't match the template (rule-based suggestions from key/label/aliases; nothing leaves the browser). Files whose headings already match the template keys (ignoring case) skip it and import exactly as before. It replaces the old "missing required column" panel.
+- **Downloads:** "Download corrected CSV" (template headings) in the preview, "Download error report" in the result.
+- **No screen, database, RLS or route changes.** New: `src/lib/spreadsheetImport.ts` (+ 38 unit tests), `exceljs`, `vitest` / `npm test`.
+- **Verified:** type-check, lint, `npm test` (UTC, Africa/Nairobi, America/Los_Angeles), production build (`exceljs` only in its own lazy chunk); code check that the import/replace/grouped-import logic is identical to `main` and no consumer file changed.
+- **`/review` (2026-11-16):** 3 Important findings fixed: merged title rows, same-meaning columns rejected as duplicates, and package advisories (`vitest` ^4.1.12, `exceljs`'s `uuid` pinned to 11.1.1). 6 Minor findings left as reported.
+- **Browser acceptance: PASS** (2026-11-17, developer, all quickstart scenarios on a test event).
+
+---
+
 ## Feature 022 — Organisation Products Management 🚧 built (2026-10-16) — migrations not yet applied; validation, /review pending
 
 Spec/plan/tasks: `specs/022-org-products-admin/`.

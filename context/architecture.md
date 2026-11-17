@@ -10,7 +10,8 @@
 | Styling        | Tailwind CSS 3, custom Material-style tokens | See `ui-tokens.md`                                              |
 | Forms          | Plain `useState` + direct Supabase calls | The dominant pattern in this codebase — see `code-standards.md`; `react-hook-form` + `zod` are installed but not currently used anywhere in `src/` |
 | Notifications  | `react-hot-toast`                      | Save/error feedback on every mutation                                 |
-| CSV            | `papaparse`                            | Facilitator bulk import (`src/lib/csvImport.ts`)                      |
+| CSV / Excel    | `papaparse` + `exceljs` (lazy-loaded)  | The shared import dialog (`CsvImportModal`) used by every bulk-import screen: CSV, pasted rows and `.xlsx` (Feature 023), via `src/lib/csvImport.ts` + `src/lib/spreadsheetImport.ts`. `exceljs` loads only when an `.xlsx` is chosen |
+| Testing        | `vitest` (`npm test`)                  | Unit tests for pure helpers only (`src/lib/*.test.ts`, Feature 023); no component/DOM tests |
 | Drag & drop    | `@dnd-kit/*`                           | Installed, not yet wired up — intended for the Networking Questionnaire Builder's reorderable options |
 | Color picker   | `react-color`                          | Installed, not yet wired up — Theme Colors currently uses plain `<input type="color">` + hex text field |
 | State          | `zustand`                              | Installed, not yet used — state today is React Context (`AuthContext`, `EventContext`, `OrganizationContext`, `ConfirmContext`) |

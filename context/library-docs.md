@@ -122,7 +122,7 @@ Existing pattern from `src/lib/assetUpload.ts`: build a collision-resistant path
 
 ## papaparse (CSV import)
 
-Used exclusively for the facilitators bulk-import flow (`src/lib/csvImport.ts` + `CsvImportModal.tsx`).
+Used by the shared import dialog (`src/lib/csvImport.ts` + `CsvImportModal.tsx`) behind every bulk-import screen — CSV files and pasted rows. `parseCsvFile`/`parseCsvText` are deliberately lenient; don't tighten them (Feature 023, research R4).
 
 ```typescript
 Papa.parse<Record<string, string>>(file, {
@@ -165,3 +165,13 @@ If you're the first to actually use one of these, you're setting the convention 
 - **@dnd-kit** — earmarked for the Networking Questionnaire Builder's option reordering.
 - **react-color** — earmarked as a possible upgrade to the native `<input type="color">` used today.
 - **zustand** — no current usage; React Context is the established state pattern.
+
+---
+
+## exceljs (Excel import, Feature 023)
+
+Reads `.xlsx` in the browser for the shared import dialog (`src/lib/spreadsheetImport.ts`). **Always load it lazily** — `const ExcelJS = await import('exceljs')` — so its ~0.9 MB chunk is only fetched when someone picks an Excel file. Convert cell values with `cellText()`, never `String(value)`: date cells arrive as UTC-based `Date`s (read only UTC parts, or dates shift by a day), and a time-only cell arrives as a `Date` on 1899-12-30. Legacy `.xls` is not supported. Merged cells: exceljs repeats a merged value into every covered cell, so check `cell.isMerged && cell.master.address !== cell.address` when that matters (heading detection does). `package.json` pins exceljs's `uuid` to 11.1.1 via `overrides` (advisory in the 8.x it ships with); drop the override once exceljs updates.
+
+## vitest (unit tests, Feature 023)
+
+`npm test` (`vitest run`), `vitest` ^4.1.12 (2.x had security advisories). No config file: tests sit beside the code (`src/lib/*.test.ts`) and use relative imports. Pure functions only — there is no DOM test setup. Run date-sensitive tests in another zone too: `TZ=Africa/Nairobi npm test`.

@@ -4,6 +4,8 @@ export type ColumnSpec = {
   key: string;
   label: string;
   required?: boolean;
+  /** Optional human header variants used by the shared spreadsheet mapper. */
+  aliases?: string[];
 };
 
 export type RowResult<T> = {
@@ -75,7 +77,16 @@ export function buildCsvTemplate(columns: ColumnSpec[], sampleRows: Record<strin
 }
 
 export function downloadCsvTemplate(filename: string, columns: ColumnSpec[], sampleRows: Record<string, string>[]) {
-  const blob = buildCsvTemplate(columns, sampleRows);
+  downloadBlob(filename, buildCsvTemplate(columns, sampleRows));
+}
+
+/** Feature 023 — downloads any table as a CSV in the browser (corrected data, error reports). Nothing is sent over the network. */
+export function downloadCsv(filename: string, headers: string[], rows: Record<string, string>[]) {
+  const csv = Papa.unparse({ fields: headers, data: rows.map((row) => headers.map((h) => row[h] ?? '')) });
+  downloadBlob(filename, new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+}
+
+function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

@@ -247,6 +247,34 @@ After building or materially changing any component, update this file with the c
   - **`previewWarnings(validData)`:** non-blocking warnings, shown in the preview in a token-styled box: `rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3`, `text-xs text-on-tertiary-fixed-variant`, with a `warning` icon. Use this for any "won't stop the import" notice. The older "Needs attention" error block in the same file still uses raw amber classes (pre-existing, not changed here).
   - **`importAll(validData)`:** replaces the per-row loop when several rows form one record. The agenda spreadsheet uses it: one session per title and start, one row per breakout room. It returns one outcome per row, and a success `notice` (e.g. "Updated the existing session") appears in the results table.
 
+#### CsvImportModal: sheet picker and "Match your columns" step (Feature 023)
+
+File: `src/components/portal/CsvImportModal.tsx`
+Last updated: 2026-11-16
+
+| Property         | Class |
+| ---------------- | ----- |
+| Background       | modal `bg-white`; table head `bg-surface-container-low/50` |
+| Border           | `border border-outline-variant` (table, sheet options); rows `divide-y divide-outline-variant/30` |
+| Border radius    | `rounded-xl` (table, sheet options, error panel); chips `rounded-full` |
+| Text — primary   | `text-sm text-on-surface font-medium` (field / sheet name) |
+| Text — secondary | `text-xs text-on-surface-variant`; Required/Optional `text-[10px] font-medium` (`text-error` / `text-on-surface-variant`) |
+| Step heading     | eyebrow `text-xs font-bold uppercase tracking-wide text-primary` + `text-sm text-on-surface-variant mt-0.5` (same as the pick step) |
+| Spacing          | step `space-y-4`; cells `px-3 py-2`; sheet option `p-3 gap-3`; actions `flex gap-3 pt-2` |
+| Hover state      | sheet option `hover:bg-surface-container-low/50` |
+| Shadow           | none (modal `panel-shadow` only) |
+| Accent usage     | status chips: Matched `bg-primary/10 text-primary`; Suggested `bg-tertiary-fixed/40 text-on-tertiary-fixed-variant`; Chosen by you `bg-surface-container-low text-on-surface`; Not matched `bg-surface-container-low text-on-surface-variant` |
+| Error state      | panel `bg-error/5 border border-error/20 rounded-xl p-4`, `text-sm font-medium text-error`; invalid select `input border-error` |
+| Loading state    | `text-xs text-on-surface-variant` + `material-symbols-outlined animate-spin` `progress_activity`, `role="status"` ("Reading file…") |
+
+**Pattern notes:**
+- **Flow:** pick → sheet (only when a workbook has more than one populated sheet) → map (only when `needsColumnReview` is true) → preview → result. Files whose headings already match the template keys skip both new steps.
+- **Mapping row:** template label plus Required/Optional chip | `select.input` of the file's headings plus "— None —" | status chip. Changing a select marks it "Chosen by you".
+- **Blocking checks:** Continue stays disabled while a required field is unmatched or one heading is chosen twice. The error panel names the fields, lists "Columns we found" and offers the example-spreadsheet download. This replaced the old preview "missing required column" panel.
+- **Downloads:** `btn-secondary text-sm py-1.5 w-fit` with the `download` symbol: "Download corrected CSV" (preview), "Download error report" (result). Built in the browser via `downloadCsv` in `csvImport.ts`.
+- **Reuse this mapping table** for any future "match external columns to our fields" flow, rather than building a new one.
+- **Colours:** new markup uses tokens only. The preview's "Ready / Needs attention" chips and result banners still use the pre-existing raw `green-*` / `amber-*` classes (unchanged, flagged for `/review`).
+
 ### Global Form Primitives (defined in `globals.css`, not React components)
 
 `.input`, `.label`, `.hint`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.panel-shadow`, `.custom-scrollbar` — see `ui-tokens.md` for exact definitions. Always reuse these classes rather than rebuilding equivalent styles per component.
@@ -257,4 +285,4 @@ After building or materially changing any component, update this file with the c
 
 These exist and are in active use but haven't had their classes extracted into this registry yet — capture with `/imprint [filepath]` the next time each is touched:
 
-`CsvImportModal` (only its Feature 021 options are captured above), `AssetPickerModal`, `Avatar`, `CreateEventModal`, `CreateOrganizationModal`, `CreateTeamModal`, `AddPersonModal`, `EditProfileModal`, `TeamMembersModal`, `EventAssignmentsDropdown`, `ComingSoonPanel` (currently unused dead code — confirm before deleting or wiring it up).
+`CsvImportModal` (Feature 021 options and Feature 023 steps captured above; the base pick/preview/result shell is not), `AssetPickerModal`, `Avatar`, `CreateEventModal`, `CreateOrganizationModal`, `CreateTeamModal`, `AddPersonModal`, `EditProfileModal`, `TeamMembersModal`, `EventAssignmentsDropdown`, `ComingSoonPanel` (currently unused dead code — confirm before deleting or wiring it up).

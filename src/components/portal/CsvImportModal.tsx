@@ -5,12 +5,23 @@ import toast from 'react-hot-toast';
 import {
   type ColumnSpec,
   type RowResult,
-  parseCsvFile,
   parseCsvText,
-  validateHeaders,
+  downloadCsv,
   downloadCsvTemplate,
   runWithConcurrency,
 } from '@/lib/csvImport';
+import {
+  type ColumnMapping,
+  type ParsedSheet,
+  SpreadsheetImportError,
+  applyColumnMappings,
+  buildCorrectedRows,
+  findDuplicateSources,
+  needsColumnReview,
+  parseSpreadsheetFile,
+  suggestColumnMappings,
+  unmatchedRequired,
+} from '@/lib/spreadsheetImport';
 import { knownErrorMessage } from '@/lib/userFacingError';
 import { DismissibleTip } from '@/components/portal/DismissibleTip';
 import { useConfirm } from '@/contexts/ConfirmContext';
@@ -55,15 +66,19 @@ type CsvImportModalProps<T> = {
   importAll?: (validData: T[]) => Promise<{ rowIndex: number; error?: string; notice?: string }[]>;
 };
 
-type Step = 'pick' | 'preview' | 'result';
+/** Feature 023 adds `sheet` (choose a worksheet) and `map` (match your columns) between pick and preview. */
+type Step = 'pick' | 'sheet' | 'map' | 'preview' | 'result';
 
-/**
- * Row number for a parsed row, counting the header as row 1 (so the first data row
- * is row 2). The parser skips blank lines, so after an empty spreadsheet row these
- * numbers run ahead of the spreadsheet — flagged rows are therefore also shown with
- * their first value (see `rowLabel`) so they can be found either way.
- */
-const sheetRow = (rowIndex: number) => rowIndex + 2;
+/** Feature 023 — status chip text and token classes for each column-match state. */
+const MATCH_STATUS: Record<ColumnMapping['confidence'], { label: string; className: string }> = {
+  exact: { label: 'Matched', className: 'bg-primary/10 text-primary' },
+  suggested: { label: 'Suggested', className: 'bg-tertiary-fixed/40 text-on-tertiary-fixed-variant' },
+  manual: { label: 'Chosen by you', className: 'bg-surface-container-low text-on-surface' },
+  unmapped: { label: 'Not matched', className: 'bg-surface-container-low text-on-surface-variant' },
+};
+
+/** `people.csv` → `people`; used to name the corrected-CSV and error-report downloads. */
+const fileStem = (filename: string) => filename.replace(/\.csv$/i, '');
 
 /** First non-empty cell of a row, shortened — identifies the row even when blank lines shift numbering. */
 function firstValue(raw: Record<string, string> | undefined): string {
@@ -111,8 +126,16 @@ export function CsvImportModal<T>({
   const [step, setStep] = useState<Step>('pick');
   const [sourceMode, setSourceMode] = useState<SourceMode>('file');
   const [pasteText, setPasteText] = useState('');
-  const [headerErrors, setHeaderErrors] = useState<string[]>([]);
   const [rawColumns, setRawColumns] = useState<string[]>([]);
+  // Feature 023 — the chosen source sheet and its column matches.
+  const [reading, setReading] = useState(false);
+  const [sheets, setSheets] = useState<ParsedSheet[]>([]);
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState(0);
+  const [sourceHeaders, setSourceHeaders] = useState<string[]>([]);
+  const [sourceRows, setSourceRows] = useState<Record<string, string>[]>([]);
+  const [sourceRowNumbers, setSourceRowNumbers] = useState<number[] | undefined>(undefined);
+  const [mappings, setMappings] = useState<ColumnMapping[]>([]);
+  const [usedMapping, setUsedMapping] = useState(false);
   const [results, setResults] = useState<RowResult<T>[]>([]);
   const [preparing, setPreparing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -128,8 +151,15 @@ export function CsvImportModal<T>({
   const resetToPick = () => {
     setStep('pick');
     setPasteText('');
-    setHeaderErrors([]);
     setRawColumns([]);
+    setReading(false);
+    setSheets([]);
+    setSelectedSheetIndex(0);
+    setSourceHeaders([]);
+    setSourceRows([]);
+    setSourceRowNumbers(undefined);
+    setMappings([]);
+    setUsedMapping(false);
     setResults([]);
     setPreparing(false);
     setImporting(false);
@@ -146,29 +176,61 @@ export function CsvImportModal<T>({
     onClose();
   };
 
+  /**
+   * Row number for a parsed row. Excel rows carry their real worksheet row (Feature 023).
+   * CSV and pasted rows count the header as row 1 (so the first data row is row 2); the
+   * parser skips blank lines, so after an empty spreadsheet row these numbers run ahead of
+   * the spreadsheet — flagged rows are therefore also shown with their first value (see
+   * `rowLabel`) so they can be found either way.
+   */
+  const sheetRow = (rowIndex: number) => sourceRowNumbers?.[rowIndex] ?? rowIndex + 2;
+
+  /** Parses rows into the preview. Only reached with every required column present (Feature 023 — the matching step handles missing ones). */
   const applyParsedRows = (headers: string[], rows: Record<string, string>[]) => {
-    const missing = validateHeaders(headers, columns);
-    if (missing.length > 0) {
-      setHeaderErrors(missing);
-      setRawColumns(headers);
-      setResults([]);
-      setStep('preview');
-      return;
-    }
-    setHeaderErrors([]);
     setRawColumns(headers);
     const parsed = rows.map((raw, i) => parseRow(raw, i));
     setResults(refineResults ? refineResults(parsed) : parsed);
     setStep('preview');
   };
 
+  /**
+   * Feature 023 — one entry point for every source (CSV, pasted rows, a worksheet). Files that
+   * already match the template go straight to the preview with their rows untouched, exactly as
+   * before; anything else goes to the matching step first.
+   */
+  const startFromSheet = (sheet: ParsedSheet) => {
+    const suggested = suggestColumnMappings(sheet.headers, columns);
+    setSourceHeaders(sheet.headers);
+    setSourceRows(sheet.rows);
+    setSourceRowNumbers(sheet.rowNumbers);
+    setMappings(suggested);
+    if (!needsColumnReview(sheet.headers, columns, suggested)) {
+      setUsedMapping(false);
+      applyParsedRows(sheet.headers, sheet.rows);
+      return;
+    }
+    setUsedMapping(true);
+    setStep('map');
+  };
+
   const handleFile = async (file: File) => {
+    setReading(true);
     try {
-      const { headers, rows } = await parseCsvFile(file);
-      applyParsedRows(headers, rows);
+      const workbook = await parseSpreadsheetFile(file);
+      setSheets(workbook.sheets);
+      setSelectedSheetIndex(0);
+      if (workbook.sheets.length > 1) setStep('sheet');
+      else startFromSheet(workbook.sheets[0]);
     } catch (err) {
-      toast.error('We couldn’t read that file. Make sure it’s a .csv file (in Excel: File → Save As → CSV; in Google Sheets: File → Download → CSV).');
-      console.error(err);
+      if (err instanceof SpreadsheetImportError) {
+        toast.error(err.message);
+      } else {
+        toast.error('We couldn’t read that file. Choose a CSV or Excel (.xlsx) file and try again.');
+        console.error(err);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } finally {
+      setReading(false);
     }
   };
 
@@ -180,12 +242,37 @@ export function CsvImportModal<T>({
         toast.error('No rows found. Copy the header row (the column names) together with the rows below it.');
         return;
       }
-      applyParsedRows(headers, rows);
+      setSheets([]);
+      startFromSheet({ name: 'Pasted rows', headers, rows });
     } catch (err) {
       toast.error('We couldn’t read the pasted rows. Copy them straight from Excel or Google Sheets, including the header row.');
       console.error(err);
     }
   };
+
+  // Feature 023 — matching step.
+  const updateMapping = (targetKey: string, sourceHeader: string | null) => {
+    setMappings((current) =>
+      current.map((m) => (m.targetKey === targetKey ? { ...m, sourceHeader, confidence: sourceHeader ? 'manual' : 'unmapped' } : m))
+    );
+  };
+  const duplicateSources = findDuplicateSources(mappings);
+  const missingRequired = unmatchedRequired(columns, mappings);
+  const mappingReady = duplicateSources.length === 0 && missingRequired.length === 0;
+
+  const confirmMappings = () => {
+    if (!mappingReady) return;
+    const rows = applyColumnMappings(sourceRows, mappings, columns);
+    const mappedKeys = columns.map((c) => c.key).filter((key) => mappings.find((m) => m.targetKey === key)?.sourceHeader);
+    applyParsedRows(mappedKeys, rows);
+  };
+
+  const backFromMapping = () => {
+    if (sheets.length > 1) setStep('sheet');
+    else resetToPick();
+  };
+
+  const columnLabel = (key: string) => (usedMapping ? (columns.find((c) => c.key === key)?.label ?? key) : key);
 
   const rowLabel = (rowIndex: number) => {
     const value = firstValue(results.find((r) => r.rowIndex === rowIndex)?.raw);
@@ -298,6 +385,20 @@ export function CsvImportModal<T>({
   const failedDuringImport = outcomes.filter((o) => !o.success);
   const importedWithNotice = outcomes.filter((o) => o.success && o.notice);
 
+  // Feature 023 — both downloads are built in the browser; nothing is sent anywhere.
+  const downloadCorrectedCsv = () =>
+    downloadCsv(`${fileStem(templateFilename)}-corrected.csv`, columns.map((c) => c.key), buildCorrectedRows(sourceRows, columns, mappings));
+
+  const downloadErrorReport = () =>
+    downloadCsv(`${fileStem(templateFilename)}-errors.csv`, ['Row', 'First value', 'Reason'], [
+      ...invalidRows.map((r) => ({ Row: String(sheetRow(r.rowIndex)), 'First value': firstValue(r.raw), Reason: r.errors.map(humanizeRowError).join(' ') })),
+      ...failedDuringImport.map((o) => ({
+        Row: String(sheetRow(o.rowIndex)),
+        'First value': firstValue(results.find((r) => r.rowIndex === o.rowIndex)?.raw),
+        Reason: readableImportError(o.error),
+      })),
+    ]);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-[20px] panel-shadow p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -308,13 +409,14 @@ export function CsvImportModal<T>({
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-primary">Import from spreadsheet</p>
               <p className="text-sm text-on-surface-variant mt-0.5">
-                Upload a CSV file from Excel or Google Sheets, or paste the rows straight from your spreadsheet.
+                Upload an Excel (.xlsx) or CSV file, or paste the rows straight from your spreadsheet.
               </p>
             </div>
 
-            <DismissibleTip id="csv-what-is-csv" title="What’s a CSV file?" showAgainLabel="What’s a CSV file?">
-              A simple spreadsheet file. In Excel choose <span className="font-medium">File → Save As → CSV</span>; in Google Sheets choose{' '}
-              <span className="font-medium">File → Download → Comma-separated values (.csv)</span>. Or skip the file and use{' '}
+            <DismissibleTip id="csv-which-files" title="Which files can I use?" showAgainLabel="Which files can I use?">
+              An Excel workbook (<span className="font-medium">.xlsx</span>) or a CSV file. Older <span className="font-medium">.xls</span> files need
+              re-saving first: in Excel choose <span className="font-medium">File → Save As → Excel Workbook (.xlsx)</span>. From Google Sheets choose{' '}
+              <span className="font-medium">File → Download → Microsoft Excel (.xlsx)</span>. Or skip the file and use{' '}
               <span className="font-medium">Paste from spreadsheet</span>.
             </DismissibleTip>
 
@@ -324,7 +426,7 @@ export function CsvImportModal<T>({
                 onClick={() => setSourceMode('file')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sourceMode === 'file' ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant'}`}
               >
-                Upload CSV file
+                Upload file
               </button>
               <button
                 type="button"
@@ -367,7 +469,7 @@ export function CsvImportModal<T>({
                 </table>
               </div>
               <p className="hint mt-1">
-                The first row must be the column names shown above (exactly as written). The example rows show the expected format. Optional columns can be left empty or left out.
+                The first row should hold the column names. If yours are named differently, you&apos;ll be asked to match them to the columns above. The example rows show the expected format. Optional columns can be left empty or left out.
               </p>
             </div>
 
@@ -380,16 +482,25 @@ export function CsvImportModal<T>({
             </button>
 
             {sourceMode === 'file' ? (
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFile(file);
-                }}
-                className="block w-full text-sm text-on-surface-variant border border-outline-variant rounded-xl p-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-sm file:font-medium"
-              />
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,.xlsx"
+                  disabled={reading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFile(file);
+                  }}
+                  className="block w-full text-sm text-on-surface-variant border border-outline-variant rounded-xl p-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:text-sm file:font-medium disabled:opacity-60"
+                />
+                {reading && (
+                  <p className="text-xs text-on-surface-variant inline-flex items-center gap-1" role="status">
+                    <span className="material-symbols-outlined text-[16px] animate-spin" aria-hidden="true">progress_activity</span>
+                    Reading file…
+                  </p>
+                )}
+              </div>
             ) : (
               <div className="space-y-2">
                 <p className="text-xs text-on-surface-variant">
@@ -412,148 +523,275 @@ export function CsvImportModal<T>({
           </div>
         )}
 
-        {step === 'preview' && (
+        {step === 'sheet' && (
           <div className="space-y-4">
-            {headerErrors.length > 0 ? (
-              <div className="bg-error/5 border border-error/20 rounded-xl p-4">
-                <p className="text-sm font-medium text-error">
-                  Your spreadsheet is missing the required column{headerErrors.length !== 1 ? 's' : ''}: {headerErrors.join(', ')}
-                </p>
-                {rawColumns.length > 0 && (
-                  <p className="text-xs text-on-surface-variant mt-1">
-                    Columns we found: {rawColumns.join(', ')}.
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-primary">Choose a sheet</p>
+              <p className="text-sm text-on-surface-variant mt-0.5">This workbook has {sheets.length} sheets with data. Which one should we import?</p>
+            </div>
+            <fieldset className="space-y-2">
+              <legend className="sr-only">Sheet to import</legend>
+              {sheets.map((sheet, index) => (
+                <label key={`${sheet.name}-${index}`} className="flex items-center gap-3 rounded-xl border border-outline-variant p-3 cursor-pointer hover:bg-surface-container-low/50">
+                  <input
+                    type="radio"
+                    name="csv-import-sheet"
+                    className="accent-primary"
+                    checked={selectedSheetIndex === index}
+                    onChange={() => setSelectedSheetIndex(index)}
+                  />
+                  <span className="text-sm text-on-surface font-medium">{sheet.name}</span>
+                  <span className="text-xs text-on-surface-variant ml-auto">
+                    {sheet.rows.length.toLocaleString()} row{sheet.rows.length !== 1 ? 's' : ''}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <div className="flex gap-3 pt-2">
+              <button className="btn-secondary" onClick={resetToPick}>
+                Choose a different file
+              </button>
+              <button className="btn-primary" onClick={() => sheets[selectedSheetIndex] && startFromSheet(sheets[selectedSheetIndex])}>
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'map' && (
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-primary">Match your columns</p>
+              <p className="text-sm text-on-surface-variant mt-0.5">
+                Your column names don&apos;t all match ours. Check each match below, change any that are wrong, then continue. Nothing is imported until
+                the next step.
+              </p>
+            </div>
+
+            <div className="border border-outline-variant rounded-xl overflow-x-auto">
+              <table className="w-full text-sm min-w-[520px]">
+                <thead className="bg-surface-container-low/50">
+                  <tr>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Our column</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Your column</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-on-surface-variant">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/30">
+                  {columns.map((column) => {
+                    const mapping = mappings.find((m) => m.targetKey === column.key);
+                    const status = MATCH_STATUS[mapping?.confidence ?? 'unmapped'];
+                    const isDuplicate = Boolean(mapping?.sourceHeader && duplicateSources.includes(mapping.sourceHeader));
+                    const isMissing = Boolean(column.required && !mapping?.sourceHeader);
+                    return (
+                      <tr key={column.key}>
+                        <td className="px-3 py-2 align-top">
+                          <span className="block text-on-surface font-medium">{column.label}</span>
+                          <span className={`block text-[10px] font-medium ${column.required ? 'text-error' : 'text-on-surface-variant'}`}>
+                            {column.required ? 'Required' : 'Optional'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <select
+                            className={`input py-1.5 text-sm ${isDuplicate || isMissing ? 'border-error' : ''}`}
+                            aria-label={`Your column for ${column.label}`}
+                            value={mapping?.sourceHeader ?? ''}
+                            onChange={(e) => updateMapping(column.key, e.target.value || null)}
+                          >
+                            <option value="">— None —</option>
+                            {/* T033: a blank heading (e.g. a CSV heading row ending in a comma) isn't offered — it would look like "None". */}
+                            {sourceHeaders.filter((header) => header.trim() !== '').map((header) => (
+                              <option key={header} value={header}>
+                                {header}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>{status.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {(missingRequired.length > 0 || duplicateSources.length > 0) && (
+              <div className="bg-error/5 border border-error/20 rounded-xl p-4 space-y-1" role="alert">
+                {missingRequired.length > 0 && (
+                  <>
+                    <p className="text-sm font-medium text-error">Choose a column for: {missingRequired.map((c) => c.label).join(', ')}.</p>
+                    <p className="text-xs text-on-surface-variant">
+                      If your file has no column for {missingRequired.length === 1 ? 'it' : 'them'}, add one to your spreadsheet or download the example
+                      spreadsheet and copy your data into it, then try again.
+                    </p>
+                    <p className="text-xs text-on-surface-variant">Columns we found: {sourceHeaders.filter((header) => header.trim() !== '').join(', ')}.</p>
+                  </>
+                )}
+                {duplicateSources.length > 0 && (
+                  <p className="text-sm font-medium text-error">
+                    Each column can only be used once: {duplicateSources.map((h) => `“${h}”`).join(', ')} {duplicateSources.length === 1 ? 'is' : 'are'} chosen
+                    more than once.
                   </p>
                 )}
-                <p className="text-xs text-on-surface-variant mt-1">
-                  Rename the column in your spreadsheet to match exactly (or download the example spreadsheet and copy your data into it), then try again.
-                </p>
+                {missingRequired.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => downloadCsvTemplate(templateFilename, columns, sampleRows)}
+                    className="btn-secondary text-sm py-1.5 w-fit mt-2"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">download</span> Download example spreadsheet (CSV)
+                  </button>
+                )}
               </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-2 text-sm">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-3 py-1 text-green-800">
-                    <span className="material-symbols-outlined text-[16px]" aria-hidden="true">check_circle</span>
-                    Ready to import: <span className="font-semibold">{validRows.length}</span>
-                  </span>
-                  {invalidRows.length > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-amber-900">
-                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">error</span>
-                      Needs attention: <span className="font-semibold">{invalidRows.length}</span>
-                    </span>
-                  )}
-                </div>
-                {invalidRows.length > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 max-h-40 overflow-y-auto">
-                    <p className="text-xs font-semibold text-amber-900 mb-1">
-                      These rows won&apos;t be imported. Fix them in your spreadsheet — you can import them afterwards on their own.
-                    </p>
-                    <p className="text-[11px] text-amber-900/80 mb-1">Row numbers count your header as row 1 and skip blank lines, so each row is also shown with its first value.</p>
-                    <ul className="space-y-0.5 text-xs text-amber-900">
-                      {invalidRows.map((r) => (
-                        <li key={r.rowIndex}>
-                          <span className="font-semibold">{rowLabel(r.rowIndex)}:</span> {r.errors.map(humanizeRowError).join(' ')}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {fileWarnings.length > 0 && (
-                  <div className="rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 max-h-40 overflow-y-auto">
-                    <p className="text-xs font-semibold text-on-tertiary-fixed-variant mb-1 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
-                      Check before importing — these won&apos;t stop the import:
-                    </p>
-                    <ul className="space-y-0.5 text-xs text-on-tertiary-fixed-variant list-disc pl-4">
-                      {fileWarnings.map((w) => <li key={w}>{w}</li>)}
-                    </ul>
-                  </div>
-                )}
-                {canReplace && replaceOption && (
-                  <fieldset className="rounded-xl border border-outline-variant p-3 space-y-2">
-                    <legend className="px-1 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
-                      This event already has {existingCount} {replaceOption.itemLabel}
-                    </legend>
-                    <label className="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
-                      <input type="radio" name="csv-import-mode" className="mt-0.5 accent-primary" checked={importMode === 'add'} onChange={() => setImportMode('add')} disabled={importing || preparing} />
-                      <span>
-                        <span className="font-medium">Add to existing items</span>
-                        <span className="block text-xs text-on-surface-variant">Keep the current {replaceOption.itemLabel} and add these rows.</span>
-                      </span>
-                    </label>
-                    <label className="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
-                      <input type="radio" name="csv-import-mode" className="mt-0.5 accent-primary" checked={importMode === 'replace'} onChange={() => setImportMode('replace')} disabled={importing || preparing} />
-                      <span>
-                        <span className="font-medium">Replace existing items</span>
-                        <span className="block text-xs text-on-surface-variant">
-                          Delete the {existingCount} current {replaceOption.itemLabel} once every row has imported. If any row fails, nothing is deleted.
-                        </span>
-                      </span>
-                    </label>
-                    {replacing && invalidRows.length > 0 && (
-                      <p className="text-xs text-amber-900">
-                        {invalidRows.length} row{invalidRows.length !== 1 ? 's need' : ' needs'} attention, so the existing items will be kept. Fix those rows first to replace.
-                      </p>
-                    )}
-                  </fieldset>
-                )}
-                <div className="border border-outline-variant rounded-xl overflow-auto max-h-96">
-                  <table className="w-full text-xs min-w-[600px]">
-                    <thead className="bg-surface-container-low/50 sticky top-0">
-                      <tr>
-                        <th className="text-left px-3 py-2 font-semibold text-on-surface-variant" title="Row number in your spreadsheet (row 1 is the header row)">Row</th>
-                        <th className="text-left px-3 py-2 font-semibold text-on-surface-variant">Status</th>
-                        {rawColumns.map((h) => (
-                          <th key={h} className="text-left px-3 py-2 font-semibold text-on-surface-variant whitespace-nowrap">
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/30">
-                      {results.map((r) => (
-                        <tr key={r.rowIndex} className={r.errors.length > 0 ? 'bg-error/5' : ''}>
-                          <td className="px-3 py-2 text-on-surface-variant">{sheetRow(r.rowIndex)}</td>
-                          <td className="px-3 py-2">
-                            {r.errors.length > 0 ? (
-                              <span className="text-error inline-flex items-center gap-1" title={r.errors.map(humanizeRowError).join(' ')}>
-                                <span className="material-symbols-outlined text-[16px]">error</span> Needs attention
-                              </span>
-                            ) : (
-                              <span className="text-green-700 inline-flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[16px]">check_circle</span> Ready
-                              </span>
-                            )}
-                          </td>
-                          {rawColumns.map((h) => (
-                            <td key={h} className="px-3 py-2 whitespace-nowrap text-on-surface">
-                              {r.raw[h] ?? ''}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
             )}
 
             <div className="flex gap-3 pt-2">
+              <button className="btn-secondary" onClick={backFromMapping}>
+                {sheets.length > 1 ? 'Choose a different sheet' : sourceMode === 'paste' ? 'Start over' : 'Choose a different file'}
+              </button>
+              <button className="btn-primary" onClick={confirmMappings} disabled={!mappingReady}>
+                Continue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'preview' && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 text-sm">
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-3 py-1 text-green-800">
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">check_circle</span>
+                Ready to import: <span className="font-semibold">{validRows.length}</span>
+              </span>
+              {invalidRows.length > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-amber-900">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">error</span>
+                  Needs attention: <span className="font-semibold">{invalidRows.length}</span>
+                </span>
+              )}
+            </div>
+            {invalidRows.length > 0 && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 max-h-40 overflow-y-auto">
+                <p className="text-xs font-semibold text-amber-900 mb-1">
+                  These rows won&apos;t be imported. Fix them in your spreadsheet — you can import them afterwards on their own.
+                </p>
+                <p className="text-[11px] text-amber-900/80 mb-1">
+                  {sourceRowNumbers
+                    ? 'Row numbers match your worksheet, and each row is also shown with its first value.'
+                    : 'Row numbers count your header as row 1 and skip blank lines, so each row is also shown with its first value.'}
+                </p>
+                <ul className="space-y-0.5 text-xs text-amber-900">
+                  {invalidRows.map((r) => (
+                    <li key={r.rowIndex}>
+                      <span className="font-semibold">{rowLabel(r.rowIndex)}:</span> {r.errors.map(humanizeRowError).join(' ')}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {fileWarnings.length > 0 && (
+              <div className="rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 max-h-40 overflow-y-auto">
+                <p className="text-xs font-semibold text-on-tertiary-fixed-variant mb-1 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
+                  Check before importing — these won&apos;t stop the import:
+                </p>
+                <ul className="space-y-0.5 text-xs text-on-tertiary-fixed-variant list-disc pl-4">
+                  {fileWarnings.map((w) => <li key={w}>{w}</li>)}
+                </ul>
+              </div>
+            )}
+            {canReplace && replaceOption && (
+              <fieldset className="rounded-xl border border-outline-variant p-3 space-y-2">
+                <legend className="px-1 text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
+                  This event already has {existingCount} {replaceOption.itemLabel}
+                </legend>
+                <label className="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
+                  <input type="radio" name="csv-import-mode" className="mt-0.5 accent-primary" checked={importMode === 'add'} onChange={() => setImportMode('add')} disabled={importing || preparing} />
+                  <span>
+                    <span className="font-medium">Add to existing items</span>
+                    <span className="block text-xs text-on-surface-variant">Keep the current {replaceOption.itemLabel} and add these rows.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 text-sm text-on-surface cursor-pointer">
+                  <input type="radio" name="csv-import-mode" className="mt-0.5 accent-primary" checked={importMode === 'replace'} onChange={() => setImportMode('replace')} disabled={importing || preparing} />
+                  <span>
+                    <span className="font-medium">Replace existing items</span>
+                    <span className="block text-xs text-on-surface-variant">
+                      Delete the {existingCount} current {replaceOption.itemLabel} once every row has imported. If any row fails, nothing is deleted.
+                    </span>
+                  </span>
+                </label>
+                {replacing && invalidRows.length > 0 && (
+                  <p className="text-xs text-amber-900">
+                    {invalidRows.length} row{invalidRows.length !== 1 ? 's need' : ' needs'} attention, so the existing items will be kept. Fix those rows first to replace.
+                  </p>
+                )}
+              </fieldset>
+            )}
+            <div className="border border-outline-variant rounded-xl overflow-auto max-h-96">
+              <table className="w-full text-xs min-w-[600px]">
+                <thead className="bg-surface-container-low/50 sticky top-0">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-semibold text-on-surface-variant" title="Row number in your spreadsheet (row 1 is the header row)">Row</th>
+                    <th className="text-left px-3 py-2 font-semibold text-on-surface-variant">Status</th>
+                    {rawColumns.map((h) => (
+                      <th key={h} className="text-left px-3 py-2 font-semibold text-on-surface-variant whitespace-nowrap">
+                        {columnLabel(h)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/30">
+                  {results.map((r) => (
+                    <tr key={r.rowIndex} className={r.errors.length > 0 ? 'bg-error/5' : ''}>
+                      <td className="px-3 py-2 text-on-surface-variant">{sheetRow(r.rowIndex)}</td>
+                      <td className="px-3 py-2">
+                        {r.errors.length > 0 ? (
+                          <span className="text-error inline-flex items-center gap-1" title={r.errors.map(humanizeRowError).join(' ')}>
+                            <span className="material-symbols-outlined text-[16px]">error</span> Needs attention
+                          </span>
+                        ) : (
+                          <span className="text-green-700 inline-flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[16px]">check_circle</span> Ready
+                          </span>
+                        )}
+                      </td>
+                      {rawColumns.map((h) => (
+                        <td key={h} className="px-3 py-2 whitespace-nowrap text-on-surface">
+                          {r.raw[h] ?? ''}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button type="button" onClick={downloadCorrectedCsv} className="btn-secondary text-sm py-1.5 w-fit" disabled={importing || preparing}>
+              <span className="material-symbols-outlined text-[18px]">download</span> Download corrected CSV
+            </button>
+
+            <div className="flex flex-wrap gap-3 pt-2">
               <button className="btn-secondary" onClick={resetToPick}>
                 {sourceMode === 'paste' ? 'Start over' : 'Choose a different file'}
               </button>
-              {headerErrors.length === 0 && (
-                <button
-                  className={replacing ? 'btn-danger' : 'btn-primary'}
-                  onClick={handleImport}
-                  disabled={validRows.length === 0 || importing || preparing}
-                >
-                  {preparing
-                    ? 'Preparing…'
-                    : importing
-                      ? `Importing… (${importProgress}/${validRows.length})`
-                      : `Import ${validRows.length} ready row${validRows.length !== 1 ? 's' : ''}${replacing ? ' and replace' : ''}`}
+              {usedMapping && (
+                <button className="btn-secondary" onClick={() => setStep('map')} disabled={importing || preparing}>
+                  Change column matches
                 </button>
               )}
+              <button
+                className={replacing ? 'btn-danger' : 'btn-primary'}
+                onClick={handleImport}
+                disabled={validRows.length === 0 || importing || preparing}
+              >
+                {preparing
+                  ? 'Preparing…'
+                  : importing
+                    ? `Importing… (${importProgress}/${validRows.length})`
+                    : `Import ${validRows.length} ready row${validRows.length !== 1 ? 's' : ''}${replacing ? ' and replace' : ''}`}
+              </button>
             </div>
           </div>
         )}
@@ -623,6 +861,12 @@ export function CsvImportModal<T>({
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {(invalidRows.length > 0 || failedDuringImport.length > 0) && (
+              <button type="button" onClick={downloadErrorReport} className="btn-secondary text-sm py-1.5 w-fit">
+                <span className="material-symbols-outlined text-[18px]">download</span> Download error report
+              </button>
             )}
 
             {importedWithNotice.length > 0 && (
