@@ -92,9 +92,11 @@ export async function middleware(request: NextRequest) {
   const getRole = async (userId: string): Promise<string | null> => {
     const cached = getCachedRole(userId);
     if (cached) return cached;
-    const { data: profile } = await supabase.from('profiles').select('global_role').eq('id', userId).single();
-    const role = profile?.global_role ?? null;
-    if (role) cacheRole(userId, role);
+    // Feature 027 (C1): `profiles.global_role` isn't selectable with a user key after C1.
+    const { data: isAdmin, error } = await supabase.rpc('portal_is_global_admin');
+    if (error) return null;
+    const role = isAdmin === true ? 'admin' : 'attendee';
+    cacheRole(userId, role);
     return role;
   };
 

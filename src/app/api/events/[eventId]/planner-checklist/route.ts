@@ -14,6 +14,7 @@ import {
   type ResolvedChecklistCapability,
 } from '@/lib/plannerChecklist';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 010 — Bendie Planner Checklist: collection route (list + capability
@@ -47,7 +48,7 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
   // Feature 016 performance pass — also select `planner_profile_id` here so the
   // separate `resolveCallerPlannerIdentity` round trip below (which queried
   // this exact same row by the same id) can be eliminated entirely.
-  const { data: profile } = await authClient.from('profiles').select('global_role, current_organization_id, planner_profile_id').eq('id', user.id).maybeSingle();
+  const { data: profile } = await readCallerProfile(user.id);
 
   const isPlatformAdmin = profile?.global_role === 'admin';
   let selectedOrganizationId: string | null = null;

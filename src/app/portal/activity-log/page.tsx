@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+import { emailsForUnnamed } from '@/lib/profileContacts';
 import { Avatar } from '@/components/portal/Avatar';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import {
@@ -46,7 +47,7 @@ export default function OrganizationActivityLogPage() {
     setLoading(true);
     let query = supabase
       .from('organization_audit_log')
-      .select('id,table_name,action,row_id,diff,created_at,profiles:actor_user_id(full_name,email,avatar_url)', { count: 'exact' })
+      .select('id,table_name,action,row_id,diff,created_at,actor_user_id,profiles:actor_user_id(full_name,avatar_url)', { count: 'exact' })
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -60,7 +61,13 @@ export default function OrganizationActivityLogPage() {
       setEntries([]);
       setSubjectNames({});
     } else {
-      const rows = (data as unknown as AuditEntry[]) ?? [];
+      const fetched = (data as unknown as AuditEntry[]) ?? [];
+      // Feature 027 (C1): an unnamed actor's email via get_profile_contact (Bendie's rule applies).
+      const actorEmails = await emailsForUnnamed(supabase, fetched.map((e) => ({ id: e.actor_user_id, fullName: e.profiles?.full_name })));
+      const rows = fetched.map((e) => ({
+        ...e,
+        profiles: e.profiles ? { ...e.profiles, email: (e.actor_user_id && actorEmails.get(e.actor_user_id)) || null } : null,
+      }));
       setEntries(rows);
       setTotal(count ?? 0);
       if (data) {
@@ -75,10 +82,12 @@ export default function OrganizationActivityLogPage() {
         new Set(rows.filter((e) => tableHasSubject(e.table_name)).map((e) => extractSubjectId(e)).filter((id): id is string => !!id))
       );
       if (subjectIds.length > 0) {
-        const { data: profileRows } = await supabase.from('profiles').select('id, full_name, email').in('id', subjectIds);
+        const { data: profileRows } = await supabase.from('profiles').select('id, full_name').in('id', subjectIds);
+        const named = (profileRows as { id: string; full_name: string | null }[]) ?? [];
+        const subjectEmails = await emailsForUnnamed(supabase, named.map((p) => ({ id: p.id, fullName: p.full_name })));
         const map: Record<string, string> = {};
-        for (const p of (profileRows as { id: string; full_name: string | null; email: string | null }[]) ?? []) {
-          map[p.id] = p.full_name ?? p.email ?? 'Unknown person';
+        for (const p of named) {
+          map[p.id] = p.full_name ?? subjectEmails.get(p.id) ?? 'Unknown person';
         }
         setSubjectNames(map);
       } else {

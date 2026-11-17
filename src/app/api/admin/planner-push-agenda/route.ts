@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 function dateKeyOf(iso: string) {
   return new Date(iso).toISOString().slice(0, 10);
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-  const { data: callerProfile } = await authClient.from('profiles').select('global_role').eq('id', user.id).single();
+  const { data: callerProfile } = await readCallerProfile(user.id);
   if (!callerProfile || callerProfile.global_role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { deactivateAssignmentForRemoval, recordAuditEntry } from '@/lib/plannerPermissions';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 008 — internal, member-removal side effect (research.md R10,
@@ -45,7 +46,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
-  const { data: callerProfile } = await authClient.from('profiles').select('global_role').eq('id', user.id).maybeSingle();
+  const { data: callerProfile } = await readCallerProfile(user.id);
   if (callerProfile?.global_role !== 'admin') {
     return NextResponse.json({ error: 'permission_admin_denied' }, { status: 403 });
   }

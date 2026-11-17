@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 export async function GET(_request: NextRequest) {
   const cookieStore = await cookies();
@@ -28,11 +29,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('global_role')
-    .eq('id', user.id)
-    .single();
+  const { data: profile } = await readCallerProfile(user.id);
 
   if (!profile || profile.global_role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

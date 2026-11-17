@@ -5,7 +5,36 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
 import type { Database } from '@/types/database';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+
+/**
+ * Feature 027 (C1 readiness): Bendie is revoking `SELECT` on `profiles` from signed-in
+ * users, except for these public columns. The signed-in user's own email/phone come
+ * from `get_profile_contact` and their Stawi-admin status from `portal_is_global_admin`,
+ * both of which work before and after C1.
+ */
+const PUBLIC_PROFILE_COLUMNS =
+  'id, username, full_name, avatar_url, bio, job_title, organization, is_onboarded, last_seen_at, created_at, updated_at, current_event_id, current_organization_id';
+
+type Profile = Pick<
+  ProfileRow,
+  | 'id'
+  | 'username'
+  | 'full_name'
+  | 'avatar_url'
+  | 'bio'
+  | 'job_title'
+  | 'organization'
+  | 'is_onboarded'
+  | 'last_seen_at'
+  | 'created_at'
+  | 'updated_at'
+  | 'current_event_id'
+  | 'current_organization_id'
+  | 'email'
+  | 'phone'
+  | 'global_role'
+>;
 
 export interface AuthContextType {
   user: User | null;
@@ -27,15 +56,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const profileUserIdRef = useRef<string | null>(null);
 
   /** Returns whether the profile actually loaded, so a failed load can be retried. */
-  const fetchProfile = async (userId: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+  const fetchProfile = async (userId: string, signInEmail: string | null): Promise<boolean> => {
+    const [profileRes, adminRes, contactRes] = await Promise.all([
+      supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', userId).single(),
+      supabase.rpc('portal_is_global_admin'),
+      supabase.rpc('get_profile_contact', { p_profile_id: userId }),
+    ]);
+    const error = profileRes.error ?? adminRes.error;
     if (error) console.error('AuthContext: profile load failed', error);
-    setProfile(data ?? null);
-    return !error;
+    if (contactRes.error) console.error('AuthContext: own contact load failed', contactRes.error);
+    if (error || !profileRes.data) {
+      setProfile(null);
+      return false;
+    }
+    const contact = (Array.isArray(contactRes.data) ? contactRes.data[0] : contactRes.data) as { email: string | null; phone: string | null } | null;
+    setProfile({
+      ...(profileRes.data as unknown as Omit<Profile, 'email' | 'phone' | 'global_role'>),
+      email: contact?.email ?? signInEmail,
+      phone: contact?.phone ?? null,
+      global_role: adminRes.data === true ? 'admin' : 'attendee',
+    });
+    return true;
   };
 
   // Corrective fix (Feature 016 continuation, performance investigation) —
@@ -86,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Only remember the user once their profile has genuinely loaded: a failed load
           // (e.g. a transient network error) is retried on the next auth event instead of
           // being skipped for the rest of the session.
-          const loaded = await fetchProfile(nextUser.id);
+          const loaded = await fetchProfile(nextUser.id, nextUser.email ?? null);
           profileUserIdRef.current = loaded ? nextUser.id : null;
         }
       } else {

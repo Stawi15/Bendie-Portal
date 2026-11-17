@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { requireEventWorkspaceAccess, isProductAvailableForEvent } from '@/lib/eventAuth';
 import { resolveProvisioningPhase } from '@/lib/plannerOverview';
 import { resolveCallerPlannerIdentity, resolveTaskCapability } from '@/lib/plannerTasks';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 007 — lightweight, dedicated capability-only endpoint for
@@ -40,7 +41,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
-  const { data: profile } = await authClient.from('profiles').select('global_role, current_organization_id').eq('id', user.id).maybeSingle();
+  const { data: profile } = await readCallerProfile(user.id);
 
   const isPlatformAdmin = profile?.global_role === 'admin';
   let selectedOrganizationId: string | null = null;

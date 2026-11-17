@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { eventMemberContacts } from '@/lib/profileContacts';
 import { Avatar } from '@/components/portal/Avatar';
 import { PlannerPermissionsModal } from '@/components/portal/PlannerPermissionsModal';
 import { AddPeopleModal } from '@/components/portal/AddPeopleModal';
@@ -56,13 +57,17 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
     const controller = new AbortController();
     setRows(null);
     setLoadError(false);
-    supabase
-      .from('event_members')
-      .select('user_id,role,profiles!event_members_user_id_fkey(full_name,email,avatar_url)')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: true })
-      .abortSignal(controller.signal)
-      .then(({ data, error }) => {
+    // Feature 027 (C1): emails come from get_event_member_contacts, not the profiles embed.
+    Promise.all([
+      supabase
+        .from('event_members')
+        .select('user_id,role,profiles!event_members_user_id_fkey(full_name,avatar_url)')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: true })
+        .abortSignal(controller.signal),
+      eventMemberContacts(supabase, eventId),
+    ])
+      .then(([{ data, error }, contacts]) => {
         if (controller.signal.aborted) return; // navigation, not failure
         if (error) {
           console.error('PlannerTeamAccessPanel: event team read failed', error);
@@ -70,7 +75,12 @@ export function PlannerTeamAccessPanel({ eventId }: { eventId: string }) {
           setRows([]);
           return;
         }
-        setRows((data as unknown as Row[]) ?? []);
+        setRows(
+          ((data as unknown as Row[]) ?? []).map((r) => ({
+            ...r,
+            profiles: r.profiles ? { ...r.profiles, email: contacts.get(r.user_id)?.email ?? null } : null,
+          }))
+        );
       });
     return () => controller.abort();
   }, [eventId, reloadKey]);

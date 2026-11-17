@@ -64,19 +64,23 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
     if (!query.trim()) return;
     setSearching(true);
     setSearched(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, avatar_url')
-      .ilike('email', `%${query.trim()}%`)
-      .limit(5);
-    setSearching(false);
-
-    if (error) {
-      toast.error('Search failed');
-      console.error(error);
-      return;
+    // Feature 027 (C1): searched on the server. Stawi gets a partial match; organisation
+    // admins must type the full email address (spec FR-008).
+    try {
+      const res = await fetch(`/api/organizations/${organizationId}/people/search?q=${encodeURIComponent(query.trim())}`);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(body.message ?? 'Search failed');
+        setResults([]);
+        return;
+      }
+      setResults((body.results as ProfileResult[]) ?? []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Search failed — check your connection and try again');
+    } finally {
+      setSearching(false);
     }
-    setResults(data ?? []);
   };
 
   const handleAdd = async (profile: ProfileResult) => {
@@ -183,7 +187,9 @@ export function AddPersonModal({ open, organizationId, onClose, onAdded }: AddPe
 
         {mode === 'search' ? (
           <>
-            <p className="hint mb-3">Search by email for an existing account.</p>
+            <p className="hint mb-3">
+              {isGlobalAdmin ? 'Search by email for an existing account.' : 'Enter their full email address to find an existing account.'}
+            </p>
             <div className="flex gap-2">
               <input
                 className="input flex-1"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { organizationPeopleContacts } from '@/lib/profileContacts';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { Avatar } from '@/components/portal/Avatar';
 import type { Team } from '@/lib/useTeams';
@@ -35,23 +36,25 @@ export function TeamMembersModal({ team, organizationId, onClose, onChanged }: T
     if (!team) return;
     setLoading(true);
 
-    const [memberRes, orgRes] = await Promise.all([
+    // Feature 027 (C1): emails come from the org-scoped contacts route, not the profiles embed.
+    const [memberRes, orgRes, { contacts }] = await Promise.all([
       supabase
         .from('team_members')
-        .select('user_id, profiles:user_id(full_name, email, avatar_url)')
+        .select('user_id, profiles:user_id(full_name, avatar_url)')
         .eq('team_id', team.id),
       supabase
         .from('organization_members')
-        .select('user_id, profiles:user_id(full_name, email, avatar_url)')
+        .select('user_id, profiles:user_id(full_name, avatar_url)')
         .eq('organization_id', organizationId),
+      organizationPeopleContacts(organizationId),
     ]);
 
-    type Raw = { user_id: string; profiles: { full_name: string | null; email: string | null; avatar_url: string | null } | null };
+    type Raw = { user_id: string; profiles: { full_name: string | null; avatar_url: string | null } | null };
 
     const memberRows = ((memberRes.data as unknown as Raw[]) ?? []).map((r) => ({
       user_id: r.user_id,
       full_name: r.profiles?.full_name ?? null,
-      email: r.profiles?.email ?? null,
+      email: contacts.get(r.user_id)?.email ?? null,
       avatar_url: r.profiles?.avatar_url ?? null,
     }));
     const memberIds = new Set(memberRows.map((m) => m.user_id));
@@ -59,7 +62,7 @@ export function TeamMembersModal({ team, organizationId, onClose, onChanged }: T
     const orgRows = ((orgRes.data as unknown as Raw[]) ?? []).map((r) => ({
       user_id: r.user_id,
       full_name: r.profiles?.full_name ?? null,
-      email: r.profiles?.email ?? null,
+      email: contacts.get(r.user_id)?.email ?? null,
       avatar_url: r.profiles?.avatar_url ?? null,
     }));
 

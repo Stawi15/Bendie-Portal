@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 // Live-verified shapes (all_flights_combined_table): despite the name,
 // departuretime/arrivaltime are plain time-only text ("17:00:00" or "06:45"),
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-  const { data: callerProfile } = await authClient.from('profiles').select('global_role').eq('id', user.id).single();
+  const { data: callerProfile } = await readCallerProfile(user.id);
   if (!callerProfile || callerProfile.global_role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -139,18 +140,17 @@ export async function POST(request: NextRequest) {
 
   // Event-scoped matching (not a global Portal search) — only members of
   // *this* linked event are candidates.
-  const { data: eventMembers, error: eventMembersError } = await authClient
-    .from('event_members')
-    .select('user_id,profiles!event_members_user_id_fkey(email)')
-    .eq('event_id', eventId);
+  // Feature 027 (C1): member emails via get_event_member_contacts (the caller is a Stawi admin),
+  // not the profiles embed, which C1 removes.
+  const { data: eventMembers, error: eventMembersError } = await authClient.rpc('get_event_member_contacts', { p_event_id: eventId });
 
   if (eventMembersError) {
     return NextResponse.json({ error: eventMembersError.message }, { status: 500 });
   }
 
   const userIdByEmail = new Map<string, string>();
-  for (const m of (eventMembers ?? []) as unknown as { user_id: string; profiles: { email: string | null } | null }[]) {
-    if (m.profiles?.email) userIdByEmail.set(m.profiles.email.toLowerCase(), m.user_id);
+  for (const m of (eventMembers ?? []) as { user_id: string; email: string | null }[]) {
+    if (m.email) userIdByEmail.set(m.email.toLowerCase(), m.user_id);
   }
 
   const rows: TravelRow[] = [];

@@ -10,6 +10,7 @@ import { resolveChecklistCapability } from '@/lib/plannerChecklist';
 import { resolvePeopleCapability } from '@/lib/plannerPeople';
 import { resolveLogisticsCapability } from '@/lib/plannerLogistics';
 import { resolveProductionCapability } from '@/lib/plannerProduction';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 016 (performance passes) — the Portal → Planner access chain run ONCE
@@ -55,11 +56,7 @@ export async function resolvePlannerEventAccess(eventId: string, logPrefix: stri
   } = await authClient.auth.getUser();
   if (!user) return { kind: 'error', httpStatus: 401, error: 'not_authenticated' };
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('global_role, current_organization_id, planner_profile_id')
-    .eq('id', user.id)
-    .maybeSingle();
+  const { data: profile } = await readCallerProfile(user.id);
 
   const isPlatformAdmin = profile?.global_role === 'admin';
   let selectedOrganizationId: string | null = null;

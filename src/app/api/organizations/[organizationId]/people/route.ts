@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { runWithConcurrency } from '@/lib/csvImport';
 import { ensureAccountByEmail, ensureOrgMember, normalizeEmail, normalizeFullName } from '@/lib/accountProvisioning';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 const MAX_PEOPLE = 500;
 
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!user) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
   const [{ data: profile }, { data: membership }] = await Promise.all([
-    authClient.from('profiles').select('global_role').eq('id', user.id).maybeSingle(),
+    readCallerProfile(user.id),
     authClient.from('organization_members').select('role').eq('organization_id', organizationId).eq('user_id', user.id).maybeSingle(),
   ]);
   const isPlatformAdmin = profile?.global_role === 'admin';

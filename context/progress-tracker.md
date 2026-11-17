@@ -6,6 +6,18 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 027 — Profiles Lock-down Readiness (C1) 🚧 built (2026-11-17), C1 simulated on live Bendie — browser pass, /review pending
+
+Spec/plan/tasks: `specs/027-profiles-lockdown-readiness/`. Branch `027-profiles-lockdown-readiness` (stacked on 026).
+
+- **No signed-in-user read of `profiles.email/phone/gender/location/role/global_role/planner_profile_id` remains**, so the backend team can apply C1 whenever it suits them. Everything also works before C1.
+- **Own role and Planner identity:** `portal_is_global_admin()` (middleware, auth helpers, `AuthContext`). In server routes, the verified caller's own row is read with the service role through `src/lib/callerProfile.ts` (about 45 routes and 6 module libs).
+- **Contacts** (`src/lib/profileContacts.ts`): `get_event_member_contacts` on event screens, a new org-scoped `GET /api/organizations/[id]/people/contacts` on organisation screens (org owners/admins and Stawi; Portal-admin roles to Stawi only), and `get_profile_contact` for unnamed activity actors. A viewer Bendie's rule doesn't allow sees names without contacts, and the profile editor then won't overwrite email/phone.
+- **Changed on purpose:** "Search existing" in Add person is now a server route. Stawi keeps the partial match; client org admins must type the full email. The Stawi people import resolves existing accounts on the server.
+- **Live C1 simulation (rolled back, 2026-11-17):** as an organiser, an org admin and a Stawi admin, the own profile, admin check, contacts, embeds and own updates work. `email`, `global_role` and `planner_profile_id` are blocked (42501). Live grants were confirmed unchanged afterwards.
+
+---
+
 ## Feature 026 — Planner Access Alignment 🚧 built (2026-11-17), verified against live Planner — browser pass, /review pending
 
 Spec/plan/tasks: `specs/026-planner-access-alignment/`. Branch `026-planner-access-alignment` (stacked on 025).

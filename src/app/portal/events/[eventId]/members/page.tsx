@@ -30,6 +30,7 @@ import {
   checkCanAdministerPlanner,
 } from '@/lib/eventTeamProvisioning';
 import { useLatestRequest } from '@/lib/useLatestRequest';
+import { eventMemberContacts } from '@/lib/profileContacts';
 import toast from 'react-hot-toast';
 import { friendlyError } from '@/lib/userFacingError';
 
@@ -47,6 +48,8 @@ type Member = {
     job_title: string | null;
     phone: string | null;
     bio: string | null;
+    /** Feature 027: false when Bendie's contact rule didn't return this person's email/phone. */
+    contact_loaded?: boolean;
   } | null;
 };
 
@@ -121,19 +124,33 @@ export default function MembersPage() {
 
   const fetchData = async () => {
     const signal = startRequest();
-    const { data, error } = await supabase
-      .from('event_members')
-      .select('event_id,user_id,role,onboarding_status,onboarding_completed_at,created_at,profiles!event_members_user_id_fkey(full_name,email,avatar_url,job_title,phone,bio)')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: false })
-      .abortSignal(signal);
+    // Feature 027 (C1): email/phone come from get_event_member_contacts, not the profiles embed.
+    const [{ data, error }, contacts] = await Promise.all([
+      supabase
+        .from('event_members')
+        .select('event_id,user_id,role,onboarding_status,onboarding_completed_at,created_at,profiles!event_members_user_id_fkey(full_name,avatar_url,job_title,bio)')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false })
+        .abortSignal(signal),
+      eventMemberContacts(supabase, eventId),
+    ]);
     if (error) {
       // A deliberate cancellation (superseded by a newer load, or the page
       // unmounted) must never surface as a user-visible error.
       if (signal.aborted) return;
       toast.error('Failed to load attendees');
     } else {
-      setMembers((data as unknown as Member[]) ?? []);
+      setMembers(
+        ((data as unknown as Member[]) ?? []).map((m) => {
+          const contact = contacts.get(m.user_id);
+          return {
+            ...m,
+            profiles: m.profiles
+              ? { ...m.profiles, email: contact?.email ?? null, phone: contact?.phone ?? null, contact_loaded: !!contact }
+              : null,
+          };
+        })
+      );
     }
     setLoading(false);
   };
@@ -608,6 +625,7 @@ export default function MembersPage() {
         }}
         onClose={() => setEditingMember(null)}
         onSaved={fetchData}
+        contactUnavailable={editingMember?.profiles?.contact_loaded === false}
         organizationId={productContext?.organizationId ?? currentEvent?.organization_id ?? null}
       />
 

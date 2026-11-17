@@ -3,6 +3,7 @@ import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 import { getParticipant, listParticipants } from '@/lib/plannerPeople';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 012 — narrow, server-only Bendie Planner Flights/Hotels
@@ -39,12 +40,10 @@ export class PlannerLogisticsValidationError extends Error {
 export class PlannerLogisticsNotFoundError extends Error {}
 
 /** Reads the caller's Planner identity from Portal's own `profiles.planner_profile_id` (Feature 001 bridge). A small, deliberately self-contained duplicate of every prior module's identical function. */
-export async function resolveCallerPlannerIdentity(portalAuthClient: SupabaseClient, portalUserId: string): Promise<string | null> {
-  const { data, error } = await portalAuthClient.from('profiles').select('planner_profile_id').eq('id', portalUserId).maybeSingle();
-  if (error) {
-    console.error('resolveCallerPlannerIdentity (logistics): profiles lookup failed', error);
-    return null;
-  }
+export async function resolveCallerPlannerIdentity(_portalAuthClient: SupabaseClient, portalUserId: string): Promise<string | null> {
+  // Feature 027 (C1): `planner_profile_id` isn't selectable with a user key after C1, so the
+  // verified caller's own row is read with the service role (`readCallerProfile` logs failures).
+  const { data } = await readCallerProfile(portalUserId);
   return data?.planner_profile_id ?? null;
 }
 

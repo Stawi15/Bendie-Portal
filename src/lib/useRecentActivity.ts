@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { emailsForUnnamed } from '@/lib/profileContacts';
 
 export type ActivityEntry = {
   id: string;
@@ -46,7 +47,7 @@ export function useRecentActivity(organizationId: string | null, orgLoading: boo
 
     const { data, error } = await supabase
       .from('organization_audit_log')
-      .select('id,table_name,action,diff,created_at,profiles:actor_user_id(full_name,email)')
+      .select('id,table_name,action,diff,created_at,actor_user_id,profiles:actor_user_id(full_name)')
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -63,15 +64,18 @@ export function useRecentActivity(organizationId: string | null, orgLoading: boo
       action: 'INSERT' | 'UPDATE' | 'DELETE';
       diff: RawDiff;
       created_at: string;
-      profiles: { full_name: string | null; email: string | null } | null;
+      actor_user_id: string | null;
+      profiles: { full_name: string | null } | null;
     };
+    // Feature 027 (C1): an unnamed actor's email via get_profile_contact (Bendie's rule applies).
+    const actorEmails = await emailsForUnnamed(supabase, (data as unknown as Raw[]).map((r) => ({ id: r.actor_user_id, fullName: r.profiles?.full_name })));
 
     const mapped = (data as unknown as Raw[]).map((r) => ({
       id: r.id,
       tableName: r.table_name,
       action: r.action,
       createdAt: r.created_at,
-      actorName: r.profiles?.full_name ?? r.profiles?.email ?? null,
+      actorName: r.profiles?.full_name ?? (r.actor_user_id ? actorEmails.get(r.actor_user_id) : undefined) ?? null,
       message: describe(r.table_name, r.action, r.diff),
     }));
 

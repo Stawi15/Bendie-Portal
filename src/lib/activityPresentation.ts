@@ -22,6 +22,7 @@ export type AuditEntry = {
   row_id: string;
   diff: Record<string, unknown> | null;
   created_at: string;
+  actor_user_id?: string | null;
   profiles: { full_name: string | null; email: string | null; avatar_url: string | null } | null;
 };
 

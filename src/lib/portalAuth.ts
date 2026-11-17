@@ -72,8 +72,9 @@ export async function getAccessibleEvents(
       } = await supabase.auth.getUser();
       if (!user) return [];
 
-      const { data: profile } = await supabase.from('profiles').select('global_role').eq('id', user.id).single();
-      globalRole = profile?.global_role ?? null;
+      // Feature 027 (C1): own admin status via RPC; `global_role` isn't selectable after C1.
+      const { data: isAdmin } = await supabase.rpc('portal_is_global_admin');
+      globalRole = isAdmin === true ? 'admin' : null;
     }
 
     if (globalRole === 'admin') {
@@ -145,8 +146,9 @@ export async function getAccessibleOrganizations(
       if (!user) return [];
       userId = user.id;
 
-      const { data: profile } = await supabase.from('profiles').select('global_role').eq('id', user.id).single();
-      globalRole = profile?.global_role ?? null;
+      // Feature 027 (C1): own admin status via RPC; `global_role` isn't selectable after C1.
+      const { data: isAdmin } = await supabase.rpc('portal_is_global_admin');
+      globalRole = isAdmin === true ? 'admin' : null;
     }
 
     if (globalRole === 'admin') {

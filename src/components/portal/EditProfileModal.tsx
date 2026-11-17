@@ -30,9 +30,15 @@ type EditProfileModalProps = {
    * PATCH /api/organizations/[organizationId]/people/[userId] instead.
    */
   organizationId?: string | null;
+  /**
+   * Feature 027 (C1): true when this person's email/phone couldn't be loaded (Bendie's
+   * contact rule didn't return them). The fields are then read-only and never sent,
+   * so saving can't blank them.
+   */
+  contactUnavailable?: boolean;
 };
 
-export function EditProfileModal({ open, userId, initial, onClose, onSaved, organizationId }: EditProfileModalProps) {
+export function EditProfileModal({ open, userId, initial, onClose, onSaved, organizationId, contactUnavailable = false }: EditProfileModalProps) {
   const { user, isGlobalAdmin } = useAuth();
   const [form, setForm] = useState<ProfileFormValues>(initial);
   const [saving, setSaving] = useState(false);
@@ -50,7 +56,7 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved, orga
 
   const editingSelf = user?.id === userId;
   // Email matches accounts across the Portal and Planner — only Stawi changes other people's.
-  const canEditEmail = isGlobalAdmin || editingSelf;
+  const canEditEmail = (isGlobalAdmin || editingSelf) && !contactUnavailable;
 
   const handleSave = async () => {
     if (!form.full_name.trim()) { toast.error('Name is required'); return; }
@@ -68,7 +74,7 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved, orga
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             full_name: form.full_name,
-            phone: form.phone,
+            ...(contactUnavailable ? {} : { phone: form.phone }),
             job_title: form.job_title,
             avatar_url: form.avatar_url,
             bio: form.bio,
@@ -95,8 +101,7 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved, orga
       .from('profiles')
       .update({
         full_name: form.full_name.trim(),
-        email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
+        ...(contactUnavailable ? {} : { email: form.email.trim() || null, phone: form.phone.trim() || null }),
         job_title: form.job_title.trim() || null,
         avatar_url: form.avatar_url.trim() || null,
         bio: form.bio.trim() || null,
@@ -131,14 +136,16 @@ export function EditProfileModal({ open, userId, initial, onClose, onSaved, orga
             <label className="label">Email</label>
             <input className="input" type="email" value={form.email} onChange={set('email')} placeholder="jane@example.com" disabled={!canEditEmail} />
             <p className="hint">
-              {canEditEmail
+              {contactUnavailable
+                ? 'You can\u2019t see this person\u2019s contact details, so email and phone are left unchanged.'
+                : canEditEmail
                 ? 'Contact email shown across the portal — this doesn\u2019t change their sign-in credentials.'
                 : 'Only Stawi can change someone\u2019s email — it is how their account is matched across the Portal and Bendie Planner.'}
             </p>
           </div>
           <div>
             <label className="label">Phone</label>
-            <input className="input" value={form.phone} onChange={set('phone')} placeholder="+254 700 000000" />
+            <input className="input" value={form.phone} onChange={set('phone')} placeholder="+254 700 000000" disabled={contactUnavailable} />
           </div>
           <div>
             <label className="label">Job Title</label>

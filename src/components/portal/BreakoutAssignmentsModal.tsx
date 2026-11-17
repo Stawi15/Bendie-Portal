@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { eventMemberContacts } from '@/lib/profileContacts';
 import { FormModal } from '@/components/portal/FormModal';
 import { friendlyError } from '@/lib/userFacingError';
 import { CsvImportModal } from '@/components/portal/CsvImportModal';
@@ -65,10 +66,12 @@ export function BreakoutAssignmentsModal({
     if (!session) return;
     setLoading(true);
     setLoadError(null);
-    const [roomRes, assignRes, memberRes] = await Promise.all([
+    // Feature 027 (C1): emails come from get_event_member_contacts, not the profiles embed.
+    const [roomRes, assignRes, memberRes, contacts] = await Promise.all([
       supabase.from('agenda_breakout_rooms').select('id,name,location,capacity,display_order').eq('session_id', session.id).order('display_order'),
       supabase.from('agenda_breakout_assignments').select('user_id,room_id,source,assigned_at').eq('session_id', session.id),
-      supabase.from('event_members').select('user_id,role,profiles!event_members_user_id_fkey(full_name,email)').eq('event_id', eventId),
+      supabase.from('event_members').select('user_id,role,profiles!event_members_user_id_fkey(full_name)').eq('event_id', eventId),
+      eventMemberContacts(supabase, eventId),
     ]);
     const error = roomRes.error ?? assignRes.error ?? memberRes.error;
     if (error) {
@@ -80,8 +83,9 @@ export function BreakoutAssignmentsModal({
     setAssignments((assignRes.data ?? []) as Assignment[]);
     setMembers(
       (memberRes.data ?? []).map((m) => {
-        const p = (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { full_name: string | null; email: string | null } | null;
-        return { user_id: m.user_id, role: m.role, name: p?.full_name || p?.email || 'Unnamed attendee', email: p?.email ?? '' };
+        const p = (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { full_name: string | null } | null;
+        const email = contacts.get(m.user_id)?.email ?? null;
+        return { user_id: m.user_id, role: m.role, name: p?.full_name || email || 'Unnamed attendee', email: email ?? '' };
       })
     );
     setLoading(false);

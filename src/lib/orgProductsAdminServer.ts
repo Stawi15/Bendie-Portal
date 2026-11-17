@@ -33,8 +33,9 @@ export async function requirePlatformAdmin(): Promise<{ authClient: AuthClient; 
     data: { user },
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  const { data: profile } = await authClient.from('profiles').select('global_role').eq('id', user.id).maybeSingle();
-  if (!profile || profile.global_role !== 'admin') return NextResponse.json({ error: 'Only platform admins can do this.' }, { status: 403 });
+  // Feature 027 (C1): own admin status via RPC; `global_role` isn't selectable after C1.
+  const { data: isAdmin } = await authClient.rpc('portal_is_global_admin');
+  if (isAdmin !== true) return NextResponse.json({ error: 'Only platform admins can do this.' }, { status: 403 });
   return { authClient, userId: user.id };
 }
 

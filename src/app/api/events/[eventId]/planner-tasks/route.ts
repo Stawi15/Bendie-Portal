@@ -13,6 +13,7 @@ import {
   type ResolvedTaskCapability,
 } from '@/lib/plannerTasks';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 007 — Bendie Planner Tasks: collection route (list + capability +
@@ -72,7 +73,7 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
   // Wave 2 — profile (incl. planner_profile_id, Feature 016), memberships (ordered, as
   // OrganizationContext — see planner-overview/route.ts), the event row and the Planner link.
   const [{ data: profile }, membershipsResult, { data: event }, linkResult] = await Promise.all([
-    authClient.from('profiles').select('global_role, current_organization_id, planner_profile_id').eq('id', user.id).maybeSingle(),
+    readCallerProfile(user.id),
     authClient.from('organization_members').select('organization_id').eq('user_id', user.id).order('organization_id', { ascending: true }),
     authClient
       .from('events')

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { eventMemberContacts, organizationPeopleContacts } from '@/lib/profileContacts';
 import { FormModal } from '@/components/portal/FormModal';
 import { Avatar } from '@/components/portal/Avatar';
 import { matchOrCreateParticipant, describeParticipantMatchOutcome, type ParticipantMatchOutcome } from '@/lib/plannerParticipantMatching';
@@ -60,21 +61,28 @@ export function AddParticipantFromPortalModal({ open, source, eventId, organizat
 
     (async () => {
       try {
-        const { data, error } =
+        // Feature 027 (C1): emails come from the contact helpers, not the profiles embed.
+        const [{ data, error }, contacts] =
           source === 'attendees'
-            ? await supabase.from('event_members').select('user_id, profiles!event_members_user_id_fkey(full_name, email, avatar_url)').eq('event_id', eventId)
-            : await supabase.from('organization_members').select('user_id, profiles:user_id(full_name, email, avatar_url)').eq('organization_id', organizationId);
+            ? await Promise.all([
+                supabase.from('event_members').select('user_id, profiles!event_members_user_id_fkey(full_name, avatar_url)').eq('event_id', eventId),
+                eventMemberContacts(supabase, eventId),
+              ])
+            : await Promise.all([
+                supabase.from('organization_members').select('user_id, profiles:user_id(full_name, avatar_url)').eq('organization_id', organizationId),
+                organizationPeopleContacts(organizationId).then((r) => r.contacts),
+              ]);
         if (cancelled) return;
         if (error) {
           setLoadError('Could not load people to add — try again.');
           setLoading(false);
           return;
         }
-        type Raw = { user_id: string; profiles: { full_name: string | null; email: string | null; avatar_url: string | null } | null };
+        type Raw = { user_id: string; profiles: { full_name: string | null; avatar_url: string | null } | null };
         const rows = ((data as unknown as Raw[]) ?? []).map((r) => ({
           userId: r.user_id,
           fullName: r.profiles?.full_name ?? null,
-          email: r.profiles?.email ?? null,
+          email: contacts.get(r.user_id)?.email ?? null,
           avatarUrl: r.profiles?.avatar_url ?? null,
         }));
         // Never pre-hide a candidate just because their email happens to

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { syncStaffMemberToPlanner } from '@/lib/plannerStaffSync';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-  const { data: callerProfile } = await authClient.from('profiles').select('global_role').eq('id', user.id).single();
+  const { data: callerProfile } = await readCallerProfile(user.id);
   if (!callerProfile || callerProfile.global_role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

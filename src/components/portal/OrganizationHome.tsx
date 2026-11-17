@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { supabase } from '@/lib/supabaseClient';
+import { emailsForUnnamed } from '@/lib/profileContacts';
 import { useOrgEvents } from '@/lib/useOrgEvents';
 import { useOrgPeople } from '@/lib/useOrgPeople';
 import { formatAuditAction } from '@/lib/portalLabels';
@@ -220,7 +221,7 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
       setActivityLoading(true);
       const { data, error } = await supabase
         .from('event_content_audit_log')
-        .select('id, table_name, action, created_at, profiles:actor_user_id(full_name, email)')
+        .select('id, table_name, action, created_at, actor_user_id, profiles:actor_user_id(full_name)')
         .in('event_id', eventIds)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -239,13 +240,18 @@ export function OrganizationHome({ product }: { product: ProductKey }) {
         table_name: string;
         action: 'INSERT' | 'UPDATE' | 'DELETE';
         created_at: string;
-        profiles: { full_name: string | null; email: string | null } | null;
+        actor_user_id: string | null;
+        profiles: { full_name: string | null } | null;
       };
+      const logRows = (data as unknown as LogRow[]) ?? [];
+      // Feature 027 (C1): an unnamed actor's email via get_profile_contact (Bendie's rule applies).
+      const actorEmails = await emailsForUnnamed(supabase, logRows.map((r) => ({ id: r.actor_user_id, fullName: r.profiles?.full_name })));
+      if (cancelled) return;
 
       setActivityEntries(
-        ((data as unknown as LogRow[]) ?? []).map((row, i) => ({
+        logRows.map((row, i) => ({
           id: row.id,
-          actorName: row.profiles?.full_name ?? row.profiles?.email ?? 'Someone',
+          actorName: row.profiles?.full_name ?? (row.actor_user_id ? actorEmails.get(row.actor_user_id) : undefined) ?? 'Someone',
           description: formatAuditAction(row.table_name, row.action),
           timestamp: formatRelativeTime(row.created_at),
           dotClass: ACTIVITY_DOT_CLASSES[i % ACTIVITY_DOT_CLASSES.length],

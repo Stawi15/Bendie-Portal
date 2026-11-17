@@ -2,6 +2,7 @@ import 'server-only';
 import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 010 — narrow, server-only Bendie Planner Checklist data-access
@@ -155,12 +156,10 @@ function shapeChecklistItem(row: RawChecklistItemRow): ChecklistItem {
 }
 
 /** Small, self-contained duplicate of `plannerTasks.ts`'s/`plannerVendors.ts`'s identical function (this codebase's established preference for independent per-module duplication). */
-export async function resolveCallerPlannerIdentity(portalAuthClient: SupabaseClient, portalUserId: string): Promise<string | null> {
-  const { data, error } = await portalAuthClient.from('profiles').select('planner_profile_id').eq('id', portalUserId).maybeSingle();
-  if (error) {
-    console.error('resolveCallerPlannerIdentity (checklist): profiles lookup failed', error);
-    return null;
-  }
+export async function resolveCallerPlannerIdentity(_portalAuthClient: SupabaseClient, portalUserId: string): Promise<string | null> {
+  // Feature 027 (C1): `planner_profile_id` isn't selectable with a user key after C1, so the
+  // verified caller's own row is read with the service role (`readCallerProfile` logs failures).
+  const { data } = await readCallerProfile(portalUserId);
   return data?.planner_profile_id ?? null;
 }
 

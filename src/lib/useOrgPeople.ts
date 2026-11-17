@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { organizationPeopleContacts } from '@/lib/profileContacts';
 import type { OrgPersonRow } from '@/components/portal/OrgPeoplePanel';
 
 type UseOrgPeopleOptions = {
@@ -14,11 +15,8 @@ type PreviewRow = {
   role: string;
   profiles: {
     full_name: string | null;
-    email: string | null;
     avatar_url: string | null;
     last_seen_at: string | null;
-    global_role: string;
-    phone: string | null;
     job_title: string | null;
     bio: string | null;
   } | null;
@@ -43,7 +41,8 @@ export function useOrgPeople(organizationId: string | null, orgLoading: boolean,
     let membersQuery = supabase
       .from('organization_members')
       .select(
-        'user_id, role, created_at, profiles:user_id(full_name, email, avatar_url, last_seen_at, global_role, phone, job_title, bio)',
+        // Feature 027 (C1): email/phone/global_role come from the org-scoped contacts route.
+        'user_id, role, created_at, profiles:user_id(full_name, avatar_url, last_seen_at, job_title, bio)',
         { count: 'exact' }
       )
       .eq('organization_id', organizationId)
@@ -51,13 +50,14 @@ export function useOrgPeople(organizationId: string | null, orgLoading: boolean,
 
     if (limit) membersQuery = membersQuery.range(0, limit - 1);
 
-    const [membersRes, elevatedRes] = await Promise.all([
+    const [membersRes, elevatedRes, orgContacts] = await Promise.all([
       membersQuery,
       supabase
         .from('organization_members')
         .select('user_id', { count: 'exact', head: true })
         .eq('organization_id', organizationId)
         .in('role', ['owner', 'admin']),
+      organizationPeopleContacts(organizationId),
     ]);
 
     const rows = (membersRes.data as unknown as PreviewRow[]) ?? [];
@@ -81,12 +81,13 @@ export function useOrgPeople(organizationId: string | null, orgLoading: boolean,
       rows.map((r) => ({
         userId: r.user_id,
         fullName: r.profiles?.full_name ?? null,
-        email: r.profiles?.email ?? null,
+        email: orgContacts.contacts.get(r.user_id)?.email ?? null,
+        contactLoaded: orgContacts.contacts.has(r.user_id),
         avatarUrl: r.profiles?.avatar_url ?? null,
         orgRole: r.role,
-        globalRole: r.profiles?.global_role ?? 'attendee',
+        globalRole: orgContacts.globalRoles?.get(r.user_id) ?? 'attendee',
         lastSeenAt: r.profiles?.last_seen_at ?? null,
-        phone: r.profiles?.phone ?? null,
+        phone: orgContacts.contacts.get(r.user_id)?.phone ?? null,
         jobTitle: r.profiles?.job_title ?? null,
         bio: r.profiles?.bio ?? null,
         assignedEventIds: eventIdsByUser[r.user_id] ?? [],

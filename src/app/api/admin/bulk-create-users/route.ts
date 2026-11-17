@@ -3,6 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { runWithConcurrency } from '@/lib/csvImport';
+import { ensureAccountByEmail } from '@/lib/accountProvisioning';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 type BulkUserInput = { email: string; fullName?: string };
 type BulkUserResult = { email: string; id?: string; error?: string };
@@ -45,11 +47,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const { data: profile } = await authClient
-    .from('profiles')
-    .select('global_role')
-    .eq('id', user.id)
-    .single();
+  const { data: profile } = await readCallerProfile(user.id);
 
   if (!profile || profile.global_role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -80,24 +78,13 @@ export async function POST(request: NextRequest) {
     async (input) => {
       if (!input.email) return { email: input.email, error: 'Email is required' };
 
-      // Same silent, no-email account provisioning as /api/admin/create-user —
-      // these accounts sign in via the Evently-App's event-access codes, not
-      // email/password here.
-      const { data: created, error: createError } = await adminClient.auth.admin.createUser({
-        email: input.email,
-        email_confirm: true,
-        user_metadata: input.fullName ? { full_name: input.fullName } : undefined,
-      });
-
-      if (createError || !created?.user) {
-        return { email: input.email, error: createError?.message ?? 'Failed to create user' };
-      }
-
-      if (input.fullName) {
-        await adminClient.from('profiles').update({ full_name: input.fullName }).eq('id', created.user.id);
-      }
-
-      return { email: input.email, id: created.user.id };
+      // Feature 027 (C1): existing accounts are resolved here with the service role —
+      // the People page can no longer look emails up from the browser. Same silent,
+      // no-email provisioning as /api/admin/create-user for new ones; an existing
+      // account's name is left unchanged, as before.
+      const outcome = await ensureAccountByEmail(adminClient, input.email, input.fullName ?? '');
+      if ('error' in outcome) return { email: input.email, error: outcome.error };
+      return { email: input.email, id: outcome.userId };
     },
     (input, _index, error) => ({
       email: input.email,

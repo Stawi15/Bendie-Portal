@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { eventMemberContacts } from '@/lib/profileContacts';
 import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { useEvent } from '@/contexts/EventContext';
@@ -127,12 +128,16 @@ export default function AttendeeTravelPage() {
   };
 
   const fetchMembers = async () => {
-    const { data, error } = await supabase
-      .from('event_members')
-      .select('user_id,profiles!event_members_user_id_fkey(full_name,email,avatar_url)')
-      .eq('event_id', eventId);
+    // Feature 027 (C1): emails come from get_event_member_contacts, not the profiles embed.
+    const [{ data, error }, contacts] = await Promise.all([
+      supabase.from('event_members').select('user_id,profiles!event_members_user_id_fkey(full_name,avatar_url)').eq('event_id', eventId),
+      eventMemberContacts(supabase, eventId),
+    ]);
     if (error) { toast.error('Failed to load attendees'); setLoading(false); return; }
-    const rows = (data as unknown as Member[]) ?? [];
+    const rows = ((data as unknown as Member[]) ?? []).map((m) => ({
+      ...m,
+      profiles: m.profiles ? { ...m.profiles, email: contacts.get(m.user_id)?.email ?? null } : null,
+    }));
     rows.sort((a, b) => (a.profiles?.full_name ?? '').localeCompare(b.profiles?.full_name ?? ''));
     setMembers(rows);
     setLoading(false);

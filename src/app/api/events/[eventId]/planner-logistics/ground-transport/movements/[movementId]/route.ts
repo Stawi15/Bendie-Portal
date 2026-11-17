@@ -15,6 +15,7 @@ import {
   type MovementPatch,
 } from '@/lib/plannerLogistics';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Feature 013 — Ground Transport: single-movement route (manage-only field
@@ -45,7 +46,7 @@ async function resolveAuthorizedContext(eventId: string): Promise<NextResponse |
   } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'not_authenticated' }, { status: 401 });
 
-  const { data: profile } = await authClient.from('profiles').select('global_role, current_organization_id').eq('id', user.id).maybeSingle();
+  const { data: profile } = await readCallerProfile(user.id);
 
   const isPlatformAdmin = profile?.global_role === 'admin';
   let selectedOrganizationId: string | null = null;

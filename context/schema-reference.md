@@ -17,6 +17,11 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-11-17 — Feature 027: Portal ready for the `profiles` lock-down (C1) (no migration)
+
+- Signed-in-user code reads only the public `profiles` columns (`id, username, full_name, avatar_url, bio, job_title, organization, linkedin_url, is_onboarded, last_seen_at, created_at, updated_at, current_event_id, current_organization_id`). **Never add `email`, `phone`, `gender`, `location`, `role`, `global_role` or `planner_profile_id` to a user-key `profiles` select or embed.** Use `portal_is_global_admin()`, `get_profile_contact(uuid)` / `get_event_member_contacts(uuid)` (`src/lib/profileContacts.ts`), or a server route with the service role (`src/lib/callerProfile.ts` for the caller's own row).
+- C1 itself (the revoke and grant) is applied by the Bendie backend team on an agreed date. A rolled-back simulation on 2026-11-17 passed.
+
 ### 2026-11-17 — Feature 026: Portal follows Planner's access rules (no migration, either project)
 
 - **One rule:** `src/lib/plannerAccessRulesCore.ts` `moduleAccess()` mirrors Planner's `has_event_module`. That's a platform admin (flag only), an org admin of the event's organization, or an active assignment while the organization is active, with the module's switch (blank `can_manage_production`/`can_manage_logistics` = the view switch). All six Planner module resolvers use it. Verified live: 1,850 decisions, 0 mismatches.

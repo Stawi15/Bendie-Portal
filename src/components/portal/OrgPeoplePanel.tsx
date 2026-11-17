@@ -14,6 +14,8 @@ export type OrgPersonRow = {
   globalRole: string;
   lastSeenAt: string | null;
   phone: string | null;
+  /** Feature 027: false when this viewer isn't allowed to see the person's email/phone. */
+  contactLoaded?: boolean;
   jobTitle: string | null;
   bio: string | null;
   assignedEventIds: string[];

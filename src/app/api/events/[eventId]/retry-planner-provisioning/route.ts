@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { provisionPlannerEvent } from '@/lib/plannerEventProvisioning';
+import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
  * Retry Planner provisioning for an existing Portal event (Feature 004,
@@ -46,7 +47,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'event_not_found' }, { status: 404 });
   }
 
-  const { data: callerProfile } = await authClient.from('profiles').select('global_role').eq('id', user.id).single();
+  const { data: callerProfile } = await readCallerProfile(user.id);
   const isPlatformAdmin = callerProfile?.global_role === 'admin';
 
   if (!isPlatformAdmin) {

@@ -39,7 +39,7 @@ const PEOPLE_CSV_SAMPLES: Record<string, string>[] = [
 
 export default function PeoplePage() {
   const { organizationId, loading: orgLoading } = useOrganization();
-  const { user, isGlobalAdmin } = useAuth();
+  const { user, profile, isGlobalAdmin } = useAuth();
   const { people, total, elevatedCount, loading, refetch } = useOrgPeople(organizationId, orgLoading);
   const { events } = useOrgEvents(organizationId, orgLoading);
   const confirm = useConfirm();
@@ -193,40 +193,31 @@ export default function PeoplePage() {
       return;
     }
 
-    const emails = rows.map((r) => r.email);
-    const { data: existing, error } = await supabase.from('profiles').select('id,email').in('email', emails);
-    if (error) {
-      toast.error('Failed to check existing accounts');
-      console.error(error);
-      return;
-    }
-    for (const p of existing ?? []) {
-      if (p.email) emailToIdRef.current.set(p.email.toLowerCase(), p.id);
-    }
-
-    const newRows = rows.filter((r) => !emailToIdRef.current.has(r.email));
-    if (newRows.length === 0) return;
-
-    try {
-      const res = await fetch('/api/admin/bulk-create-users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ users: newRows.map((r) => ({ email: r.email, fullName: r.full_name ?? '' })) }),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        const message = body.error ?? 'Failed to create new accounts';
-        for (const r of newRows) createErrorsRef.current.set(r.email, message);
-        return;
+    // Feature 027 (C1): the route resolves existing accounts and creates new ones (service role);
+    // the browser can no longer look emails up in `profiles`. Chunked like the org-admin path.
+    for (let start = 0; start < rows.length; start += 500) {
+      const chunk = rows.slice(start, start + 500);
+      try {
+        const res = await fetch('/api/admin/bulk-create-users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ users: chunk.map((r) => ({ email: r.email, fullName: r.full_name ?? '' })) }),
+        });
+        const body = await res.json();
+        if (!res.ok) {
+          const message = body.error ?? 'Failed to create new accounts';
+          for (const r of chunk) createErrorsRef.current.set(r.email, message);
+          continue;
+        }
+        for (const result of body.results as Array<{ email: string; id?: string; error?: string }>) {
+          const key = result.email.toLowerCase();
+          if (result.id) emailToIdRef.current.set(key, result.id);
+          else createErrorsRef.current.set(key, result.error ?? 'Failed to create account');
+        }
+      } catch (err) {
+        console.error(err);
+        for (const r of chunk) createErrorsRef.current.set(r.email, 'Failed to create account');
       }
-      for (const result of body.results as Array<{ email: string; id?: string; error?: string }>) {
-        const key = result.email.toLowerCase();
-        if (result.id) emailToIdRef.current.set(key, result.id);
-        else createErrorsRef.current.set(key, result.error ?? 'Failed to create account');
-      }
-    } catch (err) {
-      console.error(err);
-      for (const r of newRows) createErrorsRef.current.set(r.email, 'Failed to create account');
     }
   };
 
@@ -339,14 +330,16 @@ export default function PeoplePage() {
         userId={editingPerson?.userId ?? null}
         initial={{
           full_name: editingPerson?.fullName ?? '',
-          email: editingPerson?.email ?? '',
-          phone: editingPerson?.phone ?? '',
+          // Feature 027: your own row always has your contact (from your sign-in), even when the list's doesn't.
+          email: editingPerson?.email ?? (editingPerson?.userId === user?.id ? (profile?.email ?? '') : ''),
+          phone: editingPerson?.phone ?? (editingPerson?.userId === user?.id ? (profile?.phone ?? '') : ''),
           job_title: editingPerson?.jobTitle ?? '',
           avatar_url: editingPerson?.avatarUrl ?? '',
           bio: editingPerson?.bio ?? '',
         }}
         onClose={() => setEditingPerson(null)}
         onSaved={refetch}
+        contactUnavailable={!!editingPerson && editingPerson.contactLoaded === false && editingPerson.userId !== user?.id}
         organizationId={organizationId}
       />
 

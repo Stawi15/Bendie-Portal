@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { hasActiveTravelJourney, completeTravelJourney } from '@/lib/travelReturnContext';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { eventMemberContacts } from '@/lib/profileContacts';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { PlannerPeopleList, type ParticipantLogisticsInfo } from '@/components/portal/PlannerPeopleList';
@@ -219,15 +220,13 @@ export default function PlannerPeoplePage() {
       });
     (async () => {
       try {
-        const { data, error } = await supabase.from('event_members').select('profiles!event_members_user_id_fkey(email)').eq('event_id', eventId);
+        // Feature 027 (C1): attendee emails via get_event_member_contacts (empty when not allowed,
+        // so the badge simply never appears — never blocks the list itself).
+        const contacts = await eventMemberContacts(supabase, eventId);
         if (cancelled) return;
-        if (error) {
-          console.error('Planner Participants: attendee-email fetch failed', error);
-          return; // badge simply never appears — never blocks the list itself.
-        }
         const emails = new Set<string>();
-        for (const row of (data as unknown as { profiles: { email: string | null } | null }[]) ?? []) {
-          if (row.profiles?.email) emails.add(row.profiles.email.trim().toLowerCase());
+        for (const contact of contacts.values()) {
+          if (contact.email) emails.add(contact.email.trim().toLowerCase());
         }
         setBendieAttendeeEmails(emails);
       } catch (err) {

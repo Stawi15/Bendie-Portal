@@ -4,9 +4,14 @@ import type { ProductState } from '@/types/database';
 
 export type ProductKey = 'bendie' | 'planner';
 
-async function isPlatformAdmin(userId: string, client: SupabaseClient = supabase): Promise<boolean> {
-  const { data } = await client.from('profiles').select('global_role').eq('id', userId).maybeSingle();
-  return data?.global_role === 'admin';
+/**
+ * Feature 027 (C1): `profiles.global_role` isn't selectable with a user key after C1,
+ * so this asks `portal_is_global_admin()` about the client's own signed-in user.
+ * Every caller passes the signed-in user's own id with that user's client.
+ */
+async function isPlatformAdmin(_userId: string, client: SupabaseClient = supabase): Promise<boolean> {
+  const { data } = await client.rpc('portal_is_global_admin');
+  return data === true;
 }
 
 /**

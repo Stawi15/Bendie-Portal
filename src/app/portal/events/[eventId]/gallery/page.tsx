@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { eventMemberContacts } from '@/lib/profileContacts';
 import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
@@ -12,6 +13,7 @@ import { useLatestRequest } from '@/lib/useLatestRequest';
 
 type Post = {
   id: string;
+  user_id: string;
   image_url: string;
   caption: string | null;
   is_hidden: boolean;
@@ -32,19 +34,28 @@ export default function GalleryPage() {
 
   const fetchData = async () => {
     const signal = startRequest();
-    const { data, error } = await supabase
-      .from('posts')
-      .select('id,image_url,caption,is_hidden,created_at,profiles!posts_user_id_fkey(full_name,email,avatar_url),post_likes(count)')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: false })
-      .abortSignal(signal);
+    // Feature 027 (C1): author emails come from get_event_member_contacts, not the profiles embed.
+    const [{ data, error }, contacts] = await Promise.all([
+      supabase
+        .from('posts')
+        .select('id,user_id,image_url,caption,is_hidden,created_at,profiles!posts_user_id_fkey(full_name,avatar_url),post_likes(count)')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: false })
+        .abortSignal(signal),
+      eventMemberContacts(supabase, eventId),
+    ]);
     if (signal.aborted) return;
     if (error) {
       console.error(error);
       toast.error('Failed to load gallery');
       setPosts([]);
     } else {
-      setPosts((data as unknown as Post[]) ?? []);
+      setPosts(
+        ((data as unknown as Post[]) ?? []).map((p) => ({
+          ...p,
+          profiles: p.profiles ? { ...p.profiles, email: contacts.get(p.user_id)?.email ?? null } : null,
+        }))
+      );
     }
     setLoading(false);
   };

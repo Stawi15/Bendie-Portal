@@ -1,6 +1,7 @@
 'use client';
 
 import { supabase } from '@/lib/supabaseClient';
+import { organizationPeopleContacts, profileContacts } from '@/lib/profileContacts';
 import { isProductAvailableForEvent } from '@/lib/eventAuth';
 import { VIEWER_FLAGS, MANAGER_FLAGS, PLANNER_MODULES, type PlannerPermissionFlags } from '@/lib/plannerPermissionPresets';
 
@@ -369,14 +370,15 @@ export type PersonSummary = { userId: string; fullName: string | null; email: st
 
 /** Organisation members not yet on this event, for the "From organisation" picker. */
 export async function listOrganizationCandidates(organizationId: string, existingEventMemberIds: Set<string>): Promise<PersonSummary[]> {
-  const { data } = await supabase
-    .from('organization_members')
-    .select('user_id, profiles:user_id(full_name, email, avatar_url)')
-    .eq('organization_id', organizationId);
-  type Raw = { user_id: string; profiles: { full_name: string | null; email: string | null; avatar_url: string | null } | null };
+  // Feature 027 (C1): emails come from the org-scoped contacts route, not the profiles embed.
+  const [{ data }, { contacts }] = await Promise.all([
+    supabase.from('organization_members').select('user_id, profiles:user_id(full_name, avatar_url)').eq('organization_id', organizationId),
+    organizationPeopleContacts(organizationId),
+  ]);
+  type Raw = { user_id: string; profiles: { full_name: string | null; avatar_url: string | null } | null };
   return ((data as unknown as Raw[]) ?? [])
     .filter((r) => !existingEventMemberIds.has(r.user_id))
-    .map((r) => ({ userId: r.user_id, fullName: r.profiles?.full_name ?? null, email: r.profiles?.email ?? null, avatarUrl: r.profiles?.avatar_url ?? null }));
+    .map((r) => ({ userId: r.user_id, fullName: r.profiles?.full_name ?? null, email: contacts.get(r.user_id)?.email ?? null, avatarUrl: r.profiles?.avatar_url ?? null }));
 }
 
 export type TeamPreview = {
@@ -389,12 +391,13 @@ export type TeamPreview = {
 
 /** Preview of who a team would actually add — never blindly inserts the whole team (per the locked product decision). */
 export async function previewTeamForEvent(teamId: string, teamName: string, existingEventMemberIds: Set<string>): Promise<TeamPreview> {
-  const { data } = await supabase.from('team_members').select('user_id, profiles:user_id(full_name, email, avatar_url)').eq('team_id', teamId);
-  type Raw = { user_id: string; profiles: { full_name: string | null; email: string | null; avatar_url: string | null } | null };
+  // Feature 027 (C1): emails come from get_profile_contact (teams are small), not the profiles embed.
+  const { data } = await supabase.from('team_members').select('user_id, profiles:user_id(full_name, avatar_url)').eq('team_id', teamId);
+  type Raw = { user_id: string; profiles: { full_name: string | null; avatar_url: string | null } | null };
   const rows = (data as unknown as Raw[]) ?? [];
-  const candidates = rows
-    .filter((r) => !existingEventMemberIds.has(r.user_id))
-    .map((r) => ({ userId: r.user_id, fullName: r.profiles?.full_name ?? null, email: r.profiles?.email ?? null, avatarUrl: r.profiles?.avatar_url ?? null }));
+  const pending = rows.filter((r) => !existingEventMemberIds.has(r.user_id));
+  const contacts = await profileContacts(supabase, pending.map((r) => r.user_id));
+  const candidates = pending.map((r) => ({ userId: r.user_id, fullName: r.profiles?.full_name ?? null, email: contacts.get(r.user_id)?.email ?? null, avatarUrl: r.profiles?.avatar_url ?? null }));
   return { teamId, teamName, totalMembers: rows.length, alreadyInEvent: rows.length - candidates.length, candidates };
 }
 

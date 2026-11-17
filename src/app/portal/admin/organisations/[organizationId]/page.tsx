@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { emailsForUnnamed } from '@/lib/profileContacts';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductsCard, type AdminEventItem, type AdminPlannerLink, type AdminProductRow } from '@/components/portal/admin/ProductsCard';
 import { OrganisationHistory, type HistoryEntry } from '@/components/portal/admin/OrganisationHistory';
@@ -80,8 +81,10 @@ export default function OrganisationAdminDetailPage() {
     historyRows.forEach((h) => h.actor_user_id && actorIds.add(h.actor_user_id));
     let nameMap: Record<string, string> = {};
     if (actorIds.size > 0) {
-      const { data: profiles } = await supabase.from('profiles').select('id,full_name,email').in('id', [...actorIds]);
-      nameMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || p.email || 'A platform admin']));
+      // Feature 027 (C1): email only via get_profile_contact (Stawi admins may see every contact).
+      const { data: profiles } = await supabase.from('profiles').select('id,full_name').in('id', [...actorIds]);
+      const actorEmails = await emailsForUnnamed(supabase, (profiles ?? []).map((p) => ({ id: p.id, fullName: p.full_name })));
+      nameMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name || actorEmails.get(p.id) || 'A platform admin']));
     }
 
     setOrg(orgRes.data);
