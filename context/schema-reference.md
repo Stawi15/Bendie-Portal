@@ -37,6 +37,7 @@ this section is the running "what's new since you last synced the portal" log.
   - Provisioning copies the zone to Planner `events.timezone` (falling back to Planner's default if Planner rejects it).
   - It computes `start_date`/`end_date` in the zone.
   - Later changes aren't synced.
+- **Data (2026-11-17):** every existing event was back-filled to `Africa/Nairobi` (developer-approved; all were EAT events).
 - **Other effects:** Planner agenda day numbers use the event's zone. The `feedback_form_url` hint now mentions the 18:00 last-day push.
 
 ### 2026-10-09 — Feature 018: Planner `event_agenda_items` is now Portal-authored (no schema change)

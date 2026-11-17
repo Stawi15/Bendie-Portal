@@ -26,7 +26,7 @@ Spec/plan/tasks: `specs/024-event-timezone/`. Branch `024-event-timezone` (stack
   - Planner start/end dates are computed in the zone, which fixes a latent day-early bug.
   - Agenda day numbers use the event's zone.
 - **Also:** the feedback-link hint mentions the 18:00 last-day push. New `src/lib/eventTimeZone.ts` (10 tests) and `components/portal/TimeZoneField.tsx`.
-- **Live check, passed 2026-11-17:** the column, the `authenticated` grant (anon has none), the check constraint and Planner's default and trigger are all as the briefs say. 30 live events have no zone yet.
+- **Live check, passed 2026-11-17:** the column, the `authenticated` grant (anon has none), the check constraint and Planner's default and trigger are all as the briefs say. **Data back-fill (2026-11-17, developer-approved):** all 30 events without a zone were set to `Africa/Nairobi` (all were created in EAT). 32/32 now have a zone. Only 'AEF' (draft, 23–25 Nov) is upcoming, so its reminders start on 21 Nov; 28 had already finished and 1 has no start date.
 
 ---
 
