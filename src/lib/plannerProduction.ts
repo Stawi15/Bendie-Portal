@@ -1,4 +1,5 @@
 import 'server-only';
+import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 
@@ -43,29 +44,17 @@ export async function resolveCallerPlannerIdentity(portalAuthClient: SupabaseCli
   return data?.planner_profile_id ?? null;
 }
 
-/** `can_view_production` is a real, Feature-008-administered flag (same shape as Logistics' `can_view_logistics`) — `canView` honors it directly. `canManage` is always `false` here; manage authority only ever comes from the Portal-layer `canAdministerPlannerPermissions` check, applied by the route. */
+/**
+ * Feature 026 (supersedes the Feature 012/014 "canManage is always false" decision): Planner
+ * now has a real `can_manage_production` switch (NULL = same as `can_view_production`), so a Planner
+ * user who may edit production in the Planner app may also edit it here. Portal admins still get
+ * full access through `canAdministerPlannerPermissions`, applied by the route first.
+ */
 export async function resolveProductionCapability(plannerEventId: number, plannerProfileId: string): Promise<ResolvedProductionCapability> {
-  const planner = getPlannerAdminClient();
-
-  const { data: profile, error: profileError } = await planner.from('profiles').select('is_platform_admin, role').eq('id', plannerProfileId).maybeSingle();
-  if (profileError) throw profileError;
-
-  const role = (profile?.role ?? '').trim().toLowerCase();
-  const isPlatformAdmin = profile?.is_platform_admin === true || ['admin', 'super_admin', 'superadmin'].includes(role);
-  if (isPlatformAdmin) {
-    return { hasPlannerIdentity: true, canView: true, canManage: true };
-  }
-
-  const { data: assignment, error: assignmentError } = await planner
-    .from('event_user_assignments')
-    .select('can_view_production')
-    .eq('event_id', plannerEventId)
-    .eq('profile_id', plannerProfileId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (assignmentError) throw assignmentError;
-
-  return { hasPlannerIdentity: true, canView: assignment?.can_view_production === true, canManage: false };
+  // Feature 026: Planner's own rule (has_event_module) — platform/org admins, then the active
+  // assignment's switches. Job titles grant nothing. See src/lib/plannerAccessRules.ts.
+  const facts = await loadPlannerAccessFacts(plannerEventId, plannerProfileId);
+  return { hasPlannerIdentity: true, ...moduleAccess(facts, 'production') };
 }
 
 export type ProductionSession = {

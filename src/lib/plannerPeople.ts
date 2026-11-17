@@ -1,4 +1,5 @@
 import 'server-only';
+import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 
@@ -136,27 +137,10 @@ export async function resolveCallerPlannerIdentity(portalAuthClient: SupabaseCli
  * function is even called (see route files).
  */
 export async function resolvePeopleCapability(plannerEventId: number, plannerProfileId: string): Promise<ResolvedPeopleCapability> {
-  const planner = getPlannerAdminClient();
-
-  const { data: profile, error: profileError } = await planner.from('profiles').select('is_platform_admin, role').eq('id', plannerProfileId).maybeSingle();
-  if (profileError) throw profileError;
-
-  const role = (profile?.role ?? '').trim().toLowerCase();
-  const isPlatformAdmin = profile?.is_platform_admin === true || ['admin', 'super_admin', 'superadmin'].includes(role);
-  if (isPlatformAdmin) {
-    return { hasPlannerIdentity: true, canView: true, canManage: true };
-  }
-
-  const { data: assignment, error: assignmentError } = await planner
-    .from('event_user_assignments')
-    .select('assignment_id')
-    .eq('event_id', plannerEventId)
-    .eq('profile_id', plannerProfileId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (assignmentError) throw assignmentError;
-
-  return { hasPlannerIdentity: true, canView: !!assignment, canManage: false };
+  // Feature 026: Planner's own rule (has_event_module) — platform/org admins, then the active
+  // assignment's switches. Job titles grant nothing. See src/lib/plannerAccessRules.ts.
+  const facts = await loadPlannerAccessFacts(plannerEventId, plannerProfileId);
+  return { hasPlannerIdentity: true, ...moduleAccess(facts, 'people') };
 }
 
 /** Explicit-column select, never `select('*')`; scoped strictly to one event. Sorted by name in application code (an event's roster, not the full global table — sort-at-scale is not a concern here). */

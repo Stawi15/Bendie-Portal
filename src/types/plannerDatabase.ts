@@ -20,6 +20,8 @@ export interface PlannerDatabase {
           is_platform_admin: boolean;
           organization_id: number | null;
           is_org_admin: boolean;
+          /** Feature 026 (Planner 2026-10-15): 'staff' | 'contractor'. */
+          member_type: string;
         };
       };
       events: {
@@ -52,6 +54,13 @@ export interface PlannerDatabase {
           can_manage_tasks: boolean;
           can_manage_checklist: boolean;
           can_manage_vendors: boolean;
+          /** Feature 026 (Planner 2026-10-14): NULL = same as the view switch. */
+          can_manage_production: boolean | null;
+          can_manage_logistics: boolean | null;
+          /** Feature 026 (Planner 2026-10-15): inclusive last day; required for an active contractor assignment. */
+          access_ends_on: string | null;
+          /** 'manual' | 'org_default' — never create or delete 'org_default' rows from the Portal. */
+          assignment_source: string;
           is_active: boolean;
           created_at: string;
           updated_at: string;

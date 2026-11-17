@@ -1,4 +1,5 @@
 import 'server-only';
+import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 
@@ -165,36 +166,10 @@ export async function resolveCallerPlannerIdentity(portalAuthClient: SupabaseCli
 
 /** Mirrors `resolveVendorCapability` exactly, reading `can_view_checklist`/`can_manage_checklist` instead. Throws on a genuine query error — never returns `canView:false` for a failure. */
 export async function resolveChecklistCapability(plannerEventId: number, plannerProfileId: string): Promise<ResolvedChecklistCapability> {
-  const planner = getPlannerAdminClient();
-
-  const { data: profile, error: profileError } = await planner.from('profiles').select('is_platform_admin, role').eq('id', plannerProfileId).maybeSingle();
-  if (profileError) throw profileError;
-
-  const role = (profile?.role ?? '').trim().toLowerCase();
-  const isPlatformAdmin = profile?.is_platform_admin === true || ['admin', 'super_admin', 'superadmin'].includes(role);
-
-  if (isPlatformAdmin) {
-    return { hasPlannerIdentity: true, canView: true, canManage: true };
-  }
-
-  const { data: assignment, error: assignmentError } = await planner
-    .from('event_user_assignments')
-    .select('can_view_checklist, can_manage_checklist')
-    .eq('event_id', plannerEventId)
-    .eq('profile_id', plannerProfileId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (assignmentError) throw assignmentError;
-
-  if (!assignment) {
-    return { hasPlannerIdentity: true, canView: false, canManage: false };
-  }
-
-  return {
-    hasPlannerIdentity: true,
-    canView: assignment.can_view_checklist === true || assignment.can_manage_checklist === true,
-    canManage: assignment.can_manage_checklist === true,
-  };
+  // Feature 026: Planner's own rule (has_event_module) — platform/org admins, then the active
+  // assignment's switches. Job titles grant nothing. See src/lib/plannerAccessRules.ts.
+  const facts = await loadPlannerAccessFacts(plannerEventId, plannerProfileId);
+  return { hasPlannerIdentity: true, ...moduleAccess(facts, 'checklist') };
 }
 
 /** Event-scoped active staff, for the create form's owner picker — mirrors `plannerTasks.ts`'s `listAssignableStaff`. */

@@ -11,7 +11,11 @@
 export type PlannerPermissionFlags = {
   can_view_overview: boolean;
   can_view_production: boolean;
+  /** Feature 026. Planner treats NULL as "same as can_view_production"; the Portal always writes an explicit value. */
+  can_manage_production: boolean;
   can_view_logistics: boolean;
+  /** Feature 026. Planner treats NULL as "same as can_view_logistics"; the Portal always writes an explicit value. */
+  can_manage_logistics: boolean;
   can_view_tasks: boolean;
   can_manage_tasks: boolean;
   can_view_notifications: boolean;
@@ -30,11 +34,11 @@ export type PlannerModuleDef = {
   manage: keyof PlannerPermissionFlags | null;
 };
 
-/** Exactly the 7 modules the live `event_user_assignments` schema supports today (spec.md FR-011). `manage: null` (never `false`) for the 4 modules with no live manage column — FR-013 forbids inventing one. */
+/** Exactly the 7 modules the live `event_user_assignments` schema supports (spec.md FR-011). `manage: null` (never `false`) for the modules with no live manage column — FR-013 forbids inventing one. Feature 026: Production and Logistics gained real manage switches (Planner, 2026-10-14). */
 export const PLANNER_MODULES: readonly PlannerModuleDef[] = [
   { key: 'overview', label: 'Overview', view: 'can_view_overview', manage: null },
-  { key: 'production', label: 'Production', view: 'can_view_production', manage: null },
-  { key: 'logistics', label: 'Logistics', view: 'can_view_logistics', manage: null },
+  { key: 'production', label: 'Production', view: 'can_view_production', manage: 'can_manage_production' },
+  { key: 'logistics', label: 'Logistics', view: 'can_view_logistics', manage: 'can_manage_logistics' },
   { key: 'tasks', label: 'Tasks', view: 'can_view_tasks', manage: 'can_manage_tasks' },
   { key: 'notifications', label: 'Notifications', view: 'can_view_notifications', manage: null },
   { key: 'checklist', label: 'Checklist', view: 'can_view_checklist', manage: 'can_manage_checklist' },
@@ -45,7 +49,10 @@ export const PLANNER_MODULES: readonly PlannerModuleDef[] = [
 export const VIEWER_FLAGS: PlannerPermissionFlags = {
   can_view_overview: true,
   can_view_production: true,
+  // Feature 026: explicit false — a blank switch would let a "viewer" edit in the Planner app.
+  can_manage_production: false,
   can_view_logistics: true,
+  can_manage_logistics: false,
   can_view_tasks: true,
   can_manage_tasks: false,
   can_view_notifications: true,
@@ -59,7 +66,9 @@ export const VIEWER_FLAGS: PlannerPermissionFlags = {
 export const MANAGER_FLAGS: PlannerPermissionFlags = {
   can_view_overview: true,
   can_view_production: true,
+  can_manage_production: true,
   can_view_logistics: true,
+  can_manage_logistics: true,
   can_view_tasks: true,
   can_manage_tasks: true,
   can_view_notifications: true,
@@ -90,10 +99,16 @@ export function derivePresetLabel(flags: PlannerPermissionFlags): 'viewer' | 'ma
 
 /** `'admin'` only when every currently-supported Manage flag is true (FR-027). Never reads a client-supplied `access_role`. */
 export function deriveAccessRole(flags: PlannerPermissionFlags): 'admin' | 'member' {
-  return flags.can_manage_tasks && flags.can_manage_checklist && flags.can_manage_vendors ? 'admin' : 'member';
+  return flags.can_manage_tasks &&
+    flags.can_manage_checklist &&
+    flags.can_manage_vendors &&
+    flags.can_manage_production &&
+    flags.can_manage_logistics
+    ? 'admin'
+    : 'member';
 }
 
-/** For Tasks/Checklist/Vendors, `manage: true` forces `view: true`. The result never contains `view: false` alongside `manage: true` (FR-023–FR-025). Server-authoritative — must be applied unconditionally on every write, never merely mirrored by the client. */
+/** For every module with a manage switch, `manage: true` forces `view: true`. The result never contains `view: false` alongside `manage: true` (FR-023–FR-025). Server-authoritative — must be applied unconditionally on every write, never merely mirrored by the client. */
 export function normalizeManageImpliesView(flags: PlannerPermissionFlags): PlannerPermissionFlags {
   const normalized = { ...flags };
   for (const moduleDef of PLANNER_MODULES) {

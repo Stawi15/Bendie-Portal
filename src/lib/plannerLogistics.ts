@@ -1,4 +1,5 @@
 import 'server-only';
+import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 import { getParticipant, listParticipants } from '@/lib/plannerPeople';
@@ -48,36 +49,16 @@ export async function resolveCallerPlannerIdentity(portalAuthClient: SupabaseCli
 }
 
 /**
- * Unlike Feature 011's People (which had no view flag at all), a real,
- * Feature-008-administered `can_view_logistics` flag exists — `canView`
- * honors it directly. `canManage` is always `false` from this function: no
- * `can_manage_logistics` flag exists, and per the locked product decision
- * (spec.md), manage authority only ever comes from the Portal-layer
- * `canAdministerPlannerPermissions` check, applied by the route before this
- * function is even called.
+ * Feature 026 (supersedes the Feature 012/014 "canManage is always false" decision): Planner
+ * now has a real `can_manage_logistics` switch (NULL = same as `can_view_logistics`), so a Planner
+ * user who may edit logistics in the Planner app may also edit it here. Portal admins still get
+ * full access through `canAdministerPlannerPermissions`, applied by the route first.
  */
 export async function resolveLogisticsCapability(plannerEventId: number, plannerProfileId: string): Promise<ResolvedLogisticsCapability> {
-  const planner = getPlannerAdminClient();
-
-  const { data: profile, error: profileError } = await planner.from('profiles').select('is_platform_admin, role').eq('id', plannerProfileId).maybeSingle();
-  if (profileError) throw profileError;
-
-  const role = (profile?.role ?? '').trim().toLowerCase();
-  const isPlatformAdmin = profile?.is_platform_admin === true || ['admin', 'super_admin', 'superadmin'].includes(role);
-  if (isPlatformAdmin) {
-    return { hasPlannerIdentity: true, canView: true, canManage: true };
-  }
-
-  const { data: assignment, error: assignmentError } = await planner
-    .from('event_user_assignments')
-    .select('can_view_logistics')
-    .eq('event_id', plannerEventId)
-    .eq('profile_id', plannerProfileId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (assignmentError) throw assignmentError;
-
-  return { hasPlannerIdentity: true, canView: assignment?.can_view_logistics === true, canManage: false };
+  // Feature 026: Planner's own rule (has_event_module) — platform/org admins, then the active
+  // assignment's switches. Job titles grant nothing. See src/lib/plannerAccessRules.ts.
+  const facts = await loadPlannerAccessFacts(plannerEventId, plannerProfileId);
+  return { hasPlannerIdentity: true, ...moduleAccess(facts, 'logistics') };
 }
 
 function normalizeOptionalString(value: string | null | undefined): string | null {

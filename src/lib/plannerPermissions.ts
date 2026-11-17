@@ -38,13 +38,30 @@ export type PlannerPermissionState = {
 export type RawAssignment = PlannerPermissionFlags & { is_active: boolean };
 
 const ASSIGNMENT_SELECT_COLUMNS =
-  'is_active, can_view_overview, can_view_production, can_view_logistics, can_view_tasks, can_manage_tasks, can_view_notifications, can_view_checklist, can_manage_checklist, can_view_vendors, can_manage_vendors';
+  'is_active, can_view_overview, can_view_production, can_manage_production, can_view_logistics, can_manage_logistics, can_view_tasks, can_manage_tasks, can_view_notifications, can_view_checklist, can_manage_checklist, can_view_vendors, can_manage_vendors';
+
+/**
+ * Feature 026: Planner stores `can_manage_production` / `can_manage_logistics` as NULL = "same as
+ * the view switch". Every assignment read here is resolved to its EFFECTIVE value straight away,
+ * so the editor, presets, no-op check and audit snapshots all see what Planner enforces.
+ */
+function resolveRawAssignment(row: Record<string, unknown> | null): RawAssignment | null {
+  if (!row) return null;
+  const r = row as unknown as RawAssignment & { can_manage_production: boolean | null; can_manage_logistics: boolean | null };
+  return {
+    ...r,
+    can_manage_production: (r.can_manage_production ?? r.can_view_production) === true,
+    can_manage_logistics: (r.can_manage_logistics ?? r.can_view_logistics) === true,
+  };
+}
 
 function stripIsActive(row: RawAssignment): PlannerPermissionFlags {
   return {
     can_view_overview: row.can_view_overview,
     can_view_production: row.can_view_production,
+    can_manage_production: row.can_manage_production,
     can_view_logistics: row.can_view_logistics,
+    can_manage_logistics: row.can_manage_logistics,
     can_view_tasks: row.can_view_tasks,
     can_manage_tasks: row.can_manage_tasks,
     can_view_notifications: row.can_view_notifications,
@@ -78,7 +95,7 @@ async function readAssignment(plannerEventId: number, plannerProfileId: string):
     .eq('profile_id', plannerProfileId)
     .maybeSingle();
   if (error) throw error;
-  return (data as RawAssignment | null) ?? null;
+  return resolveRawAssignment(data as Record<string, unknown> | null);
 }
 
 /** FR-004: never writes anything. When no assignment/identity exists yet, previews the FR-016 role-derived defaults without persisting them. */
@@ -126,7 +143,7 @@ export async function enableAssignment(
       .select(ASSIGNMENT_SELECT_COLUMNS)
       .single();
     if (error) throw error;
-    const after = data as RawAssignment;
+    const after = resolveRawAssignment(data as Record<string, unknown>) as RawAssignment;
     return { before: existing, after, state: shapeState(true, hasBeenConfigured, stripIsActive(after)), branch: 'reactivate' };
   }
 
@@ -145,8 +162,21 @@ export async function enableAssignment(
     .select(ASSIGNMENT_SELECT_COLUMNS)
     .single();
   if (error) throw error;
-  const after = data as RawAssignment;
+  const after = resolveRawAssignment(data as Record<string, unknown>) as RawAssignment;
   return { before: existing, after, state: shapeState(true, false, stripIsActive(after)), branch: 'first_enable' };
+}
+
+/**
+ * Feature 026: Planner's `check_assignment_rules` trigger refuses an active contractor
+ * assignment without `access_ends_on` ("Contractor access needs an end date."). The Portal
+ * doesn't set contractor end dates (that stays in the Planner app's Event Access screen),
+ * so this turns the refusal into a message the person can act on. Null for any other error.
+ */
+export const CONTRACTOR_END_DATE_MESSAGE =
+  'This person is a contractor in Bendie Planner, so their access needs an end date. Set it in the Planner app (Event Access), then try again.';
+export function contractorEndDateMessage(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : typeof error === 'object' && error ? String((error as { message?: unknown }).message ?? '') : '';
+  return /contractor/i.test(message) && /end date/i.test(message) ? CONTRACTOR_END_DATE_MESSAGE : null;
 }
 
 export type ModulePatch = Partial<Record<PlannerModuleKey, { view?: boolean; manage?: boolean }>>;
@@ -247,7 +277,7 @@ export async function savePermissions(
     .single();
   if (error) throw error;
 
-  const after = data as RawAssignment;
+  const after = resolveRawAssignment(data as Record<string, unknown>) as RawAssignment;
   return { before: existing, after, state: shapeState(true, true, stripIsActive(after)), wasNoop: false };
 }
 
@@ -279,7 +309,7 @@ export async function disableAssignment(
     .select(ASSIGNMENT_SELECT_COLUMNS)
     .single();
   if (error) throw error;
-  const after = data as RawAssignment;
+  const after = resolveRawAssignment(data as Record<string, unknown>) as RawAssignment;
   return { before: existing, after, state: shapeState(false, true, stripIsActive(after)), wasNoop: false };
 }
 
@@ -307,7 +337,9 @@ export function snapshotFromAssignment(row: RawAssignment): Record<string, unkno
     flags: {
       canViewOverview: row.can_view_overview,
       canViewProduction: row.can_view_production,
+      canManageProduction: row.can_manage_production,
       canViewLogistics: row.can_view_logistics,
+      canManageLogistics: row.can_manage_logistics,
       canViewTasks: row.can_view_tasks,
       canManageTasks: row.can_manage_tasks,
       canViewNotifications: row.can_view_notifications,

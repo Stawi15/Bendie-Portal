@@ -6,6 +6,17 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 026 — Planner Access Alignment 🚧 built (2026-11-17), verified against live Planner — browser pass, /review pending
+
+Spec/plan/tasks: `specs/026-planner-access-alignment/`. Branch `026-planner-access-alignment` (stacked on 025).
+
+- **One copy of Planner's `has_event_module`** (`plannerAccessRulesCore.ts`, 8 tests) is used by all six Planner modules. Job-title admin is gone and org admins get full access. Logistics/Production managers in Planner can now also edit those modules in the Portal (supersedes the 012/014 decision). Live equivalence: 1,850/1,850.
+- **The permissions editor** gains Manage for Production and Logistics. Viewer no longer leaves them blank, which let Portal "Viewers" edit in the Planner app.
+- **Contractors:** a clear "set the end date in the Planner app" message on Enable and staff sync.
+- **Decided:** Portal writes still send no Planner notifications. Contractor and all-events administration stays in Planner.
+
+---
+
 ## Feature 025 — Contact Organizer Toggle & Matchmaking Checks 🚧 built (2026-11-17), live schema verified — browser pass, /review pending
 
 Spec/plan/tasks: `specs/025-contact-organizer-and-matchmaking/`. Branch `025-contact-organizer-and-matchmaking` (stacked on 024). Bendie Events brief items 6 and 10.

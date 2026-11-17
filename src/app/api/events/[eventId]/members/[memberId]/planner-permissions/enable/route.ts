@@ -6,7 +6,7 @@ import { requireEventWorkspaceAccess, isProductAvailableForEvent, canAdministerP
 import { resolveProvisioningPhase } from '@/lib/plannerOverview';
 import { ensurePlannerOrgPlacement, findOrCreatePlannerProfile } from '@/lib/plannerStaffSync';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
-import { enableAssignment, snapshotFromAssignment, recordAuditEntry } from '@/lib/plannerPermissions';
+import { enableAssignment, snapshotFromAssignment, recordAuditEntry, contractorEndDateMessage } from '@/lib/plannerPermissions';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -224,6 +224,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ ok: true, state });
   } catch (err) {
     console.error('planner-permissions/enable: POST failed', err);
+    // Feature 026: a contractor needs an end date, which is set in the Planner app.
+    const contractorMessage = contractorEndDateMessage(err);
+    if (contractorMessage) return NextResponse.json({ error: 'contractor_needs_end_date', message: contractorMessage }, { status: 409 });
     return NextResponse.json({ error: 'planner_write_failed', message: "Couldn't set up Bendie Planner access — try again." }, { status: 500 });
   }
 }

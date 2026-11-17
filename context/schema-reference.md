@@ -17,6 +17,13 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-11-17 — Feature 026: Portal follows Planner's access rules (no migration, either project)
+
+- **One rule:** `src/lib/plannerAccessRulesCore.ts` `moduleAccess()` mirrors Planner's `has_event_module`. That's a platform admin (flag only), an org admin of the event's organization, or an active assignment while the organization is active, with the module's switch (blank `can_manage_production`/`can_manage_logistics` = the view switch). All six Planner module resolvers use it. Verified live: 1,850 decisions, 0 mismatches.
+- **Removed:** job-title (`profiles.role`) admin. **Added:** org-admin access.
+- **New switches:** `can_manage_production` / `can_manage_logistics` are in the permissions editor and presets (Viewer off, Manager on) and are always written explicitly. A blank value is shown as its effective value. Existing blank rows are left as they are: 150 and 87 of 160 active, as of 2026-11-17.
+- **Contractors:** an active contractor assignment needs `access_ends_on`, which is set in the Planner app (`set_member_type` needs a signed-in Planner user, so the Portal can't call it). The Portal shows a clear message when Planner refuses.
+
 ### 2026-11-17 — Feature 025: Contact Organizer contact and matchmaking checks (no Portal migration)
 
 - **`support_contacts.show_on_access_screen`** (added by the attendee-app team, 2026-11-09): boolean, not null, default false. **At most one per event**, enforced by the unique index `support_contacts_one_access_contact_per_event`. The ticked contact's name, phone, email and group are returned to **anyone with the event link, before sign-in** (`get_event_access_contact`, active/published events only).

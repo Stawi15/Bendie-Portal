@@ -1,4 +1,5 @@
 import 'server-only';
+import { loadPlannerAccessFacts, moduleAccess } from '@/lib/plannerAccessRules';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 
@@ -165,39 +166,10 @@ export async function resolveCallerPlannerIdentity(
  * never to `canView: false` (Feature 006 F1 defect class; `/speckit.analyze` H2).
  */
 export async function resolveTaskCapability(plannerEventId: number, plannerProfileId: string): Promise<ResolvedTaskCapability> {
-  const planner = getPlannerAdminClient();
-
-  // Feature 019 (performance): independent reads, run in parallel — same decision as before.
-  const [{ data: profile, error: profileError }, { data: assignment, error: assignmentError }] = await Promise.all([
-    planner.from('profiles').select('is_platform_admin, role').eq('id', plannerProfileId).maybeSingle(),
-    planner
-      .from('event_user_assignments')
-      .select('can_view_tasks, can_manage_tasks')
-      .eq('event_id', plannerEventId)
-      .eq('profile_id', plannerProfileId)
-      .eq('is_active', true)
-      .maybeSingle(),
-  ]);
-  if (profileError) throw profileError;
-
-  const role = (profile?.role ?? '').trim().toLowerCase();
-  const isPlatformAdmin = profile?.is_platform_admin === true || ['admin', 'super_admin', 'superadmin'].includes(role);
-
-  if (isPlatformAdmin) {
-    return { hasPlannerIdentity: true, canView: true, canManage: true };
-  }
-
-  if (assignmentError) throw assignmentError;
-
-  if (!assignment) {
-    return { hasPlannerIdentity: true, canView: false, canManage: false };
-  }
-
-  return {
-    hasPlannerIdentity: true,
-    canView: assignment.can_view_tasks === true || assignment.can_manage_tasks === true,
-    canManage: assignment.can_manage_tasks === true,
-  };
+  // Feature 026: Planner's own rule (has_event_module) — platform/org admins, then the active
+  // assignment's switches. Job titles grant nothing. See src/lib/plannerAccessRules.ts.
+  const facts = await loadPlannerAccessFacts(plannerEventId, plannerProfileId);
+  return { hasPlannerIdentity: true, ...moduleAccess(facts, 'tasks') };
 }
 
 /**

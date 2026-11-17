@@ -1,4 +1,5 @@
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
+import { contractorEndDateMessage } from '@/lib/plannerPermissions';
 import { FULL_ACCESS_PORTAL_ROLES, defaultFlagsForPortalRole } from '@/lib/plannerPermissionPresets';
 
 const STAFF_ROLES = ['host', 'organizer', 'admin', 'facilitator', 'staff', 'speaker'];
@@ -337,7 +338,8 @@ export async function syncStaffMemberToPlanner(params: {
     .single();
 
   if (assignmentError || !assignment) {
-    const message = assignmentError?.message ?? 'Failed to create the Bendie Planner assignment';
+    // Feature 026: Planner refuses a contractor assignment without an end date — say why.
+    const message = (assignmentError && contractorEndDateMessage(assignmentError)) ?? assignmentError?.message ?? 'Failed to create the Bendie Planner assignment';
     await markResult('failed', message);
     return { ok: true, status: 'failed', reason: message };
   }
