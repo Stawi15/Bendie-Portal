@@ -8,6 +8,8 @@ import { getModule, markProductsConfigured, optionalModuleKeysForProducts, type 
 import { ModulePicker } from '@/components/portal/ModulePicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatRelativeTime } from '@/lib/formatRelativeTime';
+import { TimeZoneField } from '@/components/portal/TimeZoneField';
+import { detectTimeZone, isListedTimeZone } from '@/lib/eventTimeZone';
 import type { ProductKey } from '@/lib/productNavigation';
 import toast from 'react-hot-toast';
 
@@ -30,7 +32,10 @@ type CreateEventModalProps = {
   initialProduct?: ProductKey;
 };
 
-const EMPTY_FORM = { name: '', location: '', starts_at: '', ends_at: '' };
+const EMPTY_FORM = { name: '', location: '', starts_at: '', ends_at: '', timezone: '' };
+
+/** Feature 024: a fresh form starts with the organiser's computer time zone. */
+const freshForm = () => ({ ...EMPTY_FORM, timezone: detectTimeZone() ?? '' });
 
 type Draft = {
   form: typeof EMPTY_FORM;
@@ -120,7 +125,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
   const continuedDraftProductRef = useRef<ProductChoice | null>(null);
   const [modulesSkipped, setModulesSkipped] = useState(false);
   const [lastLocalSave, setLastLocalSave] = useState<number | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; ends_at?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; ends_at?: string; timezone?: string }>({});
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -137,7 +142,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
   useEffect(() => {
     if (!open || !organizationId) return;
     const draft = userId ? readDraft(organizationId, userId) : null;
-    setForm(EMPTY_FORM);
+    setForm(freshForm());
     setModules([]);
     setModulesSkipped(false);
     setStep('basics');
@@ -213,6 +218,10 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
     if (field === 'name' || field === 'ends_at' || field === 'starts_at') setFieldErrors((prev) => ({ ...prev, name: field === 'name' ? undefined : prev.name, ends_at: undefined }));
   };
+  const setTimeZone = (value: string) => {
+    setForm((prev) => ({ ...prev, timezone: value }));
+    setFieldErrors((prev) => ({ ...prev, timezone: undefined }));
+  };
 
   const noEntitlement = bendieActive === false && plannerActive === false;
   const canSubmit = !!productChoice && !noEntitlement;
@@ -223,11 +232,13 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
   // the field, input is never cleared, and it disappears as soon as the field is fixed.
   const validateStep = (key: StepKey): boolean => {
     if (key === 'basics') {
-      const errors: { name?: string; ends_at?: string } = {};
+      const errors: { name?: string; ends_at?: string; timezone?: string } = {};
       if (!form.name.trim()) errors.name = 'Give your event a name — for example “Annual Leadership Summit”.';
       if (form.starts_at && form.ends_at && form.ends_at < form.starts_at) errors.ends_at = 'The end date is before the start date. Choose the same day or a later one.';
+      // Feature 024 (FR-001, FR-003): required, and only names from the list.
+      if (!isListedTimeZone(form.timezone)) errors.timezone = 'Choose a time zone from the list.';
       setFieldErrors(errors);
-      if (errors.name || errors.ends_at) return false;
+      if (errors.name || errors.ends_at || errors.timezone) return false;
     }
     if (key === 'product' && !productChoice) {
       toast.error('Choose which product this event needs');
@@ -249,7 +260,7 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
     // Removes only the local draft — never touches any real event.
     writeDraft(organizationId, userId, null);
     setPendingDraft(null);
-    setForm(EMPTY_FORM);
+    setForm(freshForm());
     setModules([]);
     setModulesSkipped(false);
     setStep('basics');
@@ -260,7 +271,8 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
   };
   const handleContinueDraft = () => {
     if (!pendingDraft) return;
-    setForm(pendingDraft.form);
+    // Drafts saved before Feature 024 have no time zone — fill in the organiser's.
+    setForm({ ...freshForm(), ...pendingDraft.form, timezone: pendingDraft.form.timezone || detectTimeZone() || '' });
     setModules(pendingDraft.modules ?? []);
     setModulesSkipped(Boolean(pendingDraft.modulesSkipped));
     setStep(pendingDraft.step ?? 'basics');
@@ -293,6 +305,8 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
         location: form.location.trim() || null,
         startsAt: form.starts_at || null,
         endsAt: form.ends_at || null,
+        // Feature 024: dates above are venue days in this zone; the server converts them.
+        timeZone: form.timezone,
         products,
         // Skipped → send nothing: the event keeps "no preference" and shows every module.
         ...(modulesSkipped ? {} : { modules: markProductsConfigured(submittedModules, products) }),
@@ -314,6 +328,9 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
       toast.error('Event created, but Bendie Planner setup didn’t complete — you can retry it from the event.');
     } else {
       toast.success('Event created');
+    }
+    if (result.timeZoneSaved === false) {
+      toast.error('Event created, but its time zone wasn’t saved. Set it on the event’s Basics page to turn on attendee reminders.');
     }
     if (result.modulesSaved === false) {
       toast.error('Your module choices couldn’t be saved — every module is shown for now. Use “Manage modules” at the top of the event.');
@@ -481,6 +498,14 @@ export function CreateEventModal({ open, organizationId, onClose, onCreated, ini
                       )}
                     </div>
                   </div>
+                  <TimeZoneField
+                    id="ce-timezone"
+                    label="Time zone *"
+                    value={form.timezone}
+                    onChange={setTimeZone}
+                    error={fieldErrors.timezone}
+                    hint="The event’s dates are days in this time zone. It also sets when attendees get reminders."
+                  />
                   <div>
                     <label className="label" htmlFor="ce-location">Location</label>
                     <input id="ce-location" className="input" value={form.location} onChange={setField('location')} placeholder="e.g. Nairobi" />

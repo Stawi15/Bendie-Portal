@@ -121,6 +121,8 @@ MFA (TOTP) for privileged roles was documented as a requirement in the original 
 
 ## Data Flow
 
+**Venue time (Feature 024):** event dates typed into the Portal are wall-clock times in the event's time zone (`events.timezone`), the same rule the attendee app and Bendie Planner use. Convert with `src/lib/eventTimeZone.ts` (`zonedLocalToUtcIso`, `utcIsoToZonedLocal`, `zonedDateOf`), never with `new Date(local)` or `iso.slice(0, 10)`, which use the computer's zone or UTC. With no zone set, the computer's zone is used, as before.
+
 There is no Server Actions layer. The pattern is uniform across all 16 content-section pages:
 
 ```

@@ -10,6 +10,16 @@ import toast from 'react-hot-toast';
 import { friendlyError } from '@/lib/userFacingError';
 import { useSaveStatus } from '@/lib/useSaveStatus';
 import { SaveStatus } from '@/components/portal/SaveStatus';
+import { TimeZoneField } from '@/components/portal/TimeZoneField';
+import {
+  TIME_ZONE_REJECTED_MESSAGE,
+  detectTimeZone,
+  isListedTimeZone,
+  isTimeZoneConstraintError,
+  isValidTimeZone,
+  utcIsoToZonedLocal,
+  zonedLocalToUtcIso,
+} from '@/lib/eventTimeZone';
 
 type BasicsForm = {
   name: string;
@@ -25,13 +35,15 @@ type BasicsForm = {
   interests_enabled: boolean;
   in_house: boolean;
   disabled_menu_items: string[];
+  /** Feature 024: IANA name, '' = not set. */
+  timezone: string;
 };
 
 const EMPTY: BasicsForm = {
   name: '', slug: '', description: '', location: '',
   status: 'draft', event_type: 'conference', starts_at: '', ends_at: '',
   attendee_limit: '', networking_mode: 'full',
-  interests_enabled: true, in_house: false, disabled_menu_items: [],
+  interests_enabled: true, in_house: false, disabled_menu_items: [], timezone: '',
 };
 
 const MENU_ITEM_LABELS: Record<string, string> = {
@@ -47,17 +59,12 @@ const MENU_ITEM_LABELS: Record<string, string> = {
 const MENU_ITEM_KEYS = Object.keys(MENU_ITEM_LABELS);
 
 /**
- * ISO → `datetime-local` value in LOCAL time. Feature 016 fix: was the UTC slice of
- * `toISOString()`, while Save parses the input as local time — re-saving Basics in a
- * non-UTC timezone shifted the event's dates by the UTC offset.
+ * Feature 024 — venue time. Start/End are shown and saved in the event's time zone, or in the
+ * organiser's computer zone when the event has none (exactly as before: Feature 016 already made
+ * Save and display agree on the computer's zone). `displayZone` below is the zone the current
+ * `datetime-local` strings are written in.
  */
-function toLocalDatetime(iso: string | null) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+const computerZone = () => detectTimeZone() ?? 'UTC';
 
 export default function BasicsPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -66,6 +73,13 @@ export default function BasicsPage() {
   const [form, setForm] = useState<BasicsForm>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Feature 024: the zone the Start/End strings are currently written in, whether the event has
+  // Bendie Planner (its own time zone isn't synced), and whether the zone was changed this visit.
+  const [displayZone, setDisplayZone] = useState<string>(computerZone);
+  const [hasPlanner, setHasPlanner] = useState(false);
+  const [zoneChanged, setZoneChanged] = useState(false);
+  // The zone stored on the event, accepted on save even if this browser's list lacks it (an alias).
+  const [loadedZone, setLoadedZone] = useState('');
   // Feature 016: truthful Unsaved → Saving… → Saved / Couldn't save indicator.
   const saveStatus = useSaveStatus(form, !loading);
 
@@ -79,6 +93,11 @@ export default function BasicsPage() {
       if (controller.signal.aborted) return;
       if (error) { toast.error('Failed to load event'); }
       else if (data) {
+        const zone = isValidTimeZone(data.timezone) ? data.timezone : computerZone();
+        setLoadedZone(data.timezone ?? '');
+        setDisplayZone(zone);
+        // 'not_required' (the column default) = no Bendie Planner on this event.
+        setHasPlanner(!!data.planner_provisioning_status && data.planner_provisioning_status !== 'not_required');
         setForm({
           name: data.name ?? '',
           slug: data.slug ?? '',
@@ -86,13 +105,14 @@ export default function BasicsPage() {
           location: data.location ?? '',
           status: data.status ?? 'draft',
           event_type: data.event_type ?? 'conference',
-          starts_at: toLocalDatetime(data.starts_at),
-          ends_at: toLocalDatetime(data.ends_at),
+          starts_at: utcIsoToZonedLocal(data.starts_at, zone),
+          ends_at: utcIsoToZonedLocal(data.ends_at, zone),
           attendee_limit: data.attendee_limit?.toString() ?? '',
           networking_mode: data.networking_mode ?? 'full',
           interests_enabled: data.interests_enabled ?? true,
           in_house: data.in_house ?? false,
           disabled_menu_items: data.disabled_menu_items ?? [],
+          timezone: data.timezone ?? '',
         });
       }
       setLoading(false);
@@ -114,14 +134,37 @@ export default function BasicsPage() {
         : prev.disabled_menu_items.filter(k => k !== key),
     }));
 
-  const [fieldErrors, setFieldErrors] = useState<{ name?: string; ends_at?: string }>({});
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; ends_at?: string; timezone?: string }>({});
+
+  /**
+   * Feature 024 (FR-008): once the field holds a valid zone (or is cleared), re-show Start/End in it
+   * without moving the moments they represent: old-zone wall clock → instant → new-zone wall clock.
+   * While a name is half-typed nothing is converted.
+   */
+  const changeTimeZone = (value: string) => {
+    setFieldErrors((p) => ({ ...p, timezone: undefined }));
+    const nextZone = value === '' ? computerZone() : isListedTimeZone(value) || (value === loadedZone && isValidTimeZone(value)) ? value : null;
+    setForm((prev) => {
+      if (!nextZone || nextZone === displayZone) return { ...prev, timezone: value };
+      const convert = (local: string) => {
+        const iso = local ? zonedLocalToUtcIso(local, displayZone) : null;
+        return iso ? utcIsoToZonedLocal(iso, nextZone) : local;
+      };
+      return { ...prev, timezone: value, starts_at: convert(prev.starts_at), ends_at: convert(prev.ends_at) };
+    });
+    if (nextZone && nextZone !== displayZone) {
+      setDisplayZone(nextZone);
+      if (form.starts_at || form.ends_at) setZoneChanged(true);
+    }
+  };
 
   const handleSave = async () => {
-    const errors: { name?: string; ends_at?: string } = {};
+    const errors: { name?: string; ends_at?: string; timezone?: string } = {};
     if (!form.name.trim()) errors.name = 'Your event needs a name.';
-    if (form.starts_at && form.ends_at && new Date(form.ends_at) < new Date(form.starts_at)) errors.ends_at = 'The end is before the start. Choose the same time or later.';
+    if (form.starts_at && form.ends_at && form.ends_at < form.starts_at) errors.ends_at = 'The end is before the start. Choose the same time or later.';
+    if (form.timezone && form.timezone !== loadedZone && !isListedTimeZone(form.timezone)) errors.timezone = 'Choose a time zone from the list.';
     setFieldErrors(errors);
-    if (errors.name || errors.ends_at) return;
+    if (errors.name || errors.ends_at || errors.timezone) return;
     setSaving(true);
     saveStatus.start();
     const payload = {
@@ -131,17 +174,23 @@ export default function BasicsPage() {
       location: form.location || null,
       status: form.status,
       event_type: form.event_type,
-      starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
-      ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
+      // Venue time (FR-007): the strings are wall-clock times in `displayZone`.
+      starts_at: form.starts_at ? zonedLocalToUtcIso(form.starts_at, displayZone) : null,
+      ends_at: form.ends_at ? zonedLocalToUtcIso(form.ends_at, displayZone) : null,
       attendee_limit: form.attendee_limit ? parseInt(form.attendee_limit) : null,
       networking_mode: form.networking_mode,
       interests_enabled: form.interests_enabled,
       in_house: form.in_house,
       disabled_menu_items: form.disabled_menu_items,
+      timezone: form.timezone || null,
     };
     const { error } = await supabase.from('events').update(payload).eq('id', eventId);
 
-    if (error) { toast.error(friendlyError(error)); saveStatus.fail(); }
+    if (error) {
+      if (isTimeZoneConstraintError(error)) setFieldErrors((p) => ({ ...p, timezone: TIME_ZONE_REJECTED_MESSAGE }));
+      toast.error(isTimeZoneConstraintError(error) ? TIME_ZONE_REJECTED_MESSAGE : friendlyError(error));
+      saveStatus.fail();
+    }
     else { toast.success('Basics saved'); saveStatus.succeed(); patchCurrentEvent(eventId, payload as Partial<EventRow>); } // the DB just accepted these values
     setSaving(false);
   };
@@ -212,13 +261,41 @@ export default function BasicsPage() {
             <input className="input" value={form.location} onChange={set('location')} placeholder="Cape Town International Convention Centre" />
           </div>
 
+          {/* Feature 024 — time zone (FR-004, FR-005, FR-011). */}
+          <div className="sm:col-span-2 lg:col-span-2">
+            <TimeZoneField
+              id="basics-timezone"
+              label="Time zone"
+              value={form.timezone}
+              onChange={changeTimeZone}
+              error={fieldErrors.timezone}
+              hint={
+                zoneChanged
+                  ? 'Check the start and end times after changing the time zone.'
+                  : hasPlanner
+                    ? 'Start and end are in this time zone. Bendie Planner keeps its own time zone, set in the Planner app.'
+                    : 'Start and end are in this time zone. It also sets when attendees get reminders.'
+              }
+            />
+          </div>
+
+          {!form.timezone && (
+            <div className="sm:col-span-2 lg:col-span-4 rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 text-xs text-on-tertiary-fixed-variant flex gap-2" role="status">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">notifications_off</span>
+              <span>
+                <span className="font-semibold">Attendee reminders are off for this event.</span> Countdowns, nudges, the evening recap and the
+                wrap-up message only go out once the event has a time zone. Until then, start and end are shown in your computer&apos;s time zone.
+              </span>
+            </div>
+          )}
+
           <div>
-            <label className="label">Start Date & Time</label>
+            <label className="label">Start Date & Time<span className="font-normal text-on-surface-variant"> · {form.timezone && isValidTimeZone(form.timezone) ? displayZone : 'your computer’s time zone'}</span></label>
             <input type="datetime-local" className="input" value={form.starts_at} onChange={set('starts_at')} />
           </div>
 
           <div>
-            <label className="label" htmlFor="basics-end">End Date & Time</label>
+            <label className="label" htmlFor="basics-end">End Date & Time<span className="font-normal text-on-surface-variant"> · {form.timezone && isValidTimeZone(form.timezone) ? displayZone : 'your computer’s time zone'}</span></label>
             <input
               id="basics-end"
               type="datetime-local"

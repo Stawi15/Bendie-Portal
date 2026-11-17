@@ -6,6 +6,21 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 024 — Event Time Zone 🚧 built (2026-11-17) — live grant check (T001), browser pass, /review pending
+
+Spec/plan/tasks: `specs/024-event-timezone/`. Branch `024-event-timezone` (stacked on 023).
+
+- **Create event:** a required, searchable time zone (pre-filled from the computer). Dates are stored as venue days in that zone. The zone is written after the RPC, before Planner provisioning.
+- **Basics:** set, change or clear the zone. Start/End are shown and saved in it, and changing the zone never moves the stored moments. There's a "reminders are off" notice when no zone is set, and a Planner-not-synced hint.
+- **Planner:**
+  - The zone is copied at provisioning; if Planner rejects it, the event is created with Planner's default and the fallback is logged.
+  - Planner start/end dates are computed in the zone, which fixes a latent day-early bug.
+  - Agenda day numbers use the event's zone.
+- **Also:** the feedback-link hint mentions the 18:00 last-day push. New `src/lib/eventTimeZone.ts` (10 tests) and `components/portal/TimeZoneField.tsx`.
+- **Before merge:** run research R9's SQL on both projects. Adding `timezone` to `EVENTS_SELECT_COLUMNS` breaks every event read if the `authenticated` grant is missing.
+
+---
+
 ## Feature 023 — Smart Spreadsheet Import ✅ Built and accepted (2026-11-17)
 
 Spec/plan/tasks: `specs/023-smart-spreadsheet-import/`. Branch `023-smart-spreadsheet-import`. A selective port of the unmerged Codex branch `codex/ux-foundations-smart-import` (`45a2a91`), import capability only; its sidebar/wording/home-page changes and the AI-mapping commit (`d013ddf`) were deliberately left out. The Codex branches are untouched.

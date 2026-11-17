@@ -1,5 +1,6 @@
 import { getPlannerAdminClient } from '@/lib/plannerAdmin';
 import { plannerEventCode } from '@/lib/plannerEventCode';
+import { isValidTimeZone, zonedDateOf } from '@/lib/eventTimeZone';
 import { syncStaffMemberToPlanner, syncOrgAdminsToPlanner } from '@/lib/plannerStaffSync';
 
 export type ProvisioningFailureCode = 'entitlement_inactive' | 'planner_mapping_missing' | 'mapping_drift' | 'provisioning_error';
@@ -139,7 +140,7 @@ export async function provisionPlannerEvent(params: {
 
   const { data: event } = await authClient
     .from('events')
-    .select('name,location,starts_at,ends_at')
+    .select('name,location,starts_at,ends_at,timezone')
     .eq('id', eventId)
     .single();
 
@@ -155,7 +156,11 @@ export async function provisionPlannerEvent(params: {
   }
 
   const code = plannerEventCode(eventId);
-  const toDateOnly = (iso: string | null) => (iso ? iso.slice(0, 10) : null);
+  // Feature 024: with a time zone, the Planner dates are the venue's calendar dates in that zone.
+  // (Venue-time starts are stored as e.g. 21:00 UTC the day before for Nairobi, so slicing the UTC
+  // string would be a day early.) Without one, the original UTC slice is kept unchanged.
+  const timeZone = isValidTimeZone(event.timezone) ? event.timezone : null;
+  const toDateOnly = (iso: string | null) => (iso ? (timeZone ? zonedDateOf(iso, timeZone) : iso.slice(0, 10)) : null);
   const startDate = toDateOnly(event.starts_at);
   const endDate = toDateOnly(event.ends_at);
 
@@ -184,19 +189,27 @@ export async function provisionPlannerEvent(params: {
     }
     plannerEventId = existingPlannerEvent.event_id;
   } else {
-    const { data: created, error: insertError } = await planner
+    const plannerEventRow: Record<string, unknown> = {
+      event_code: code,
+      event_title: event.name,
+      location: event.location,
+      start_date: startDate,
+      end_date: endDate,
+      setup_date: startDate,
+      organization_id: mapping.planner_organization_id,
+    };
+    // Feature 024 (FR-009): copy the event's time zone to Planner. Planner validates it against its own
+    // zone list; if it rejects it, create the event anyway with Planner's default (FR-010).
+    let { data: created, error: insertError } = await planner
       .from('events')
-      .insert({
-        event_code: code,
-        event_title: event.name,
-        location: event.location,
-        start_date: startDate,
-        end_date: endDate,
-        setup_date: startDate,
-        organization_id: mapping.planner_organization_id,
-      })
+      .insert(timeZone ? { ...plannerEventRow, timezone: timeZone } : plannerEventRow)
       .select('event_id')
       .single();
+    // Only a rejection of the time zone itself is retried, so any other failure surfaces exactly as before.
+    if (insertError && timeZone && /time ?zone/i.test(insertError.message ?? '')) {
+      console.warn('[planner provisioning] Planner rejected the time zone; creating with its default instead', { eventId, timeZone, error: insertError.message });
+      ({ data: created, error: insertError } = await planner.from('events').insert(plannerEventRow).select('event_id').single());
+    }
 
     if (insertError || !created) {
       return await fail(insertError?.message ?? 'Failed to create the Bendie Planner event', 'provisioning_error');

@@ -115,7 +115,7 @@ export default function TerminologyPage() {
         <div className="border-t border-outline-variant pt-6">
           <h3 className="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wide mb-4">External Links</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Field label="Feedback Form URL" hint="External survey or feedback form link shown to attendees after the event" value={form.feedback_form_url} onChange={set('feedback_form_url')} placeholder="https://forms.example.com/feedback" />
+            <Field label="Feedback Form URL" hint="Survey link shown to attendees after the event. When set, attendees also get a “share your feedback” push at 18:00 on the event’s last day." value={form.feedback_form_url} onChange={set('feedback_form_url')} placeholder="https://forms.example.com/feedback" />
           </div>
         </div>
 

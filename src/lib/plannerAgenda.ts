@@ -215,16 +215,20 @@ function timingColumns(date: string, startTime: string | null, endTime: string |
 // ---------------------------------------------------------------------------
 
 /**
- * The Portal event's start date as a LOCAL calendar date (YYYY-MM-DD) in `timeZone` — day 1 for
- * derived day numbers (plan D4). `events.starts_at` is a timestamptz, so its UTC date can be the
- * previous day for an event starting just after local midnight (/code-review #6).
+ * The Portal event's start date as a LOCAL calendar date (YYYY-MM-DD) — day 1 for derived day
+ * numbers (plan D4). `events.starts_at` is a timestamptz, so its UTC date can be the previous day
+ * for an event starting just after local midnight (/code-review #6).
+ *
+ * Feature 024 (FR-012): the date is read in the event's own time zone (`events.timezone`) when it
+ * has one; `fallbackTimeZone` (the organiser's computer zone, sent by the page) is used otherwise.
  */
-export async function readPortalEventStartDate(eventId: string, timeZone: string): Promise<string | null> {
+export async function readPortalEventStartDate(eventId: string, fallbackTimeZone: string): Promise<string | null> {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) return null;
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
-  const { data } = await admin.from('events').select('starts_at').eq('id', eventId).maybeSingle();
+  const { data } = await admin.from('events').select('starts_at, timezone').eq('id', eventId).maybeSingle();
   if (!data?.starts_at) return null;
+  const timeZone = typeof data.timezone === 'string' && data.timezone ? resolveTimeZone(data.timezone) : fallbackTimeZone;
   const start = new Date(data.starts_at);
   if (Number.isNaN(start.getTime())) return null;
   return start.toLocaleDateString('en-CA', { timeZone }); // en-CA formats as YYYY-MM-DD

@@ -16,9 +16,16 @@ import type { Database } from '@/types/database';
  * `permission denied for table events`, even though every column IT actually
  * needs is granted. Every client-side `events` read must use this constant
  * (or a narrower explicit list) instead of `'*'`.
+ *
+ * Feature 024 added `timezone`. Unlike the older columns it is granted to
+ * `authenticated` only (not `anon`, per the Bendie Events backend brief), so
+ * this list must only ever be used with a signed-in session — every Portal
+ * page already is. If the grant were missing, every read using this list
+ * would fail, which is why the grant is verified live before release
+ * (specs/024-event-timezone/research.md R9).
  */
 export const EVENTS_SELECT_COLUMNS =
-  'id, organization_id, name, slug, description, location, status, attendee_limit, starts_at, ends_at, created_by, created_at, updated_at, image_url, hero_title, hero_description, hero_image_url, category_label, theme_label, theme_icon, facilitator_label_singular, facilitator_label_plural, gallery_external_url, event_type, networking_mode, interests_enabled, feedback_form_url, theme_primary, theme_secondary, theme_tertiary, profile_banner_image_url, in_house, gallery_background, disabled_menu_items, portal_setup_modules, planner_provisioning_status, planner_provisioning_attempts, planner_provisioning_last_attempted_at, planner_provisioning_succeeded_at' as const;
+  'id, organization_id, name, slug, description, location, status, attendee_limit, starts_at, ends_at, created_by, created_at, updated_at, image_url, hero_title, hero_description, hero_image_url, category_label, theme_label, theme_icon, facilitator_label_singular, facilitator_label_plural, gallery_external_url, event_type, networking_mode, interests_enabled, feedback_form_url, theme_primary, theme_secondary, theme_tertiary, profile_banner_image_url, in_house, gallery_background, disabled_menu_items, portal_setup_modules, planner_provisioning_status, planner_provisioning_attempts, planner_provisioning_last_attempted_at, planner_provisioning_succeeded_at, timezone' as const;
 
 /**
  * The `events` row shape actually returned by `EVENTS_SELECT_COLUMNS` —

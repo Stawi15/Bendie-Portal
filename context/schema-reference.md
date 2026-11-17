@@ -17,6 +17,22 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-11-17 — Feature 024: `events.timezone` is now Portal-managed (no Portal migration)
+
+- **Column (added by the attendee-app team, 2026-10-30):** `events.timezone` is a nullable IANA name, checked by `events_timezone_valid`, and granted `select, insert, update` to `authenticated` only (not `anon`). NULL means the event gets no automatic countdowns, nudges, recap or wrap-up push. Live grant and check still to be confirmed (`specs/024-event-timezone/research.md` R9).
+- **Portal:**
+  - It's required (pre-filled) on Create event and editable on Basics.
+  - It's in `EVENTS_SELECT_COLUMNS`, which is therefore authenticated-only.
+  - It's written by `POST /api/events/create` after the RPC, as the caller, before Planner provisioning.
+- **Venue time:**
+  - Create-form dates are stored as the start of that day in the event's zone.
+  - Basics shows and saves Start/End in the event's zone, or the computer's zone when there's none.
+- **Planner:**
+  - Provisioning copies the zone to Planner `events.timezone` (falling back to Planner's default if Planner rejects it).
+  - It computes `start_date`/`end_date` in the zone.
+  - Later changes aren't synced.
+- **Other effects:** Planner agenda day numbers use the event's zone. The `feedback_form_url` hint now mentions the 18:00 last-day push.
+
 ### 2026-10-09 — Feature 018: Planner `event_agenda_items` is now Portal-authored (no schema change)
 
 The Planner project's `event_agenda_items` (programme) is now written by the Portal's Planner **Agenda**

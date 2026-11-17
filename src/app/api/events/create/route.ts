@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { provisionPlannerEvent } from '@/lib/plannerEventProvisioning';
 import { sanitizeModuleKeys } from '@/lib/eventModules';
+import { isValidTimeZone, zonedLocalToUtcIso } from '@/lib/eventTimeZone';
 
 /**
  * Product-aware event creation (Feature 004). Replaces the previous direct
@@ -36,8 +37,19 @@ export async function POST(request: NextRequest) {
   const organizationId = typeof body?.organizationId === 'string' ? body.organizationId : '';
   const name = typeof body?.name === 'string' ? body.name.trim() : '';
   const location = typeof body?.location === 'string' ? body.location.trim() || null : null;
-  const startsAt = typeof body?.startsAt === 'string' && body.startsAt ? body.startsAt : null;
-  const endsAt = typeof body?.endsAt === 'string' && body.endsAt ? body.endsAt : null;
+  // Feature 024: optional IANA time zone. Absent (older clients) → NULL and dates handled exactly as before.
+  const rawTimeZone = typeof body?.timeZone === 'string' ? body.timeZone.trim() : '';
+  if (rawTimeZone && !isValidTimeZone(rawTimeZone)) {
+    return NextResponse.json({ error: 'invalid_request', message: 'Choose a time zone from the list.' }, { status: 400 });
+  }
+  const timeZone = rawTimeZone || null;
+  // Venue time (FR-006): a date-only value means the start of that day in the event's time zone,
+  // not midnight UTC (which is the evening before for events west of UTC). Without a time zone,
+  // or for any other value, it's passed through unchanged as before.
+  const toVenueStart = (value: string | null) =>
+    value && timeZone && /^\d{4}-\d{2}-\d{2}$/.test(value) ? (zonedLocalToUtcIso(value, timeZone) ?? value) : value;
+  const startsAt = toVenueStart(typeof body?.startsAt === 'string' && body.startsAt ? body.startsAt : null);
+  const endsAt = toVenueStart(typeof body?.endsAt === 'string' && body.endsAt ? body.endsAt : null);
   const products = Array.isArray(body?.products) ? body.products.filter((p: unknown) => typeof p === 'string') : [];
   // Feature 016: optional setup-module preference. Absent (older clients) → left NULL,
   // i.e. "show every section", exactly as before. Sanitized to known optional keys.
@@ -110,22 +122,31 @@ export async function POST(request: NextRequest) {
   const eventId: string = created.event_id;
   let plannerProvisioningStatus: string = created.planner_provisioning_status;
 
-  // Feature 016: store the chosen setup modules. Written as the CALLER (existing
-  // events UPDATE RLS — the RPC just made them an event admin), never with the
-  // service role; a display preference, so a failure here never fails creation
-  // (the event simply shows every section until modules are set via Manage modules).
-  // Idempotent on retry: re-writing the same array is harmless.
+  // Feature 016: store the chosen setup modules, and Feature 024: the time zone. Written as the
+  // CALLER (existing events UPDATE RLS — the RPC just made them an event admin), never with the
+  // service role, and BEFORE Planner provisioning below so it can copy the time zone. Neither
+  // write fails creation: the event simply shows every section / has no time zone until set later.
+  // Idempotent on retry: re-writing the same values is harmless.
   let modulesSaved: boolean | undefined;
-  if (modules) {
+  let timeZoneSaved: boolean | undefined;
+  if (modules || timeZone) {
+    const update: { portal_setup_modules?: string[]; timezone?: string } = {};
+    if (modules) update.portal_setup_modules = modules;
+    if (timeZone) update.timezone = timeZone;
     // `.select('id')`: an RLS-filtered UPDATE returns no error, just zero rows — count it as not saved.
-    const { data: updatedRows, error: modulesError } = await authClient
-      .from('events')
-      .update({ portal_setup_modules: modules })
-      .eq('id', eventId)
-      .select('id');
-    modulesSaved = !modulesError && (updatedRows?.length ?? 0) > 0;
-    if (modulesError) console.error('events.portal_setup_modules write failed', modulesError);
-    else if (!modulesSaved) console.error('events.portal_setup_modules write matched no rows (RLS)', { eventId });
+    const write = (values: typeof update) => authClient.from('events').update(values).eq('id', eventId).select('id');
+    const { data: updatedRows, error: updateError } = await write(update);
+    const saved = !updateError && (updatedRows?.length ?? 0) > 0;
+    if (updateError) console.error('events setup-modules/timezone write failed', updateError);
+    else if (!saved) console.error('events setup-modules/timezone write matched no rows (RLS)', { eventId });
+    if (modules) modulesSaved = saved;
+    if (timeZone) timeZoneSaved = saved;
+    // A rejected time zone must not also lose the module choices (they were saved alone before Feature 024).
+    if (updateError && modules && timeZone) {
+      const { data: retryRows, error: retryError } = await write({ portal_setup_modules: modules });
+      modulesSaved = !retryError && (retryRows?.length ?? 0) > 0;
+      if (retryError) console.error('events.portal_setup_modules write failed', retryError);
+    }
   }
 
   if (plannerProvisioningStatus === 'pending') {
@@ -146,5 +167,5 @@ export async function POST(request: NextRequest) {
   // 200 ok:true response — creation itself did not fail. The client must
   // render this as "created, Planner setup incomplete, retry available,"
   // never as a creation error.
-  return NextResponse.json({ ok: true, eventId, plannerProvisioningStatus, modulesSaved });
+  return NextResponse.json({ ok: true, eventId, plannerProvisioningStatus, modulesSaved, timeZoneSaved });
 }

@@ -158,6 +158,8 @@ export interface Database {
           planner_provisioning_succeeded_at: string | null;
           /** Feature 016: Portal-only setup-module preference. NULL = not configured (show all). Display only, never authorization. */
           portal_setup_modules: string[] | null;
+          /** Feature 024: IANA time zone (e.g. `Africa/Nairobi`), checked by `events_timezone_valid`. NULL = no automatic engagement pushes in the attendee app. Granted to `authenticated` only (never `anon`). */
+          timezone: string | null;
         };
       };
       event_creation_requests: {
