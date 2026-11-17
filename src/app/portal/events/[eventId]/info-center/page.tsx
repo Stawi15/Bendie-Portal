@@ -129,6 +129,7 @@ type Contact = {
   avatar_url: string | null;
   contact_group: string | null;
   display_order: number;
+  show_on_access_screen: boolean;
 };
 
 type ContactForm = {
@@ -138,9 +139,14 @@ type ContactForm = {
   avatar_url: string;
   contact_group: string;
   display_order: string;
+  /** Feature 025: the one contact shown on the app's "Contact Organizer" alert, before sign-in. */
+  show_on_access_screen: boolean;
 };
 
-const EMPTY: ContactForm = { name: '', email: '', phone: '', avatar_url: '', contact_group: '', display_order: '0' };
+const EMPTY: ContactForm = { name: '', email: '', phone: '', avatar_url: '', contact_group: '', display_order: '0', show_on_access_screen: false };
+
+/** Postgres unique violation — here, the one-access-contact-per-event index. */
+const isUniqueViolation = (error: { code?: string } | null) => error?.code === '23505';
 
 export default function InfoCenterPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -155,7 +161,7 @@ export default function InfoCenterPage() {
   const fetchData = async () => {
     const { data, error } = await supabase
       .from('support_contacts')
-      .select('id,name,email,phone,avatar_url,contact_group,display_order')
+      .select('id,name,email,phone,avatar_url,contact_group,display_order,show_on_access_screen')
       .eq('event_id', eventId)
       .order('contact_group').order('display_order');
     if (error) toast.error('Failed to load contacts');
@@ -175,15 +181,30 @@ export default function InfoCenterPage() {
 
   const openEdit = (c: Contact) => {
     setEditing(c);
-    setForm({ name: c.name, email: c.email ?? '', phone: c.phone ?? '', avatar_url: c.avatar_url ?? '', contact_group: c.contact_group ?? '', display_order: c.display_order.toString() });
+    setForm({ name: c.name, email: c.email ?? '', phone: c.phone ?? '', avatar_url: c.avatar_url ?? '', contact_group: c.contact_group ?? '', display_order: c.display_order.toString(), show_on_access_screen: c.show_on_access_screen });
     setShowForm(true);
   };
 
   const set = (f: keyof ContactForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [f]: e.target.value }));
 
+  const accessContact = contacts.find((c) => c.show_on_access_screen) ?? null;
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
+    // Feature 025 (FR-003): the app's Call/Email buttons need at least one of these.
+    if (form.show_on_access_screen && !form.phone.trim() && !form.email.trim()) {
+      toast.error('Add a phone number or an email before showing this contact on the access screen.');
+      return;
+    }
+    // FR-004: at most one per event — confirm replacing the current one.
+    const replacing = form.show_on_access_screen && accessContact && accessContact.id !== editing?.id ? accessContact : null;
+    if (replacing && !(await confirm({
+      title: 'Replace the Contact Organizer contact?',
+      message: `${form.name.trim()} will replace ${replacing.name} on the app's access screen. ${replacing.name} will no longer be shown there.`,
+      confirmLabel: 'Replace',
+    }))) return;
+
     setSaving(true);
     const payload = {
       name: form.name.trim(),
@@ -192,13 +213,32 @@ export default function InfoCenterPage() {
       avatar_url: form.avatar_url || null,
       contact_group: form.contact_group || null,
       display_order: parseInt(form.display_order) || 0,
+      show_on_access_screen: form.show_on_access_screen,
     };
-    if (editing) {
-      const { error } = await supabase.from('support_contacts').update(payload).eq('id', editing.id);
-      if (error) toast.error(friendlyError(error)); else { toast.success('Contact updated'); setShowForm(false); fetchData(); }
+
+    // Untick the current one first, so the one-per-event index never sees two.
+    if (replacing) {
+      const { error } = await supabase.from('support_contacts').update({ show_on_access_screen: false }).eq('id', replacing.id);
+      if (error) { toast.error(friendlyError(error)); setSaving(false); return; }
+    }
+
+    const { error } = editing
+      ? await supabase.from('support_contacts').update(payload).eq('id', editing.id)
+      : await supabase.from('support_contacts').insert({ ...payload, event_id: eventId });
+
+    if (error) {
+      // Put the previous access-screen contact back (best effort) so the event isn't left without one.
+      if (replacing) await supabase.from('support_contacts').update({ show_on_access_screen: true }).eq('id', replacing.id);
+      if (isUniqueViolation(error)) {
+        toast.error('Another contact is already on the access screen — the list has been refreshed. Try again.');
+        fetchData();
+      } else {
+        toast.error(friendlyError(error));
+      }
     } else {
-      const { error } = await supabase.from('support_contacts').insert({ ...payload, event_id: eventId });
-      if (error) toast.error(friendlyError(error)); else { toast.success('Contact added'); setShowForm(false); fetchData(); }
+      toast.success(editing ? 'Contact updated' : 'Contact added');
+      setShowForm(false);
+      fetchData();
     }
     setSaving(false);
   };
@@ -245,6 +285,31 @@ export default function InfoCenterPage() {
               <label className="label">Display Order</label>
               <input type="number" className="input" value={form.display_order} onChange={set('display_order')} min={0} />
             </div>
+            <div className="sm:col-span-2 rounded-xl border border-outline-variant p-3 space-y-2">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 w-4 h-4 accent-primary"
+                  checked={form.show_on_access_screen}
+                  onChange={(e) => setForm((prev) => ({ ...prev, show_on_access_screen: e.target.checked }))}
+                />
+                <span>
+                  <span className="text-sm font-medium text-on-surface">Show on access screen (Contact Organizer)</span>
+                  <span className="block text-xs text-on-surface-variant">
+                    Who people reach when they tap <span className="font-medium">Contact Organizer</span> in the app because their email isn&apos;t registered. One contact per event.
+                  </span>
+                </span>
+              </label>
+              {form.show_on_access_screen && (
+                <div className="rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 text-xs text-on-tertiary-fixed-variant flex gap-2" role="note">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">public</span>
+                  <span>
+                    This contact&apos;s <span className="font-semibold">name, phone, email and group become visible to anyone with the event&apos;s link</span>, before they sign in. Use a team or event line, not a personal number or a hotel desk.
+                    {accessContact && accessContact.id !== editing?.id && <> It will replace <span className="font-semibold">{accessContact.name}</span>.</>}
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="sm:col-span-2">
               <label className="label">Avatar URL</label>
               <input className="input" value={form.avatar_url} onChange={set('avatar_url')} placeholder="https://..." />
@@ -270,6 +335,14 @@ export default function InfoCenterPage() {
         </div>
       ) : (
         <div className="space-y-6">
+          {!accessContact && (
+            <div className="rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 text-xs text-on-tertiary-fixed-variant flex gap-2" role="status">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">info</span>
+              <span>
+                No contact is on the app&apos;s access screen. People whose email isn&apos;t registered will see <span className="font-semibold">Contact Bendie support</span> (bendie@stawiexperiences.com). Edit a contact and tick <span className="font-semibold">Show on access screen</span> to choose who they reach.
+              </span>
+            </div>
+          )}
           {groups.map(group => (
             <div key={group}>
               <div className="flex items-center justify-between mb-2">
@@ -281,7 +354,14 @@ export default function InfoCenterPage() {
                   <div key={c.id} className="flex items-center gap-4 bg-white border border-[#E4EAF0] rounded-[20px] panel-shadow p-4">
                     <Avatar name={c.name} avatarUrl={c.avatar_url} size={40} />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-on-surface truncate">{c.name}</p>
+                      <p className="font-medium text-on-surface truncate flex items-center gap-2">
+                        <span className="truncate">{c.name}</span>
+                        {c.show_on_access_screen && (
+                          <span className="flex-shrink-0 inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-[11px] font-medium px-2 py-0.5" title="Shown on the app's access screen (Contact Organizer)">
+                            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">contact_phone</span> Shown on access screen
+                          </span>
+                        )}
+                      </p>
                       <p className="text-sm text-on-surface-variant truncate">{[c.email, c.phone].filter(Boolean).join(' · ')}</p>
                     </div>
                     <div className="flex gap-1 sm:gap-2 flex-shrink-0">

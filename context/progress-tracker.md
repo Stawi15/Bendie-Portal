@@ -6,6 +6,15 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 025 — Contact Organizer Toggle & Matchmaking Checks 🚧 built (2026-11-17) — live column check, browser pass, /review pending
+
+Spec/plan/tasks: `specs/025-contact-organizer-and-matchmaking/`. Branch `025-contact-organizer-and-matchmaking` (stacked on 024). Bendie Events brief items 6 and 10.
+
+- **Info Center:** the "Show on access screen (Contact Organizer)" toggle, with a public-visibility warning. It requires a phone or an email, and allows one per event, with confirm-and-replace and rollback. The list shows a badge, and a note appears when none is set.
+- **Networking:** a "Hidden from attendees" flag on select questions with no options, a confirmation before deleting the last option, a CSV preview warning, and the key-permanence hint.
+
+---
+
 ## Feature 024 — Event Time Zone 🚧 built (2026-11-17) — live grant check (T001), browser pass, /review pending
 
 Spec/plan/tasks: `specs/024-event-timezone/`. Branch `024-event-timezone` (stacked on 023).

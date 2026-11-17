@@ -17,6 +17,12 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-11-17 — Feature 025: Contact Organizer contact and matchmaking checks (no Portal migration)
+
+- **`support_contacts.show_on_access_screen`** (added by the attendee-app team, 2026-11-09): boolean, not null, default false. **At most one per event**, enforced by the unique index `support_contacts_one_access_contact_per_event`. The ticked contact's name, phone, email and group are returned to **anyone with the event link, before sign-in** (`get_event_access_contact`, active/published events only).
+  - **Portal (Info Center):** a toggle with a public-visibility warning. A ticked contact needs a phone or an email. Ticking a new one confirms, unticks the old one first, then saves, rolling back on failure. `23505` reloads with a message. There's a list badge and a "none set → Contact Bendie support" note. Live column and index still to be confirmed.
+- **Matchmaking (`event_interest_options`):** the app skips select questions with no options, so the Networking page flags them "Hidden from attendees", confirms before deleting the last option, and warns in the CSV preview. Question keys still can't be renamed in the Portal; the form now says why.
+
 ### 2026-11-17 — Feature 024: `events.timezone` is now Portal-managed (no Portal migration)
 
 - **Column (added by the attendee-app team, 2026-10-30):** `events.timezone` is a nullable IANA name, checked by `events_timezone_valid`, and granted `select, insert, update` to `authenticated` only (not `anon`). NULL means the event gets no automatic countdowns, nudges, recap or wrap-up push. Live grant and check still to be confirmed (`specs/024-event-timezone/research.md` R9).

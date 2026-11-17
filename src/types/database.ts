@@ -575,6 +575,8 @@ export interface Database {
           contact_group: string | null;
           display_order: number;
           created_at: string;
+          /** Feature 025: shown before sign-in on the app's "Contact Organizer" alert. At most one per event (unique index `support_contacts_one_access_contact_per_event`). */
+          show_on_access_screen: boolean;
         };
       };
       event_interest_options: {

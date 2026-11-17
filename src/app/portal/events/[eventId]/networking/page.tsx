@@ -196,7 +196,20 @@ export default function NetworkingPage() {
     setSaving(false);
   };
 
-  const handleDeleteOption = async (id: string) => {
+  /** Feature 025: the app skips a single/multi-select question that has no options. */
+  const optionCount = (group: QuestionGroup) => group.options.filter((o) => o.option_key).length;
+  const isHiddenFromAttendees = (group: QuestionGroup) => isSelectType(group.question_type) && optionCount(group) === 0;
+
+  const handleDeleteOption = async (id: string, group?: QuestionGroup) => {
+    // FR-008: deleting the last option hides the question from attendees — confirm first.
+    if (group && isSelectType(group.question_type) && optionCount(group) === 1) {
+      const ok = await confirm({
+        message: `This is the last option for “${group.question_label}”. Without options, attendees won't see this question at all. Delete it anyway?`,
+        confirmLabel: 'Delete option',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
     const { error } = await supabase.from('event_interest_options').delete().eq('id', id);
     if (error) toast.error(friendlyError(error));
     else { toast.success('Deleted'); fetchData(); }
@@ -267,6 +280,19 @@ export default function NetworkingPage() {
     return { rowIndex, raw, data: errors.length === 0 ? data : undefined, errors };
   };
 
+  /** Feature 025 (FR-009): select questions that would still have no options after this import. */
+  const networkingPreviewWarnings = (rows: InterestOptionCsvRow[]): string[] => {
+    const selectQuestions = new Map<string, string>();
+    const withOptions = new Set(options.filter((o) => o.option_key).map((o) => o.question_key));
+    for (const row of rows) {
+      if (isSelectType(row.question_type)) selectQuestions.set(row.question_key, row.question_label || row.question_key);
+      if (row.option_key) withOptions.add(row.question_key);
+    }
+    return [...selectQuestions]
+      .filter(([key]) => !withOptions.has(key))
+      .map(([, label]) => `“${label}” is a select question with no options, so attendees won't see it. Add option rows for it.`);
+  };
+
   const importNetworkingRow = async (row: InterestOptionCsvRow) => {
     const { rowIndex, ...rest } = row;
     const existingCount = options.filter((o) => o.question_key === rest.question_key).length;
@@ -303,7 +329,7 @@ export default function NetworkingPage() {
             <div>
               <label className="label">Question Key *</label>
               <input className="input font-mono text-sm" value={qForm.question_key} onChange={setQ('question_key')} placeholder="investment_stage" />
-              <p className="hint">Unique identifier, lowercase with underscores</p>
+              <p className="hint">Unique identifier, lowercase with underscores. It can&apos;t be changed later — attendees&apos; answers are matched by it.</p>
             </div>
             <div>
               <label className="label">Question Type</label>
@@ -366,6 +392,11 @@ export default function NetworkingPage() {
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="font-semibold text-on-surface">{group.question_label}</p>
                     {group.is_required && <span className="text-xs px-1.5 py-0.5 rounded bg-error/10 text-error font-medium">Required</span>}
+                    {isHiddenFromAttendees(group) && (
+                      <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-tertiary-fixed/60 text-on-tertiary-fixed-variant font-medium" title="Attendees won't see a select question until it has at least one option">
+                        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">visibility_off</span> Hidden from attendees
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="text-xs text-on-surface-variant bg-surface-container-high px-1.5 py-0.5 rounded">{group.question_key}</code>
@@ -390,14 +421,16 @@ export default function NetworkingPage() {
               {isSelectType(group.question_type) && (
                 <div className="px-5 py-3">
                   {group.options.filter(o => o.option_key).length === 0 ? (
-                    <p className="text-sm text-on-surface-variant/70 italic">No options yet — click &quot;+ Option&quot; to add choices.</p>
+                    <p className="text-sm text-on-tertiary-fixed-variant">
+                      No options yet, so <span className="font-semibold">attendees won&apos;t see this question</span>. Click &quot;+ Option&quot; to add at least one choice.
+                    </p>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {group.options.filter(o => o.option_key).map(opt => (
                         <div key={opt.id} className="flex items-center gap-1 bg-primary/5 border border-primary/20 rounded-full px-3 py-1">
                           <span className="text-sm text-primary">{opt.option_label}</span>
                           <code className="text-xs text-primary/60">({opt.option_key})</code>
-                          <button onClick={() => handleDeleteOption(opt.id)} className="text-primary/60 hover:text-error ml-1 font-bold leading-none transition">×</button>
+                          <button onClick={() => handleDeleteOption(opt.id, group)} className="text-primary/60 hover:text-error ml-1 font-bold leading-none transition">×</button>
                         </div>
                       ))}
                     </div>
@@ -435,6 +468,7 @@ export default function NetworkingPage() {
         sampleRows={NETWORKING_CSV_SAMPLES}
         parseRow={parseNetworkingCsvRow}
         importRow={importNetworkingRow}
+        previewWarnings={networkingPreviewWarnings}
       />
     </div>
   );
