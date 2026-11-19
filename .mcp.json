@@ -7,6 +7,14 @@
     "supabase-planner": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=zghoaawgrmvqdlksuiam&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+    },
+    "supabase-bendie-test": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=baqivpboykobrqlxxoph&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment"
+    },
+    "supabase-planner-test": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=xwqhisiwvnhluihcpliz&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment"
     }
   }
 }

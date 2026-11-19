@@ -1,0 +1,24 @@
+import fs from 'node:fs';
+const root=process.argv[2]; const j=JSON.parse(fs.readFileSync(root+'/docs/bendie-revamp/data/routes.json','utf8'));
+const status = p => p.redirect_only ? 'Fully implemented (redirect)' : 'Fully implemented — unverified in browser';
+const L=[];
+L.push('# 05 — Complete Route Inventory','',`**Status:** VERIFIED from source (${j.generated}). Not browser-verified, because there's no test account yet (see [15](15-browser-exploration-report.md)). Generated from \`data/routes.json\`, so regenerate that file rather than hand-editing this one.`,'');
+L.push(`**Totals:** ${j.pages.length} pages (\`page.tsx\`), ${j.api_routes.length} API route files, 3 layouts (\`app/layout.tsx\`, \`app/portal/layout.tsx\`, \`app/portal/events/[eventId]/layout.tsx\`), 1 middleware (\`src/middleware.ts\`).`,'');
+L.push('## How a route is reached','','- **Sidebar** (`OrgSideNav`): Overview, Events, People, Assets, Teams, Activity Log, Settings, plus Help (mailto) and Logout.','- **Header** (`TopHeader`): org switcher menu (for Stawi admins it also holds New Organisation, Organisations and Moderation), product switcher (Bendie / Bendie Planner), "Search experiences…" (searches events only), bell (org activity, linking to `/portal/activity-log`), settings icon (`/portal/settings`), avatar menu (profile, Logout), "+ New Event" (opens `CreateEventModal`, not a route).','- **Event workspace** (`[eventId]/layout.tsx`): grouped area row → section stepper → Previous/Next, all driven by `EVENT_SECTIONS` and filtered by `isSectionAvailable` (product entitlement + Planner capability).','- **Direct URL only:** `/portal/no-access`, `/portal/no-product`, `/unauthorized` (middleware/redirect targets), `/auth/reset-password` (email link).','');
+L.push('## Scope & permission legend','','| Scope | Gate |','|---|---|','| public | none (middleware sends signed-in Stawi admins from `/auth/*` to `/portal`) |','| organization | signed in **and** (Stawi admin **or** ≥1 `organization_members` row), checked in middleware with a 60s cookie cache; then RLS |','| event | as organization, plus event access (`event_members` row, org owner/admin, or Stawi admin), resolved in `EventContext`; tabs then filtered by product + Planner capability |','| platform-admin | `portal_is_global_admin()`, checked in middleware and again in the page and its API |','');
+const groups=[['Public & auth',p=>p.scope==='public'],['Organisation workspace',p=>p.scope==='organization'],['Platform admin (Stawi)',p=>p.scope==='platform-admin'],['Event workspace',p=>p.scope==='event']];
+for (const [t,f] of groups){ L.push(`## ${t}`,'','| Route | Label · group · product | Purpose | DB tables / RPCs | API deps | Status | File |','|---|---|---|---|---|---|---|');
+ for (const p of j.pages.filter(f)) L.push(`| \`${p.route}\` | ${[p.label,p.group,p.product].filter(Boolean).join(' · ')||'—'} | ${(p.purpose||'').replace(/\|/g,'/')||'—'} | ${[...p.tables,...p.rpcs.map(r=>r+'()')].join(', ')||'—'} | ${p.apis.length?p.apis.map(a=>'`'+a+'`').join('<br>'):'—'} | ${status(p)} | [${p.file.split('/').slice(-2).join('/')}](../../${p.file}) |`);
+ L.push(''); }
+L.push('## API routes','','SR = uses a service-role client (Bendie or Planner). Every route re-checks the caller on the server; "auth helpers" are the checks found in the file.','','| Route | Methods | SR | Auth helpers | File |','|---|---|---|---|---|');
+for (const a of j.api_routes) L.push(`| \`${a.route}\` | ${a.methods.join(', ')} | ${a.uses_service_role?'yes':''} | ${a.auth_checks.join(', ')||'via shared helper'} | [route.ts](../../${a.file}) |`);
+L.push('','## Classification summary','','| Class | Routes |','|---|---|',
+'| Fully implemented | All event, org and admin pages listed above (source-confirmed; none browser-verified) |',
+'| Implemented but inaccessible / near-hidden | `/portal/bendie`, `/portal/planner`, `/portal/bendie/events`, `/portal/planner/events` are reached only through `/portal` and `/portal/events` redirects (product-resolved homes). `bendie-planner` tab is listed for everyone but usable only by Stawi admins. |',
+'| Placeholder / thin | `/portal/settings` (two read-only fields, per the October audit §4.7). `ComingSoonPanel` component exists. |',
+'| Redirect-only | `/portal`, `/portal/events` |',
+'| Deprecated | none found |',
+'| Broken | none confirmed (needs browser pass) |',
+'| Unverified | every route: no browser session was possible |','',
+'## Missing from older docs','','`context/project-overview.md` lists 21 event tabs and says admins only. Source now has **32 event sections** (24 Bendie or shared, 8 Planner) and admits **any organisation member**. Missing from it: `files`, `notifications`, all 8 `planner-*` pages, `/portal/admin/*`, `/portal/bendie*`, `/portal/planner*`, `/portal/no-access`, `/portal/no-product`.');
+fs.writeFileSync(root+'/docs/bendie-revamp/05-complete-route-inventory.md', L.join('\n')+'\n');

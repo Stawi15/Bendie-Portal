@@ -1,0 +1,2207 @@
+{
+  "generated": "2026-11-19",
+  "source": "derived from src/app/**/page.tsx, route.ts and src/lib/eventSectionMeta.ts",
+  "verification": "SOURCE-CONFIRMED; no route browser-verified (no test account)",
+  "pages": [
+    {
+      "route": "/",
+      "file": "src/app/page.tsx",
+      "scope": "public",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 51,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/auth/forgot-password",
+      "file": "src/app/auth/forgot-password/page.tsx",
+      "scope": "public",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 140,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/auth/login",
+      "file": "src/app/auth/login/page.tsx",
+      "scope": "public",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 194,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/auth/reset-password",
+      "file": "src/app/auth/reset-password/page.tsx",
+      "scope": "public",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 420,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/auth/signup",
+      "file": "src/app/auth/signup/page.tsx",
+      "scope": "public",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 281,
+      "redirect_only": false,
+      "components": [],
+      "tables": [
+        "organizations",
+        "organization_members"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal",
+      "file": "src/app/portal/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 34,
+      "redirect_only": true,
+      "components": [
+        "PortalLoadingSkeleton"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/activity-log",
+      "file": "src/app/portal/activity-log/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 251,
+      "redirect_only": false,
+      "components": [
+        "Avatar"
+      ],
+      "tables": [
+        "organization_audit_log",
+        "profiles"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/admin/moderation",
+      "file": "src/app/portal/admin/moderation/page.tsx",
+      "scope": "platform-admin",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 455,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "EmptyState"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/admin/moderation",
+        "/api/admin/moderation/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/admin/organisations",
+      "file": "src/app/portal/admin/organisations/page.tsx",
+      "scope": "platform-admin",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 158,
+      "redirect_only": false,
+      "components": [],
+      "tables": [
+        "events",
+        "organization_members",
+        "organization_planner_links",
+        "organization_products",
+        "organizations"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/admin/organizations"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/admin/organisations/[organizationId]",
+      "file": "src/app/portal/admin/organisations/[organizationId]/page.tsx",
+      "scope": "platform-admin",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 181,
+      "redirect_only": false,
+      "components": [],
+      "tables": [
+        "event_products",
+        "events",
+        "organization_audit_log",
+        "organization_members",
+        "organization_planner_links",
+        "organization_products",
+        "organizations",
+        "profiles"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/admin/organizations/[param]/planner-connection",
+        "/api/admin/organizations/[param]/products/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/assets",
+      "file": "src/app/portal/assets/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 178,
+      "redirect_only": false,
+      "components": [],
+      "tables": [
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/bendie",
+      "file": "src/app/portal/bendie/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 24,
+      "redirect_only": false,
+      "components": [
+        "OrganizationHome",
+        "PausedProductNotice",
+        "PortalLoadingSkeleton"
+      ],
+      "tables": [
+        "agenda_sessions",
+        "emergency_contacts",
+        "event_content_audit_log",
+        "facilitators"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/bendie/events",
+      "file": "src/app/portal/bendie/events/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 20,
+      "redirect_only": false,
+      "components": [
+        "OrganizationEventsList",
+        "PausedProductNotice",
+        "PortalLoadingSkeleton"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events",
+      "file": "src/app/portal/events/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 35,
+      "redirect_only": true,
+      "components": [
+        "PortalLoadingSkeleton"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/activities",
+      "file": "src/app/portal/events/[eventId]/activities/page.tsx",
+      "scope": "event",
+      "section_key": "activities",
+      "label": "Activities",
+      "group": "Programme",
+      "product": "bendie",
+      "purpose": "Experiences and activities attendees can take part in",
+      "lines": 511,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "EmptyState",
+        "FormModal",
+        "ImageField",
+        "AssetPickerModal",
+        "CsvImportModal"
+      ],
+      "tables": [
+        "activities",
+        "activity_images",
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/activity-log",
+      "file": "src/app/portal/events/[eventId]/activity-log/page.tsx",
+      "scope": "event",
+      "section_key": "activity-log",
+      "label": "Activity Log",
+      "group": "Operations",
+      "product": "bendie",
+      "purpose": "Audit trail of all changes",
+      "lines": 236,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "SectionHeader"
+      ],
+      "tables": [
+        "event_content_audit_log",
+        "profiles"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/agenda",
+      "file": "src/app/portal/events/[eventId]/agenda/page.tsx",
+      "scope": "event",
+      "section_key": "agenda",
+      "label": "Agenda",
+      "group": "Programme",
+      "product": "bendie",
+      "purpose": "Session schedule and timetable",
+      "lines": 1267,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "SectionHeader",
+        "RowActionsMenu",
+        "CsvImportModal",
+        "FormModal",
+        "BreakoutRoomsEditor",
+        "BreakoutAssignmentsModal"
+      ],
+      "tables": [
+        "agenda_breakout_assignments",
+        "agenda_breakout_room_items",
+        "agenda_breakout_rooms",
+        "agenda_session_speakers",
+        "agenda_sessions",
+        "event_members",
+        "facilitators"
+      ],
+      "rpcs": [
+        "is_event_host_or_organizer",
+        "is_event_org_admin",
+        "save_breakout_rooms"
+      ],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/attendee-travel",
+      "file": "src/app/portal/events/[eventId]/attendee-travel/page.tsx",
+      "scope": "event",
+      "section_key": "attendee-travel",
+      "label": "Attendee Travel",
+      "group": "Attendees",
+      "product": "bendie",
+      "purpose": "Flight and transfer details each attendee sees in the app",
+      "lines": 439,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "SectionHeader",
+        "FormModal"
+      ],
+      "tables": [
+        "attendee_travel_details",
+        "event_members"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/admin/planner-pull-travel"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/basics",
+      "file": "src/app/portal/events/[eventId]/basics/page.tsx",
+      "scope": "event",
+      "section_key": "basics",
+      "label": "Basics",
+      "group": "Event Setup",
+      "product": "bendie",
+      "purpose": "Name, dates, location, status",
+      "lines": 364,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "SaveStatus",
+        "TimeZoneField"
+      ],
+      "tables": [
+        "events"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/bendie-planner",
+      "file": "src/app/portal/events/[eventId]/bendie-planner/page.tsx",
+      "scope": "event",
+      "section_key": "bendie-planner",
+      "label": "Bendie Planner",
+      "group": "Operations",
+      "product": "shared",
+      "purpose": "Link this event to Bendie Planner and sync members, agenda & travel",
+      "lines": 474,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "FormModal"
+      ],
+      "tables": [
+        "event_planner_links",
+        "event_products"
+      ],
+      "rpcs": [
+        "get_event_planner_sync_status"
+      ],
+      "apis": [
+        "/api/admin/planner-events",
+        "/api/admin/planner-link",
+        "/api/admin/planner-pull-travel",
+        "/api/admin/planner-push-agenda"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/dashboard",
+      "file": "src/app/portal/events/[eventId]/dashboard/page.tsx",
+      "scope": "event",
+      "section_key": "dashboard",
+      "label": "Dashboard",
+      "group": "Overview",
+      "product": "bendie",
+      "purpose": "What’s ready, what’s missing, and what to do next",
+      "lines": 614,
+      "redirect_only": false,
+      "components": [
+        "SectionIconBadge",
+        "SectionHeader",
+        "PlannerProvisioningBanner"
+      ],
+      "tables": [
+        "event_members"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-readiness",
+        "/api/events/[param]/retry-planner-provisioning"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/emergency",
+      "file": "src/app/portal/events/[eventId]/emergency/page.tsx",
+      "scope": "event",
+      "section_key": "emergency",
+      "label": "Emergency",
+      "group": "Operations",
+      "product": "bendie",
+      "purpose": "Emergency contacts and procedures",
+      "lines": 268,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "FormModal"
+      ],
+      "tables": [
+        "emergency_contacts",
+        "emergency_images"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/event-photos",
+      "file": "src/app/portal/events/[eventId]/event-photos/page.tsx",
+      "scope": "event",
+      "section_key": "event-photos",
+      "label": "Event Photos",
+      "group": "Media",
+      "product": "bendie",
+      "purpose": "Organizer-curated event photos",
+      "lines": 203,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "FormModal",
+        "ImageField",
+        "AssetPickerModal"
+      ],
+      "tables": [
+        "event_photos",
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/excursions",
+      "file": "src/app/portal/events/[eventId]/excursions/page.tsx",
+      "scope": "event",
+      "section_key": "excursions",
+      "label": "Excursions",
+      "group": "Programme",
+      "product": "bendie",
+      "purpose": "Local recommendations for attendees — places to eat, visit or explore",
+      "lines": 460,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "FormModal",
+        "ImageField",
+        "AssetPickerModal",
+        "CsvImportModal"
+      ],
+      "tables": [
+        "excursion_categories",
+        "excursions",
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/expo",
+      "file": "src/app/portal/events/[eventId]/expo/page.tsx",
+      "scope": "event",
+      "section_key": "expo",
+      "label": "Expo Directory",
+      "group": "Content",
+      "product": "bendie",
+      "purpose": "The exhibitors and sponsors attendees can browse at your event",
+      "lines": 404,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "EmptyState",
+        "FormModal",
+        "ImageField",
+        "TagInput",
+        "AssetPickerModal",
+        "CsvImportModal"
+      ],
+      "tables": [
+        "expo_spaces",
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/facilitators",
+      "file": "src/app/portal/events/[eventId]/facilitators/page.tsx",
+      "scope": "event",
+      "section_key": "facilitators",
+      "label": "Speakers",
+      "group": "Programme",
+      "product": "bendie",
+      "purpose": "Speaker and presenter profiles",
+      "lines": 397,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "SectionHeader",
+        "CsvImportModal",
+        "FormModal"
+      ],
+      "tables": [
+        "facilitators"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/faqs",
+      "file": "src/app/portal/events/[eventId]/faqs/page.tsx",
+      "scope": "event",
+      "section_key": "faqs",
+      "label": "FAQs",
+      "group": "Content",
+      "product": "bendie",
+      "purpose": "Frequently asked questions",
+      "lines": 293,
+      "redirect_only": false,
+      "components": [
+        "CsvImportModal",
+        "FormModal",
+        "SectionHeader",
+        "EmptyState"
+      ],
+      "tables": [
+        "faqs"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/files",
+      "file": "src/app/portal/events/[eventId]/files/page.tsx",
+      "scope": "event",
+      "section_key": "files",
+      "label": "Files",
+      "group": "Media",
+      "product": "bendie",
+      "purpose": "Documents for attendees to download",
+      "lines": 227,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/gallery",
+      "file": "src/app/portal/events/[eventId]/gallery/page.tsx",
+      "scope": "event",
+      "section_key": "gallery",
+      "label": "Gallery",
+      "group": "Media",
+      "product": "bendie",
+      "purpose": "Attendee photo gallery",
+      "lines": 172,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "SectionHeader"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/gallery",
+        "/api/events/[param]/gallery/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/games",
+      "file": "src/app/portal/events/[eventId]/games/page.tsx",
+      "scope": "event",
+      "section_key": "games",
+      "label": "Games",
+      "group": "Operations",
+      "product": "bendie",
+      "purpose": "Quiz games and trivia",
+      "lines": 275,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "FormModal"
+      ],
+      "tables": [
+        "game_questions",
+        "games"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/hero",
+      "file": "src/app/portal/events/[eventId]/hero/page.tsx",
+      "scope": "event",
+      "section_key": "hero",
+      "label": "Hero & Branding",
+      "group": "Event Setup",
+      "product": "bendie",
+      "purpose": "Hero image, title, banner",
+      "lines": 134,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "AssetPickerModal",
+        "ImageField",
+        "SaveStatus"
+      ],
+      "tables": [
+        "events",
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/info-center",
+      "file": "src/app/portal/events/[eventId]/info-center/page.tsx",
+      "scope": "event",
+      "section_key": "info-center",
+      "label": "Info Center",
+      "group": "Content",
+      "product": "bendie",
+      "purpose": "Support contacts and info",
+      "lines": 393,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "SectionHeader",
+        "FormModal"
+      ],
+      "tables": [
+        "info_content",
+        "support_contacts"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/members",
+      "file": "src/app/portal/events/[eventId]/members/page.tsx",
+      "scope": "event",
+      "section_key": "members",
+      "label": "Attendees & Access",
+      "group": "Attendees",
+      "product": "bendie",
+      "purpose": "People who can use the Bendie attendee app for this event, and how they get access",
+      "lines": 644,
+      "redirect_only": false,
+      "components": [
+        "Avatar",
+        "EditProfileModal",
+        "CsvImportModal",
+        "PlannerPermissionsModal",
+        "AddPeopleMenu",
+        "AddPeopleModal",
+        "AddFromTeamModal",
+        "AddAllOrgPeopleModal",
+        "SectionHeader"
+      ],
+      "tables": [
+        "event_members",
+        "facilitators",
+        "profiles",
+        "teams"
+      ],
+      "rpcs": [
+        "is_event_host_or_organizer",
+        "issue_event_access_code"
+      ],
+      "apis": [
+        "/api/events/[param]/members/[param]/planner-permissions",
+        "/api/events/[param]/members/[param]/planner-permissions/deactivate-on-removal",
+        "/api/events/[param]/members/[param]/planner-permissions/disable",
+        "/api/events/[param]/members/[param]/planner-permissions/enable",
+        "/api/organizations/[param]/people/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/networking",
+      "file": "src/app/portal/events/[eventId]/networking/page.tsx",
+      "scope": "event",
+      "section_key": "networking",
+      "label": "Networking",
+      "group": "Attendees",
+      "product": "bendie",
+      "purpose": "Interest questions that help attendees find people to meet",
+      "lines": 476,
+      "redirect_only": false,
+      "components": [
+        "CsvImportModal",
+        "FormModal",
+        "SectionHeader",
+        "EmptyState"
+      ],
+      "tables": [
+        "event_interest_options"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/news",
+      "file": "src/app/portal/events/[eventId]/news/page.tsx",
+      "scope": "event",
+      "section_key": "news",
+      "label": "News Feed",
+      "group": "Content",
+      "product": "bendie",
+      "purpose": "Announcements and articles",
+      "lines": 401,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "EmptyState",
+        "FormModal",
+        "ImageField",
+        "TagInput",
+        "AssetPickerModal",
+        "CsvImportModal"
+      ],
+      "tables": [
+        "news_items",
+        "organization_assets"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/notifications",
+      "file": "src/app/portal/events/[eventId]/notifications/page.tsx",
+      "scope": "event",
+      "section_key": "notifications",
+      "label": "Notifications",
+      "group": "Operations",
+      "product": "bendie",
+      "purpose": "Send or schedule push notifications",
+      "lines": 205,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "FormModal"
+      ],
+      "tables": [
+        "event_push_notifications"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-agenda",
+      "file": "src/app/portal/events/[eventId]/planner-agenda/page.tsx",
+      "scope": "event",
+      "section_key": "planner-agenda",
+      "label": "Agenda",
+      "group": "Production",
+      "product": "planner",
+      "purpose": "The event programme your team sees in Bendie Planner: sessions, breaks, speakers and MCs",
+      "lines": 371,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerAgendaList",
+        "PlannerAgendaModal",
+        "CsvImportModal"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-agenda",
+        "/api/events/[param]/planner-agenda/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-checklist",
+      "file": "src/app/portal/events/[eventId]/planner-checklist/page.tsx",
+      "scope": "event",
+      "section_key": "planner-checklist",
+      "label": "Checklist",
+      "group": "Planning",
+      "product": "planner",
+      "purpose": "Items to source and check off before the event and on site",
+      "lines": 533,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerChecklistList",
+        "CsvImportModal",
+        "PlannerChecklistModal"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-checklist",
+        "/api/events/[param]/planner-checklist/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-logistics",
+      "file": "src/app/portal/events/[eventId]/planner-logistics/page.tsx",
+      "scope": "event",
+      "section_key": "planner-logistics",
+      "label": "Logistics",
+      "group": "Logistics",
+      "product": "planner",
+      "purpose": "Participant flights, hotel stays and ground transport (vehicles and movements)",
+      "lines": 1211,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerFlightList",
+        "PlannerFlightModal",
+        "PlannerHotelList",
+        "PlannerHotelModal",
+        "PlannerGroundTransportList",
+        "PlannerMovementModal",
+        "PlannerVehicleModal",
+        "PlannerAssignPassengerModal",
+        "CsvImportModal"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-logistics/flights",
+        "/api/events/[param]/planner-logistics/flights/[param]",
+        "/api/events/[param]/planner-logistics/ground-transport/assignments/[param]",
+        "/api/events/[param]/planner-logistics/ground-transport/assignments/assign",
+        "/api/events/[param]/planner-logistics/ground-transport/assignments/move",
+        "/api/events/[param]/planner-logistics/ground-transport/movements",
+        "/api/events/[param]/planner-logistics/ground-transport/movements/[param]",
+        "/api/events/[param]/planner-logistics/ground-transport/vehicles",
+        "/api/events/[param]/planner-logistics/ground-transport/vehicles/[param]",
+        "/api/events/[param]/planner-logistics/hotels",
+        "/api/events/[param]/planner-logistics/hotels/[param]",
+        "/api/events/[param]/planner-logistics/overview"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-overview",
+      "file": "src/app/portal/events/[eventId]/planner-overview/page.tsx",
+      "scope": "event",
+      "section_key": "planner-overview",
+      "label": "Planner Overview",
+      "group": "Overview",
+      "product": "planner",
+      "purpose": "Event identity and live session status from Bendie Planner",
+      "lines": 259,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerTeamAccessPanel"
+      ],
+      "tables": [
+        "event_members"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-overview",
+        "/api/events/[param]/planner-permissions/can-administer"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-people",
+      "file": "src/app/portal/events/[eventId]/planner-people/page.tsx",
+      "scope": "event",
+      "section_key": "planner-people",
+      "label": "Participants",
+      "group": "Participants",
+      "product": "planner",
+      "purpose": "People tracked for travel and logistics. Participants do not automatically receive Planner access.",
+      "lines": 644,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerPeopleList",
+        "CsvImportModal",
+        "PlannerPeopleModal",
+        "AddParticipantMenu",
+        "AddParticipantFromPortalModal"
+      ],
+      "tables": [
+        "event_members",
+        "organization_members"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]",
+        "/api/events/[param]/planner-people",
+        "/api/events/[param]/planner-people/[param]",
+        "/api/events/[param]/planner-people/link",
+        "/api/events/[param]/planner-people/search"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-production",
+      "file": "src/app/portal/events/[eventId]/planner-production/page.tsx",
+      "scope": "event",
+      "section_key": "planner-production",
+      "label": "Production",
+      "group": "Production",
+      "product": "planner",
+      "purpose": "Run-of-show: what needs to happen, and when, in each session",
+      "lines": 430,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerProductionList",
+        "PlannerProductionModal",
+        "CsvImportModal"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-production",
+        "/api/events/[param]/planner-production/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-tasks",
+      "file": "src/app/portal/events/[eventId]/planner-tasks/page.tsx",
+      "scope": "event",
+      "section_key": "planner-tasks",
+      "label": "Tasks",
+      "group": "Planning",
+      "product": "planner",
+      "purpose": "To-dos for your event team, tracked in Bendie Planner",
+      "lines": 498,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerTaskList",
+        "PlannerTaskModal",
+        "CsvImportModal"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-tasks",
+        "/api/events/[param]/planner-tasks/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/planner-vendors",
+      "file": "src/app/portal/events/[eventId]/planner-vendors/page.tsx",
+      "scope": "event",
+      "section_key": "planner-vendors",
+      "label": "Vendors",
+      "group": "Planning",
+      "product": "planner",
+      "purpose": "Suppliers, the equipment they provide, and whether it has arrived on site",
+      "lines": 489,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "PlannerVendorList",
+        "PlannerVendorModal",
+        "CsvImportModal"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [
+        "/api/events/[param]/planner-vendors",
+        "/api/events/[param]/planner-vendors/[param]"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/terminology",
+      "file": "src/app/portal/events/[eventId]/terminology/page.tsx",
+      "scope": "event",
+      "section_key": "terminology",
+      "label": "Terminology",
+      "group": "Event Setup",
+      "product": "bendie",
+      "purpose": "Speaker labels, event category and theme, and the feedback link",
+      "lines": 132,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "SaveStatus"
+      ],
+      "tables": [
+        "events"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/events/[eventId]/theme",
+      "file": "src/app/portal/events/[eventId]/theme/page.tsx",
+      "scope": "event",
+      "section_key": "theme",
+      "label": "Theme Colours",
+      "group": "Event Setup",
+      "product": "bendie",
+      "purpose": "Brand, card and heading colours of the attendee app",
+      "lines": 116,
+      "redirect_only": false,
+      "components": [
+        "SectionHeader",
+        "EventThemePreview",
+        "ThemeDesignerModal"
+      ],
+      "tables": [
+        "events"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/no-access",
+      "file": "src/app/portal/no-access/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 27,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/no-product",
+      "file": "src/app/portal/no-product/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 47,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/people",
+      "file": "src/app/portal/people/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 363,
+      "redirect_only": false,
+      "components": [
+        "OrgPeoplePanel",
+        "AddPersonModal",
+        "EditProfileModal",
+        "CsvImportModal"
+      ],
+      "tables": [
+        "event_members",
+        "organization_members",
+        "profiles"
+      ],
+      "rpcs": [],
+      "apis": [
+        "/api/admin/bulk-create-users",
+        "/api/admin/create-user",
+        "/api/organizations/[param]/people",
+        "/api/organizations/[param]/people/[param]",
+        "/api/organizations/[param]/people/search"
+      ],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/planner",
+      "file": "src/app/portal/planner/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 20,
+      "redirect_only": false,
+      "components": [
+        "OrganizationHome",
+        "PausedProductNotice",
+        "PortalLoadingSkeleton"
+      ],
+      "tables": [
+        "agenda_sessions",
+        "emergency_contacts",
+        "event_content_audit_log",
+        "facilitators"
+      ],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/planner/events",
+      "file": "src/app/portal/planner/events/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 20,
+      "redirect_only": false,
+      "components": [
+        "OrganizationEventsList",
+        "PausedProductNotice",
+        "PortalLoadingSkeleton"
+      ],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/settings",
+      "file": "src/app/portal/settings/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 37,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/portal/teams",
+      "file": "src/app/portal/teams/page.tsx",
+      "scope": "organization",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 158,
+      "redirect_only": false,
+      "components": [
+        "CreateTeamModal",
+        "TeamMembersModal"
+      ],
+      "tables": [
+        "organization_members",
+        "team_members",
+        "teams"
+      ],
+      "rpcs": [
+        "is_organization_admin"
+      ],
+      "apis": [],
+      "status": "unverified-in-browser"
+    },
+    {
+      "route": "/unauthorized",
+      "file": "src/app/unauthorized/page.tsx",
+      "scope": "public",
+      "section_key": null,
+      "label": null,
+      "group": null,
+      "product": null,
+      "purpose": null,
+      "lines": 41,
+      "redirect_only": false,
+      "components": [],
+      "tables": [],
+      "rpcs": [],
+      "apis": [],
+      "status": "unverified-in-browser"
+    }
+  ],
+  "api_routes": [
+    {
+      "route": "/api/admin/bulk-create-users",
+      "file": "src/app/api/admin/bulk-create-users/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/admin/create-user",
+      "file": "src/app/api/admin/create-user/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/admin/moderation",
+      "file": "src/app/api/admin/moderation/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/moderation/[reportId]",
+      "file": "src/app/api/admin/moderation/[reportId]/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/organizations",
+      "file": "src/app/api/admin/organizations/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/organizations/[organizationId]/events/[eventId]/products",
+      "file": "src/app/api/admin/organizations/[organizationId]/events/[eventId]/products/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/organizations/[organizationId]/impact",
+      "file": "src/app/api/admin/organizations/[organizationId]/impact/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/organizations/[organizationId]/planner-connection",
+      "file": "src/app/api/admin/organizations/[organizationId]/planner-connection/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/organizations/[organizationId]/products/[product]",
+      "file": "src/app/api/admin/organizations/[organizationId]/products/[product]/route.ts",
+      "methods": [
+        "PATCH"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/planner-events",
+      "file": "src/app/api/admin/planner-events/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/admin/planner-link",
+      "file": "src/app/api/admin/planner-link/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/admin/planner-organizations",
+      "file": "src/app/api/admin/planner-organizations/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "requirePlatformAdmin"
+      ]
+    },
+    {
+      "route": "/api/admin/planner-pull-travel",
+      "file": "src/app/api/admin/planner-pull-travel/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/admin/planner-push-agenda",
+      "file": "src/app/api/admin/planner-push-agenda/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/admin/planner-sync-member",
+      "file": "src/app/api/admin/planner-sync-member/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser",
+        "portal_is_global_admin"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/gallery",
+      "file": "src/app/api/events/[eventId]/gallery/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": []
+    },
+    {
+      "route": "/api/events/[eventId]/gallery/[postId]",
+      "file": "src/app/api/events/[eventId]/gallery/[postId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": false,
+      "planner_db": false,
+      "auth_checks": []
+    },
+    {
+      "route": "/api/events/[eventId]/members",
+      "file": "src/app/api/events/[eventId]/members/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/members/[memberId]/planner-permissions",
+      "file": "src/app/api/events/[eventId]/members/[memberId]/planner-permissions/route.ts",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/members/[memberId]/planner-permissions/deactivate-on-removal",
+      "file": "src/app/api/events/[eventId]/members/[memberId]/planner-permissions/deactivate-on-removal/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "canAdministerPlannerPermissions",
+        "portal_is_global_admin",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/members/[memberId]/planner-permissions/disable",
+      "file": "src/app/api/events/[eventId]/members/[memberId]/planner-permissions/disable/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/members/[memberId]/planner-permissions/enable",
+      "file": "src/app/api/events/[eventId]/members/[memberId]/planner-permissions/enable/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-agenda",
+      "file": "src/app/api/events/[eventId]/planner-agenda/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "resolvePlannerEventAccess"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-agenda/[itemId]",
+      "file": "src/app/api/events/[eventId]/planner-agenda/[itemId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "resolvePlannerEventAccess"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-capabilities",
+      "file": "src/app/api/events/[eventId]/planner-capabilities/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolvePlannerEventAccess"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-checklist",
+      "file": "src/app/api/events/[eventId]/planner-checklist/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-checklist/[itemId]",
+      "file": "src/app/api/events/[eventId]/planner-checklist/[itemId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-checklist/capability",
+      "file": "src/app/api/events/[eventId]/planner-checklist/capability/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/capability",
+      "file": "src/app/api/events/[eventId]/planner-logistics/capability/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/flights",
+      "file": "src/app/api/events/[eventId]/planner-logistics/flights/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/flights/[recordId]",
+      "file": "src/app/api/events/[eventId]/planner-logistics/flights/[recordId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/assignments/[assignmentId]",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/assignments/[assignmentId]/route.ts",
+      "methods": [
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/assignments/assign",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/assignments/assign/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/assignments/move",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/assignments/move/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/movements",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/movements/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/movements/[movementId]",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/movements/[movementId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/vehicles",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/vehicles/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/ground-transport/vehicles/[vehicleId]",
+      "file": "src/app/api/events/[eventId]/planner-logistics/ground-transport/vehicles/[vehicleId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/hotels",
+      "file": "src/app/api/events/[eventId]/planner-logistics/hotels/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/hotels/[bookingId]",
+      "file": "src/app/api/events/[eventId]/planner-logistics/hotels/[bookingId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-logistics/overview",
+      "file": "src/app/api/events/[eventId]/planner-logistics/overview/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "resolvePlannerEventAccess"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-overview",
+      "file": "src/app/api/events/[eventId]/planner-overview/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-people",
+      "file": "src/app/api/events/[eventId]/planner-people/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-people/[passengerId]",
+      "file": "src/app/api/events/[eventId]/planner-people/[passengerId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-people/capability",
+      "file": "src/app/api/events/[eventId]/planner-people/capability/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-people/link",
+      "file": "src/app/api/events/[eventId]/planner-people/link/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-people/search",
+      "file": "src/app/api/events/[eventId]/planner-people/search/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-permissions/can-administer",
+      "file": "src/app/api/events/[eventId]/planner-permissions/can-administer/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-production",
+      "file": "src/app/api/events/[eventId]/planner-production/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-production/[productionId]",
+      "file": "src/app/api/events/[eventId]/planner-production/[productionId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-production/capability",
+      "file": "src/app/api/events/[eventId]/planner-production/capability/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "canAdministerPlannerPermissions",
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-readiness",
+      "file": "src/app/api/events/[eventId]/planner-readiness/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": false,
+      "planner_db": true,
+      "auth_checks": [
+        "resolvePlannerEventAccess"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-tasks",
+      "file": "src/app/api/events/[eventId]/planner-tasks/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-tasks/[taskId]",
+      "file": "src/app/api/events/[eventId]/planner-tasks/[taskId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-tasks/capability",
+      "file": "src/app/api/events/[eventId]/planner-tasks/capability/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-vendors",
+      "file": "src/app/api/events/[eventId]/planner-vendors/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser",
+        "resolveCallerPlannerIdentity"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-vendors/[itemId]",
+      "file": "src/app/api/events/[eventId]/planner-vendors/[itemId]/route.ts",
+      "methods": [
+        "PATCH",
+        "DELETE"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/planner-vendors/capability",
+      "file": "src/app/api/events/[eventId]/planner-vendors/capability/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "resolveCallerPlannerIdentity",
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/[eventId]/retry-planner-provisioning",
+      "file": "src/app/api/events/[eventId]/retry-planner-provisioning/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": true,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/events/create",
+      "file": "src/app/api/events/create/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "portal_is_global_admin",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/organizations/[organizationId]/people",
+      "file": "src/app/api/organizations/[organizationId]/people/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/organizations/[organizationId]/people/[userId]",
+      "file": "src/app/api/organizations/[organizationId]/people/[userId]/route.ts",
+      "methods": [
+        "PATCH"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/organizations/[organizationId]/people/contacts",
+      "file": "src/app/api/organizations/[organizationId]/people/contacts/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "readCallerProfile",
+        "is_organization_admin",
+        "auth.getUser"
+      ]
+    },
+    {
+      "route": "/api/organizations/[organizationId]/people/search",
+      "file": "src/app/api/organizations/[organizationId]/people/search/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "uses_service_role": true,
+      "planner_db": false,
+      "auth_checks": [
+        "readCallerProfile",
+        "auth.getUser"
+      ]
+    }
+  ]
+}

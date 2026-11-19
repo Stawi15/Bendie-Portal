@@ -1,0 +1,1320 @@
+{
+  "generated": "2026-11-19",
+  "source": "Live schemas, read only: Bendie project (shared with the Bendie Events app) and Bendie Planner project. Row counts are counts or planner estimates on the day.",
+  "field_level_reference": "context/schema-reference.md (Bendie, field by field). The Planner field list is in 07-database-schema.md.",
+  "databases": {
+    "bendie": {
+      "tables": 63,
+      "rls_all_tables": true,
+      "ids": "uuid",
+      "tables_detail": [
+        {
+          "name": "organizations",
+          "scope": "organization",
+          "category": "tenancy",
+          "approx_rows": null,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "admin/organisations, settings"
+        },
+        {
+          "name": "organization_members",
+          "scope": "organization",
+          "category": "people",
+          "approx_rows": 254,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "people"
+        },
+        {
+          "name": "organization_products",
+          "scope": "organization",
+          "category": "entitlement",
+          "approx_rows": null,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 2,
+          "studio_screen": "admin/organisations"
+        },
+        {
+          "name": "organization_planner_links",
+          "scope": "organization",
+          "category": "integration",
+          "approx_rows": null,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 1,
+          "studio_screen": "admin/organisations/[id]"
+        },
+        {
+          "name": "organization_assets",
+          "scope": "organization",
+          "category": "content",
+          "approx_rows": null,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 3,
+          "studio_screen": "assets"
+        },
+        {
+          "name": "organization_audit_log",
+          "scope": "organization",
+          "category": "audit",
+          "approx_rows": null,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 2,
+          "studio_screen": "activity-log"
+        },
+        {
+          "name": "teams",
+          "scope": "organization",
+          "category": "people",
+          "approx_rows": null,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 8,
+          "studio_screen": "teams"
+        },
+        {
+          "name": "team_members",
+          "scope": "organization",
+          "category": "people",
+          "approx_rows": null,
+          "fk_to": [
+            "profiles",
+            "teams"
+          ],
+          "rls_policies": 6,
+          "studio_screen": "teams"
+        },
+        {
+          "name": "profiles",
+          "scope": "global",
+          "category": "people",
+          "approx_rows": 494,
+          "fk_to": [
+            "events",
+            "organizations"
+          ],
+          "rls_policies": 3,
+          "studio_screen": "people, members (contacts via RPC only)"
+        },
+        {
+          "name": "events",
+          "scope": "event",
+          "category": "event-config",
+          "approx_rows": 34,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "basics, hero, theme, terminology, modules"
+        },
+        {
+          "name": "event_products",
+          "scope": "event",
+          "category": "entitlement",
+          "approx_rows": 37,
+          "fk_to": [
+            "events",
+            "organization_products",
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 2,
+          "studio_screen": "create event, admin/organisations"
+        },
+        {
+          "name": "event_creation_requests",
+          "scope": "event",
+          "category": "system",
+          "approx_rows": 15,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0,
+          "studio_screen": "create event (idempotency)"
+        },
+        {
+          "name": "event_members",
+          "scope": "event",
+          "category": "people",
+          "approx_rows": 632,
+          "fk_to": [
+            "events",
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 6,
+          "studio_screen": "members"
+        },
+        {
+          "name": "event_user_access_codes",
+          "scope": "event",
+          "category": "access",
+          "approx_rows": 1224,
+          "fk_to": [
+            "events",
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 3,
+          "studio_screen": "members (resend code)"
+        },
+        {
+          "name": "event_planner_links",
+          "scope": "event",
+          "category": "integration",
+          "approx_rows": 8,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 1,
+          "studio_screen": "bendie-planner"
+        },
+        {
+          "name": "planner_permission_audit_log",
+          "scope": "event",
+          "category": "audit",
+          "approx_rows": 15,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 1,
+          "studio_screen": "members → Team & Access"
+        },
+        {
+          "name": "event_content_audit_log",
+          "scope": "event",
+          "category": "audit",
+          "approx_rows": 1501,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 2,
+          "studio_screen": "activity-log"
+        },
+        {
+          "name": "facilitators",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": 136,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "facilitators"
+        },
+        {
+          "name": "facilitator_favorites",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 0,
+          "fk_to": [
+            "facilitators",
+            "profiles"
+          ],
+          "rls_policies": 6,
+          "studio_screen": "—"
+        },
+        {
+          "name": "agenda_sessions",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": 227,
+          "fk_to": [
+            "events",
+            "facilitators",
+            "profiles"
+          ],
+          "rls_policies": 10,
+          "studio_screen": "agenda"
+        },
+        {
+          "name": "agenda_session_speakers",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": 122,
+          "fk_to": [
+            "agenda_sessions",
+            "facilitators"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "agenda"
+        },
+        {
+          "name": "agenda_breakout_rooms",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": 5,
+          "fk_to": [
+            "agenda_sessions",
+            "facilitators"
+          ],
+          "rls_policies": 8,
+          "studio_screen": "agenda"
+        },
+        {
+          "name": "agenda_breakout_room_items",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": null,
+          "fk_to": [
+            "agenda_breakout_rooms"
+          ],
+          "rls_policies": 8,
+          "studio_screen": "agenda"
+        },
+        {
+          "name": "agenda_breakout_assignments",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": null,
+          "fk_to": [
+            "agenda_breakout_rooms",
+            "agenda_sessions",
+            "event_members",
+            "profiles"
+          ],
+          "rls_policies": 8,
+          "studio_screen": "agenda (BreakoutAssignmentsModal)"
+        },
+        {
+          "name": "session_attendees",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 24,
+          "fk_to": [
+            "agenda_sessions",
+            "profiles"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "—"
+        },
+        {
+          "name": "session_ratings",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": null,
+          "fk_to": [
+            "agenda_sessions",
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 3,
+          "studio_screen": "—"
+        },
+        {
+          "name": "activities",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": 0,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "activities"
+        },
+        {
+          "name": "activity_images",
+          "scope": "event",
+          "category": "programme",
+          "approx_rows": null,
+          "fk_to": [
+            "activities"
+          ],
+          "rls_policies": 6,
+          "studio_screen": "activities"
+        },
+        {
+          "name": "excursion_categories",
+          "scope": "event-or-global",
+          "category": "programme",
+          "approx_rows": null,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "excursions"
+        },
+        {
+          "name": "excursions",
+          "scope": "event-or-global",
+          "category": "programme",
+          "approx_rows": 9,
+          "fk_to": [
+            "events",
+            "excursion_categories"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "excursions"
+        },
+        {
+          "name": "attendee_travel_details",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": 4,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 10,
+          "studio_screen": "attendee-travel"
+        },
+        {
+          "name": "event_interest_options",
+          "scope": "event",
+          "category": "networking",
+          "approx_rows": 271,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "networking"
+        },
+        {
+          "name": "networking_preferences",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 43,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "— (attendee answers)"
+        },
+        {
+          "name": "connections",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 12,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "—"
+        },
+        {
+          "name": "news_items",
+          "scope": "event-or-global",
+          "category": "content",
+          "approx_rows": null,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "news"
+        },
+        {
+          "name": "faqs",
+          "scope": "event",
+          "category": "content",
+          "approx_rows": 95,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "faqs"
+        },
+        {
+          "name": "info_content",
+          "scope": "event",
+          "category": "content",
+          "approx_rows": null,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "info-center"
+        },
+        {
+          "name": "support_contacts",
+          "scope": "event",
+          "category": "content",
+          "approx_rows": 26,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "info-center"
+        },
+        {
+          "name": "expo_spaces",
+          "scope": "event-or-global",
+          "category": "content",
+          "approx_rows": 22,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "expo"
+        },
+        {
+          "name": "event_photos",
+          "scope": "event",
+          "category": "media",
+          "approx_rows": null,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 8,
+          "studio_screen": "event-photos"
+        },
+        {
+          "name": "posts",
+          "scope": "event",
+          "category": "media",
+          "approx_rows": 21,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 11,
+          "studio_screen": "gallery"
+        },
+        {
+          "name": "post_likes",
+          "scope": "event",
+          "category": "media",
+          "approx_rows": 17,
+          "fk_to": [
+            "posts",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "gallery"
+        },
+        {
+          "name": "post_comments",
+          "scope": "event",
+          "category": "media",
+          "approx_rows": null,
+          "fk_to": [
+            "posts",
+            "profiles"
+          ],
+          "rls_policies": 10,
+          "studio_screen": "gallery, moderation"
+        },
+        {
+          "name": "emergency_contacts",
+          "scope": "event",
+          "category": "operations",
+          "approx_rows": 2,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "emergency"
+        },
+        {
+          "name": "emergency_images",
+          "scope": "event",
+          "category": "operations",
+          "approx_rows": null,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "emergency"
+        },
+        {
+          "name": "games",
+          "scope": "event",
+          "category": "engagement",
+          "approx_rows": null,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 6,
+          "studio_screen": "games"
+        },
+        {
+          "name": "game_questions",
+          "scope": "event",
+          "category": "engagement",
+          "approx_rows": null,
+          "fk_to": [
+            "games"
+          ],
+          "rls_policies": 6,
+          "studio_screen": "games"
+        },
+        {
+          "name": "game_results",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": null,
+          "fk_to": [
+            "games",
+            "profiles"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "—"
+        },
+        {
+          "name": "game_points",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 92,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 1,
+          "studio_screen": "—"
+        },
+        {
+          "name": "event_push_notifications",
+          "scope": "event",
+          "category": "communication",
+          "approx_rows": 10,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "notifications"
+        },
+        {
+          "name": "notifications",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 114,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "— (in-app feed)"
+        },
+        {
+          "name": "engagement_notification_log",
+          "scope": "event",
+          "category": "system",
+          "approx_rows": null,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 0,
+          "studio_screen": "—"
+        },
+        {
+          "name": "user_push_tokens",
+          "scope": "global",
+          "category": "attendee-runtime",
+          "approx_rows": 47,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "—"
+        },
+        {
+          "name": "user_settings",
+          "scope": "global",
+          "category": "attendee-runtime",
+          "approx_rows": null,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 3,
+          "studio_screen": "—"
+        },
+        {
+          "name": "user_blocks",
+          "scope": "global",
+          "category": "attendee-runtime",
+          "approx_rows": null,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 3,
+          "studio_screen": "moderation (effects)"
+        },
+        {
+          "name": "content_reports",
+          "scope": "global",
+          "category": "moderation",
+          "approx_rows": null,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 1,
+          "studio_screen": "admin/moderation (service role only)"
+        },
+        {
+          "name": "chats",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 11,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 7,
+          "studio_screen": "moderation"
+        },
+        {
+          "name": "chat_participants",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 29,
+          "fk_to": [
+            "chats",
+            "profiles"
+          ],
+          "rls_policies": 4,
+          "studio_screen": "—"
+        },
+        {
+          "name": "messages",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": 103,
+          "fk_to": [
+            "chats",
+            "profiles"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "moderation"
+        },
+        {
+          "name": "message_reads",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": null,
+          "fk_to": [
+            "messages",
+            "profiles"
+          ],
+          "rls_policies": 2,
+          "studio_screen": "—"
+        },
+        {
+          "name": "feedback",
+          "scope": "event",
+          "category": "attendee-runtime",
+          "approx_rows": null,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 5,
+          "studio_screen": "—"
+        },
+        {
+          "name": "app_release_config",
+          "scope": "global",
+          "category": "system",
+          "approx_rows": 2,
+          "fk_to": [],
+          "rls_policies": 2,
+          "studio_screen": "— (no screen)"
+        },
+        {
+          "name": "meeting_requests",
+          "scope": "global",
+          "category": "marketing",
+          "approx_rows": null,
+          "fk_to": [],
+          "rls_policies": 0,
+          "studio_screen": "—"
+        }
+      ]
+    },
+    "planner": {
+      "tables": 40,
+      "rls_all_tables": true,
+      "ids": "integer/bigint (profiles uuid)",
+      "reached_via": "Portal server routes with the Planner service role (src/lib/plannerAdmin.ts); never from the browser",
+      "tables_detail": [
+        {
+          "name": "organizations",
+          "scope": "organization",
+          "category": "tenancy",
+          "approx_rows": null,
+          "fk_to": [],
+          "rls_policies": 2
+        },
+        {
+          "name": "profiles",
+          "scope": "global",
+          "category": "people",
+          "approx_rows": 46,
+          "fk_to": [
+            "organizations"
+          ],
+          "rls_policies": 6
+        },
+        {
+          "name": "org_member_access",
+          "scope": "organization",
+          "category": "access",
+          "approx_rows": null,
+          "fk_to": [
+            "organizations",
+            "profiles"
+          ],
+          "rls_policies": 4
+        },
+        {
+          "name": "events",
+          "scope": "event",
+          "category": "event-config",
+          "approx_rows": 25,
+          "fk_to": [
+            "organizations"
+          ],
+          "rls_policies": 5
+        },
+        {
+          "name": "event_user_assignments",
+          "scope": "event",
+          "category": "access",
+          "approx_rows": 165,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 8
+        },
+        {
+          "name": "passengers",
+          "scope": "global",
+          "category": "people",
+          "approx_rows": 409,
+          "fk_to": [],
+          "rls_policies": 1
+        },
+        {
+          "name": "event_passengers",
+          "scope": "event",
+          "category": "people",
+          "approx_rows": 400,
+          "fk_to": [
+            "events",
+            "passengers"
+          ],
+          "rls_policies": 1
+        },
+        {
+          "name": "all_flights_combined_table",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": 605,
+          "fk_to": [
+            "events",
+            "passengers"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "hotel_bookings",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": 104,
+          "fk_to": [
+            "events",
+            "passengers"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "transport_movements",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": null,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "vehicles",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": 54,
+          "fk_to": [
+            "events",
+            "transport_movements"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "passenger_vehicle_assignments",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": 48,
+          "fk_to": [
+            "all_flights_combined_table",
+            "events",
+            "transport_movements",
+            "vehicles"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "vehicle_boardings",
+          "scope": "event",
+          "category": "travel",
+          "approx_rows": 8,
+          "fk_to": [
+            "all_flights_combined_table",
+            "vehicles"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "vehicle_passengers",
+          "scope": "event",
+          "category": "travel-legacy?",
+          "approx_rows": null,
+          "fk_to": [
+            "vehicles"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "operational_tasks",
+          "scope": "event",
+          "category": "planning",
+          "approx_rows": 691,
+          "fk_to": [
+            "events",
+            "profiles",
+            "users"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "operational_task_assignees",
+          "scope": "event",
+          "category": "planning",
+          "approx_rows": 613,
+          "fk_to": [
+            "operational_tasks",
+            "profiles"
+          ],
+          "rls_policies": 1
+        },
+        {
+          "name": "operational_task_notes",
+          "scope": "event",
+          "category": "planning",
+          "approx_rows": null,
+          "fk_to": [
+            "operational_tasks",
+            "profiles"
+          ],
+          "rls_policies": 1
+        },
+        {
+          "name": "event_task_counters",
+          "scope": "event",
+          "category": "system",
+          "approx_rows": 8,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "event_vendor_items",
+          "scope": "event",
+          "category": "planning",
+          "approx_rows": 111,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 4
+        },
+        {
+          "name": "event_checklist_items",
+          "scope": "event",
+          "category": "planning",
+          "approx_rows": 81,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 4
+        },
+        {
+          "name": "event_agenda_items",
+          "scope": "event",
+          "category": "production",
+          "approx_rows": 133,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "production_tasks",
+          "scope": "event",
+          "category": "production",
+          "approx_rows": 340,
+          "fk_to": [
+            "events",
+            "users"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "event_blueprints",
+          "scope": "event",
+          "category": "production",
+          "approx_rows": null,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "event_notifications",
+          "scope": "event",
+          "category": "communication",
+          "approx_rows": 2631,
+          "fk_to": [
+            "events",
+            "profiles"
+          ],
+          "rls_policies": 3
+        },
+        {
+          "name": "event_notification_reads",
+          "scope": "event",
+          "category": "communication",
+          "approx_rows": 388,
+          "fk_to": [
+            "event_notifications",
+            "profiles"
+          ],
+          "rls_policies": 2
+        },
+        {
+          "name": "notification_preferences",
+          "scope": "global",
+          "category": "communication",
+          "approx_rows": 14,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 3
+        },
+        {
+          "name": "device_push_tokens",
+          "scope": "global",
+          "category": "communication",
+          "approx_rows": 39,
+          "fk_to": [
+            "profiles"
+          ],
+          "rls_policies": 3
+        },
+        {
+          "name": "sent_reminders",
+          "scope": "event",
+          "category": "system",
+          "approx_rows": 53,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "session_status_realtime",
+          "scope": "event",
+          "category": "production",
+          "approx_rows": 1,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "session_summary_realtime",
+          "scope": "event",
+          "category": "production",
+          "approx_rows": 33,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "overall_session_summary",
+          "scope": "event",
+          "category": "production",
+          "approx_rows": 1,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "users",
+          "scope": "global",
+          "category": "legacy",
+          "approx_rows": null,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "transport_logistics",
+          "scope": "event",
+          "category": "legacy",
+          "approx_rows": null,
+          "fk_to": [
+            "events",
+            "users"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "shuttles",
+          "scope": "event",
+          "category": "legacy",
+          "approx_rows": 10,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "capetown",
+          "scope": "event",
+          "category": "legacy-import",
+          "approx_rows": 74,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "johburg_one",
+          "scope": "event",
+          "category": "legacy-import",
+          "approx_rows": 164,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "johburg_two",
+          "scope": "event",
+          "category": "legacy-import",
+          "approx_rows": 0,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "slt_vip",
+          "scope": "event",
+          "category": "legacy-import",
+          "approx_rows": 10,
+          "fk_to": [
+            "events"
+          ],
+          "rls_policies": 0
+        },
+        {
+          "name": "staging_production_csv",
+          "scope": "event",
+          "category": "legacy-import",
+          "approx_rows": null,
+          "fk_to": [],
+          "rls_policies": 0
+        },
+        {
+          "name": "planner_access_backup_022",
+          "scope": "global",
+          "category": "backup",
+          "approx_rows": null,
+          "fk_to": [],
+          "rls_policies": 0
+        }
+      ]
+    }
+  },
+  "enums": {
+    "events.status": [
+      "draft",
+      "published",
+      "active",
+      "completed",
+      "archived"
+    ],
+    "events.event_type": [
+      "conference",
+      "teambuilding",
+      "hybrid"
+    ],
+    "events.networking_mode": [
+      "full",
+      "attendees_only",
+      "disabled"
+    ],
+    "events.planner_provisioning_status": [
+      "not_required",
+      "pending",
+      "provisioning",
+      "succeeded",
+      "failed"
+    ],
+    "organization_members.role": [
+      "owner",
+      "admin",
+      "member",
+      "attendee",
+      "facilitator",
+      "staff"
+    ],
+    "event_members.role": [
+      "host",
+      "organizer",
+      "admin",
+      "attendee",
+      "facilitator",
+      "staff",
+      "speaker"
+    ],
+    "event_members.onboarding_status": [
+      "pending",
+      "in_progress",
+      "completed"
+    ],
+    "agenda_sessions.block_type": [
+      "session",
+      "activity",
+      "meal",
+      "transfer",
+      "freetime",
+      "ceremony",
+      "break"
+    ],
+    "agenda_sessions.breakout_mode": [
+      "attendee_choice",
+      "organizer_assigns",
+      "preassigned_switchable"
+    ],
+    "agenda_session_speakers.speaker_type": [
+      "speaker",
+      "panelist",
+      "moderator",
+      "facilitator",
+      "host"
+    ],
+    "facilitators.role_type": [
+      "speaker",
+      "presenter"
+    ],
+    "facilitators.claim_status": [
+      "unclaimed",
+      "claimed"
+    ],
+    "event_interest_options.question_type": [
+      "single_select",
+      "multi_select",
+      "short_text",
+      "long_text"
+    ],
+    "attendee_travel_details.type": [
+      "flight",
+      "ground_transfer",
+      "other"
+    ],
+    "event_push_notifications.status": [
+      "scheduled",
+      "sending",
+      "sent",
+      "failed",
+      "canceled"
+    ],
+    "product_key": [
+      "bendie",
+      "planner"
+    ],
+    "content_reports.reason": [
+      "spam",
+      "harassment",
+      "inappropriate",
+      "impersonation",
+      "other"
+    ],
+    "content_reports.status": [
+      "pending",
+      "reviewed",
+      "dismissed",
+      "actioned"
+    ],
+    "planner.operational_tasks.status (free text in use)": [
+      "Pending",
+      "In progress",
+      "Completed"
+    ]
+  },
+  "key_rpcs": [
+    "create_event_with_products",
+    "save_breakout_rooms",
+    "choose_breakout_room",
+    "issue_event_access_code",
+    "verify_event_access_code",
+    "get_event_member_contacts",
+    "get_profile_contact",
+    "can_view_profile_contact",
+    "portal_is_global_admin",
+    "is_event_manager",
+    "is_event_org_admin",
+    "is_organization_admin",
+    "get_network_matches",
+    "get_homepage_data_v2",
+    "send_notification_push",
+    "enqueue_engagement_notifications",
+    "report_user_block"
+  ],
+  "edge_functions": {
+    "bendie": [
+      "exchange-event-code-for-session",
+      "send-notification-push",
+      "send-push-notifications",
+      "send-event-access-code-email",
+      "delete-account",
+      "submit-meeting-request"
+    ],
+    "planner": [
+      "push-dispatch"
+    ]
+  },
+  "storage_buckets": [
+    "event-assets",
+    "org-assets",
+    "event-files",
+    "avatars",
+    "post-images",
+    "chat-media"
+  ]
+}

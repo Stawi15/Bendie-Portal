@@ -1,0 +1,137 @@
+{
+  "generated": "2026-11-19",
+  "legend": {
+    "mandatory": "cannot work without it",
+    "soft": "works but is empty or misleading without it",
+    "ordering": "import/create order"
+  },
+  "edges": [
+    {
+      "feature": "event-create",
+      "needs": "product-entitlement",
+      "kind": "mandatory",
+      "why": "An organisation needs at least one active product (else /portal/no-product)."
+    },
+    {
+      "feature": "planner-*",
+      "needs": "planner-provisioning",
+      "kind": "mandatory",
+      "why": "Planner tabs wait on provisioning status = succeeded."
+    },
+    {
+      "feature": "planner-*",
+      "needs": "planner-team-access",
+      "kind": "mandatory",
+      "why": "Non-admins need a Planner identity and the module view flag."
+    },
+    {
+      "feature": "planner-logistics",
+      "needs": "planner-people",
+      "kind": "mandatory",
+      "why": "Flights, hotels and vehicle assignments attach to a participant."
+    },
+    {
+      "feature": "agenda (speakers on sessions)",
+      "needs": "speakers",
+      "kind": "soft",
+      "why": "A session’s speaker list comes from facilitators."
+    },
+    {
+      "feature": "agenda (breakout assignments)",
+      "needs": "event-attendees",
+      "kind": "mandatory",
+      "why": "Assignments reference event_members."
+    },
+    {
+      "feature": "agenda (dates)",
+      "needs": "event-basics.timezone",
+      "kind": "soft",
+      "why": "Venue time. Without a zone, the computer’s zone is used."
+    },
+    {
+      "feature": "attendee-travel",
+      "needs": "event-attendees",
+      "kind": "mandatory",
+      "why": "Travel rows are per attendee (user_id)."
+    },
+    {
+      "feature": "planner-sync (pull travel)",
+      "needs": "event-attendees + planner-people (same email)",
+      "kind": "mandatory",
+      "why": "Email match. 86% of Planner passengers have no email."
+    },
+    {
+      "feature": "planner-sync (push agenda)",
+      "needs": "agenda",
+      "kind": "mandatory",
+      "why": "Pushes agenda_sessions into event_agenda_items."
+    },
+    {
+      "feature": "event-attendees (access codes)",
+      "needs": "profiles.email",
+      "kind": "mandatory",
+      "why": "The code is emailed. A member without an email cannot get in."
+    },
+    {
+      "feature": "event-attendees",
+      "needs": "org-people",
+      "kind": "soft",
+      "why": "Add flows create or link the organisation membership."
+    },
+    {
+      "feature": "excursions",
+      "needs": "excursion categories",
+      "kind": "mandatory",
+      "why": "category_id is NOT NULL."
+    },
+    {
+      "feature": "push-notifications",
+      "needs": "event-attendees with push tokens",
+      "kind": "soft",
+      "why": "target_count is 0 without app installs."
+    },
+    {
+      "feature": "networking matchmaking",
+      "needs": "networking questions with options",
+      "kind": "soft",
+      "why": "Select questions with no options are flagged (Feature 025)."
+    },
+    {
+      "feature": "speakers (claim)",
+      "needs": "profiles with the same email",
+      "kind": "soft",
+      "why": "Linked by trigger on email."
+    },
+    {
+      "feature": "hero / activities / expo / news / photos",
+      "needs": "org-assets",
+      "kind": "soft",
+      "why": "The picker reuses the asset library. Direct upload also works."
+    },
+    {
+      "feature": "dashboard readiness",
+      "needs": "event-basics + event-attendees (role = attendee)",
+      "kind": "mandatory",
+      "why": "These are the only two Required checks."
+    }
+  ],
+  "import_order": [
+    "organisation",
+    "organisation people",
+    "event (products, timezone)",
+    "event attendees (access codes)",
+    "speakers",
+    "agenda sessions → session speakers → breakout rooms → assignments",
+    "Planner participants",
+    "flights / hotels",
+    "movements → vehicles → assignments",
+    "production / planner agenda"
+  ],
+  "poorly_communicated": [
+    "Planner participant vs Bendie attendee (two records, email-joined)",
+    "Required \"attendee\" counts only role = attendee",
+    "Planner tab locked for non-Stawi admins",
+    "Timezone effect on existing sessions",
+    "Excursion needs a category first"
+  ]
+}

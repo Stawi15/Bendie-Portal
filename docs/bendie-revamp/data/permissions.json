@@ -1,0 +1,240 @@
+{
+  "generated": "2026-11-19",
+  "evidence": "SC: middleware.ts, portalAuth.ts, eventAuth.ts, plannerAccessRules*.ts, API route guards, RLS helper names. RLS policy bodies were not re-audited.",
+  "identity_tiers": [
+    {
+      "id": "stawi_admin",
+      "name": "Stawi (platform) admin",
+      "source": "profiles.global_role = admin → portal_is_global_admin()",
+      "scope": "all organisations"
+    },
+    {
+      "id": "org_owner_admin",
+      "name": "Organisation owner / admin",
+      "source": "organization_members.role in (owner, admin); auto-made event admin on every org event (Feature 017)",
+      "scope": "organisation"
+    },
+    {
+      "id": "org_member",
+      "name": "Organisation member (member, attendee, facilitator, staff)",
+      "source": "organization_members row",
+      "scope": "organisation"
+    },
+    {
+      "id": "event_manager",
+      "name": "Event host / organizer / admin",
+      "source": "event_members.role",
+      "scope": "event"
+    },
+    {
+      "id": "event_member",
+      "name": "Event facilitator / staff / attendee / speaker",
+      "source": "event_members.role",
+      "scope": "event"
+    },
+    {
+      "id": "planner_viewer_manager_custom",
+      "name": "Planner access (Viewer / Manager / Custom)",
+      "source": "Planner event_user_assignments flags, decided in plannerAccessRulesCore.moduleAccess",
+      "scope": "event (Planner)"
+    }
+  ],
+  "capabilities": [
+    {
+      "capability": "Enter /portal",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "Y",
+      "event_manager": "via org membership",
+      "event_member": "via org membership",
+      "planner": "n/a"
+    },
+    {
+      "capability": "/portal/admin/* (organisations, products, moderation)",
+      "stawi_admin": "Y",
+      "org_owner_admin": "",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Create organisation",
+      "stawi_admin": "Y",
+      "org_owner_admin": "",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Create event",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Open event workspace",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "needs event membership",
+      "event_manager": "Y",
+      "event_member": "Y",
+      "planner": ""
+    },
+    {
+      "capability": "Edit Basics / modules (events UPDATE)",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "Y",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Edit Bendie content tabs",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "Y (RLS)",
+      "event_member": "RLS decides; pages render",
+      "planner": ""
+    },
+    {
+      "capability": "Edit agenda sessions",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y (Feature 021)",
+      "org_member": "",
+      "event_manager": "per RLS",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Breakout rooms and assignments",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "Y",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Attendees & Access (add, remove, resend code)",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "Y",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Create new accounts / bulk create users",
+      "stawi_admin": "Y",
+      "org_owner_admin": "org-scoped people route",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Make / revoke platform admin",
+      "stawi_admin": "Y",
+      "org_owner_admin": "",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Planner Team & Access (grant, change, revoke)",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Planner Tasks / Vendors / Checklist: view",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": "view flag"
+    },
+    {
+      "capability": "Planner Tasks / Vendors / Checklist: manage",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": "manage flag"
+    },
+    {
+      "capability": "Planner Participants / Logistics / Production: manage",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y (Portal override)",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": "manage flag (Feature 026)"
+    },
+    {
+      "capability": "Bendie Planner tab: link, push agenda, pull travel",
+      "stawi_admin": "Y",
+      "org_owner_admin": "",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Send / schedule push notifications",
+      "stawi_admin": "Y",
+      "org_owner_admin": "Y",
+      "org_member": "",
+      "event_manager": "per RLS",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Gallery hide / delete others’ posts",
+      "stawi_admin": "Y",
+      "org_owner_admin": "",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "own posts only",
+      "planner": ""
+    },
+    {
+      "capability": "View others’ email / phone",
+      "stawi_admin": "per can_view_profile_contact",
+      "org_owner_admin": "per rule",
+      "org_member": "",
+      "event_manager": "per rule",
+      "event_member": "",
+      "planner": ""
+    },
+    {
+      "capability": "Org people: edit email",
+      "stawi_admin": "Y",
+      "org_owner_admin": "",
+      "org_member": "",
+      "event_manager": "",
+      "event_member": "",
+      "planner": ""
+    }
+  ],
+  "known_mismatches": [
+    "UI offers actions the server refuses for non-Stawi admins: Create New User tab, People CSV, Attendee Travel \"Pull from Planner\" (October audit §24).",
+    "The Bendie Planner tab is listed for everyone but locked unless you are a Stawi admin.",
+    "The People \"Make Admin\" control grants platform-wide admin while its summary counts organisation admins.",
+    "MFA for privileged roles is documented but not enforced (architecture.md)."
+  ],
+  "ai_rule": "The Copilot must call the same routes and RLS as the signed-in user. It never gets a service-role client of its own."
+}

@@ -1,0 +1,3372 @@
+{
+  "generated": "2026-11-19",
+  "base": "http://localhost:3000",
+  "environment": "TEST (synthetic data)",
+  "results": [
+    {
+      "role": "stawi_admin",
+      "path": "/portal",
+      "final_url": "/portal/bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 4117,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/activity-log",
+      "final_url": "/portal/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 1984,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_activity-log.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/admin/moderation",
+      "final_url": "/portal/admin/moderation",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2986,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_admin_moderation.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/admin/organisations",
+      "final_url": "/portal/admin/organisations",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2151,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_admin_organisations.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/assets",
+      "final_url": "/portal/assets",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2016,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_assets.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/bendie",
+      "final_url": "/portal/bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2611,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_bendie.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/bendie/events",
+      "final_url": "/portal/bendie/events",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2420,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_bendie_events.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events",
+      "final_url": "/portal/bendie/events",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2787,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_events.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/no-access",
+      "final_url": "/portal/no-access",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 1940,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_no-access.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/no-product",
+      "final_url": "/portal/no-product",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 1998,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_no-product.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/people",
+      "final_url": "/portal/people",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4479,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_people.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/planner",
+      "final_url": "/portal/planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2779,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_planner.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/planner/events",
+      "final_url": "/portal/planner/events",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2757,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_planner_events.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/settings",
+      "final_url": "/portal/settings",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 1975,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_settings.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/teams",
+      "final_url": "/portal/teams",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2455,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/portal_teams.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/admin/organisations/5e5e0000-0000-4000-8000-000000000001",
+      "final_url": "/portal/admin/organisations/5e5e0000-0000-4000-8000-000000000001",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2251,
+      "h1": "Bendie Studio",
+      "flags": [
+        "error_text"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 400 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/portal_admin_organisations_5e5e0000-0000-4000-8000-000000000001.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activities",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activities",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2561,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_activities.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activity-log",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2802,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_activity-log.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2546,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_agenda.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/attendee-travel",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/attendee-travel",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2546,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_attendee-travel.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/basics",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/basics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2282,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_basics.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/bendie-planner",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/bendie-planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2587,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_bendie-planner.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2310,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_dashboard.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/emergency",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/emergency",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2452,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_emergency.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/event-photos",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/event-photos",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2502,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_event-photos.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/excursions",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/excursions",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2580,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_excursions.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/expo",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/expo",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2911,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_expo.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2356,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_facilitators.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/faqs",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/faqs",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2547,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_faqs.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/files",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/files",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2531,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_files.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/gallery",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/gallery",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3909,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_gallery.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/games",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/games",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2497,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_games.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/hero",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/hero",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2463,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_hero.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/info-center",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/info-center",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2750,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_info-center.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/members",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/members",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6794,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_members.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/networking",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/networking",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2885,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_networking.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/news",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/news",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3007,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_news.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/notifications",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/notifications",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2602,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_notifications.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3120,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-agenda.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-checklist",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3114,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-checklist.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-logistics",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3031,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-logistics.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-overview",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3204,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-overview.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-people",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3060,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-people.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-production",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3743,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-production.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-tasks",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3132,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-tasks.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-vendors",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3521,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/summit_planner-vendors.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/terminology",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/terminology",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2628,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_terminology.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/theme",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/theme",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3009,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/summit_theme.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activities",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activities",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5703,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_activities.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activity-log",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5889,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_activity-log.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/agenda",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6181,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_agenda.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/attendee-travel",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/attendee-travel",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6276,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_attendee-travel.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/basics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/basics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6345,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_basics.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/bendie-planner",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/bendie-planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7071,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_bendie-planner.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5635,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/stawi_admin/tester_dashboard.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/emergency",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/emergency",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4947,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_emergency.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/event-photos",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/event-photos",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5304,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_event-photos.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/excursions",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/excursions",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5402,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_excursions.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/expo",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/expo",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5305,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_expo.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/facilitators",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/facilitators",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4964,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_facilitators.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/faqs",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/faqs",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5001,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_faqs.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/files",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/files",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5304,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_files.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/gallery",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/gallery",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5157,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_gallery.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/games",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/games",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5335,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_games.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/hero",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/hero",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5416,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_hero.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/info-center",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/info-center",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5067,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_info-center.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/members",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/members",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5798,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_members.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/networking",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/networking",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5278,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_networking.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/news",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/news",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5924,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_news.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/notifications",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/notifications",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4875,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_notifications.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-agenda",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8042,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-agenda.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-checklist",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-checklist",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8758,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-checklist.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 9719,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-logistics.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-overview",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-overview?product=planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7986,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-overview.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-people",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-people",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 11756,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-people.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-production",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-production",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7676,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-production.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-tasks",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-tasks",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7931,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-tasks.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-vendors",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-vendors",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8016,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_planner-vendors.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/terminology",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/terminology",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5508,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_terminology.jpg"
+    },
+    {
+      "role": "stawi_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/theme",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/theme",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5511,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/stawi_admin/tester_theme.jpg"
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal",
+      "final_url": "/portal/bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3435,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/activity-log",
+      "final_url": "/portal/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2379,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/admin/moderation",
+      "final_url": "/unauthorized",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 1553,
+      "h1": "Access Denied",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/admin/organisations",
+      "final_url": "/unauthorized",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 1214,
+      "h1": "Access Denied",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/assets",
+      "final_url": "/portal/assets",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2437,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/bendie",
+      "final_url": "/portal/bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3027,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/bendie/events",
+      "final_url": "/portal/bendie/events",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2474,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events",
+      "final_url": "/portal/bendie/events",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3004,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/no-access",
+      "final_url": "/portal/no-access",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2426,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/no-product",
+      "final_url": "/portal/no-product",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2483,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/people",
+      "final_url": "/portal/people",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3530,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/planner",
+      "final_url": "/portal/planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3253,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/planner/events",
+      "final_url": "/portal/planner/events",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2616,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/settings",
+      "final_url": "/portal/settings",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2391,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/teams",
+      "final_url": "/portal/teams",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2544,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/admin/organisations/5e5e0000-0000-4000-8000-000000000001",
+      "final_url": "/unauthorized",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 1222,
+      "h1": "Access Denied",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activities",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activities",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2727,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activity-log",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2965,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2937,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/attendee-travel",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/attendee-travel",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2796,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/basics",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/basics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2701,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/bendie-planner",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/bendie-planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2286,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2518,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/org_admin/summit_dashboard.jpg"
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/emergency",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/emergency",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2607,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/event-photos",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/event-photos",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3378,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/excursions",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/excursions",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2685,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/expo",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/expo",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2889,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2751,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/faqs",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/faqs",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2956,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/files",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/files",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3474,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/gallery",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/gallery",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3872,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/games",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/games",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2873,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/hero",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/hero",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2829,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/info-center",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/info-center",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2972,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/members",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/members",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7640,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/networking",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/networking",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3223,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/news",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/news",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2476,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/notifications",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/notifications",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2677,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2835,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-checklist",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2548,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-logistics",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2453,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-overview",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2420,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-people",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3504,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-production",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3282,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-tasks",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2417,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-vendors",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3375,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/terminology",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/terminology",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3498,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/theme",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/theme",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2994,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activities",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activities",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8460,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activity-log",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7071,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/agenda",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6854,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/attendee-travel",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/attendee-travel",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5810,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/basics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/basics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5837,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/bendie-planner",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/bendie-planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5729,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6528,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/org_admin/tester_dashboard.jpg"
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/emergency",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/emergency",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5739,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/event-photos",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/event-photos",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5739,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/excursions",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/excursions",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5649,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/expo",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/expo",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5396,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/facilitators",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/facilitators",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5397,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/faqs",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/faqs",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6065,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/files",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/files",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5424,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/gallery",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/gallery",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5134,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/games",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/games",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6345,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/hero",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/hero",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5862,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/info-center",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/info-center",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5750,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/members",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/members",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7620,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/networking",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/networking",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5550,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/news",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/news",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5818,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/notifications",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/notifications",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5478,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-agenda",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8827,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-checklist",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-checklist",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8168,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8411,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-overview",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-overview?product=planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7918,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-people",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-people",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 11276,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-production",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-production",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 9126,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-tasks",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-tasks",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 7147,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-vendors",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-vendors",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 8810,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/terminology",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/terminology",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5906,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "org_admin",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/theme",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/theme",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 5661,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal",
+      "final_url": "/portal/bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 4306,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [
+        "TypeError: Failed to fetch\n    at eval (webpack-internal:///(app-pages-browser)/./node_modules/@supabase/auth-js/dist/module/lib/helpers.js:121:25)\n    at _handleRequest (webpack-internal:///(app-page"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/activity-log",
+      "final_url": "/portal/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2795,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/admin/moderation",
+      "final_url": "/unauthorized",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 1720,
+      "h1": "Access Denied",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/admin/organisations",
+      "final_url": "/unauthorized",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 1294,
+      "h1": "Access Denied",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/assets",
+      "final_url": "/portal/assets",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3223,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/bendie",
+      "final_url": "/portal/bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3326,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/bendie/events",
+      "final_url": "/portal/bendie/events",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3209,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events",
+      "final_url": "/portal/bendie/events",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3393,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/no-access",
+      "final_url": "/portal/no-access",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2881,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/no-product",
+      "final_url": "/portal/no-product",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2979,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/people",
+      "final_url": "/portal/people",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3182,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/planner",
+      "final_url": "/portal/planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3226,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/planner/events",
+      "final_url": "/portal/planner/events",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3000,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/settings",
+      "final_url": "/portal/settings",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2946,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/teams",
+      "final_url": "/portal/teams",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2797,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/admin/organisations/5e5e0000-0000-4000-8000-000000000001",
+      "final_url": "/unauthorized",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 1295,
+      "h1": "Access Denied",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activities",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activities",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4121,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activity-log",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3328,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3219,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/attendee-travel",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/attendee-travel",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3299,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/basics",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/basics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3481,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/bendie-planner",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/bendie-planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2578,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4170,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/event_staff/summit_dashboard.jpg"
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/emergency",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/emergency",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3033,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/event-photos",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/event-photos",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3214,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/excursions",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/excursions",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3310,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/expo",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/expo",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3310,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3047,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/faqs",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/faqs",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4047,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/files",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/files",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3402,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/gallery",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/gallery",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4015,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/games",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/games",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3199,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/hero",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/hero",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3651,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/info-center",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/info-center",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3518,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/members",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/members",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 10756,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+        "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/networking",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/networking",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4628,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/news",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/news",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 4081,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/notifications",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/notifications",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3423,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3330,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-checklist",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2874,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-logistics",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2921,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-overview",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 4163,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-people",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3079,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-production",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3230,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-tasks",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2794,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-vendors",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 2831,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/terminology",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/terminology",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3191,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/theme",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/theme",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3264,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": []
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activities",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activities",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2353,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activity-log",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/activity-log",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2252,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/agenda",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2274,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/attendee-travel",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/attendee-travel",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2209,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/basics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/basics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2489,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/bendie-planner",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/bendie-planner",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2336,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2142,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ],
+      "screenshot": "screenshots/event_staff/tester_dashboard.jpg"
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/emergency",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/emergency",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3352,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/event-photos",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/event-photos",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2458,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/excursions",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/excursions",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2876,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/expo",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/expo",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2292,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/facilitators",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/facilitators",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2277,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/faqs",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/faqs",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2296,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/files",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/files",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2266,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/gallery",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/gallery",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3131,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/games",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/games",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2450,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/hero",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/hero",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2347,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/info-center",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/info-center",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2274,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/members",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/members",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2315,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/networking",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/networking",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2262,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/news",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/news",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2607,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/notifications",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/notifications",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2173,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-agenda",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2383,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-checklist",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-checklist",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2305,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3050,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-overview",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-overview",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2516,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-people",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-people",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2445,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-production",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-production",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2404,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-tasks",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-tasks",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2371,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-vendors",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-vendors",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2301,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/terminology",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/terminology",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3357,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "event_staff",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/theme",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/theme",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2234,
+      "h1": "Bendie Studio",
+      "flags": [
+        "no_access"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 406 ()",
+        "{code: PGRST116, details: The result contains 0 rows, hint: null, message: Cannot coerce the result to a single JSON object}"
+      ]
+    },
+    {
+      "role": "responsive_w1024",
+      "path": "/portal",
+      "final_url": "/portal/bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3462,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w1024/portal.jpg"
+    },
+    {
+      "role": "responsive_w1024",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2219,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/responsive_w1024/portal_events_5e5e0000-0000-4000-8000-0000000000e1_dashboard.jpg"
+    },
+    {
+      "role": "responsive_w1024",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2352,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w1024/portal_events_5e5e0000-0000-4000-8000-0000000000e1_agenda.jpg"
+    },
+    {
+      "role": "responsive_w1024",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 3298,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w1024/vents_a8f27084-53ad-4779-9379-72d5e820664c_planner-logistics.jpg"
+    },
+    {
+      "role": "responsive_w768",
+      "path": "/portal",
+      "final_url": "/portal/bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 4071,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w768/portal.jpg"
+    },
+    {
+      "role": "responsive_w768",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2704,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/responsive_w768/portal_events_5e5e0000-0000-4000-8000-0000000000e1_dashboard.jpg"
+    },
+    {
+      "role": "responsive_w768",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2615,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w768/portal_events_5e5e0000-0000-4000-8000-0000000000e1_agenda.jpg"
+    },
+    {
+      "role": "responsive_w768",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 10315,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w768/vents_a8f27084-53ad-4779-9379-72d5e820664c_planner-logistics.jpg"
+    },
+    {
+      "role": "responsive_w390",
+      "path": "/portal",
+      "final_url": "/portal/bendie",
+      "redirected": true,
+      "status": 200,
+      "load_ms": 3707,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w390/portal.jpg"
+    },
+    {
+      "role": "responsive_w390",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard?product=bendie",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2261,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 403 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "screenshot": "screenshots/responsive_w390/portal_events_5e5e0000-0000-4000-8000-0000000000e1_dashboard.jpg"
+    },
+    {
+      "role": "responsive_w390",
+      "path": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "final_url": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/agenda",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 2512,
+      "h1": "Bendie Studio",
+      "flags": [],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w390/portal_events_5e5e0000-0000-4000-8000-0000000000e1_agenda.jpg"
+    },
+    {
+      "role": "responsive_w390",
+      "path": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "final_url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/planner-logistics",
+      "redirected": false,
+      "status": 200,
+      "load_ms": 6958,
+      "h1": "Bendie Studio",
+      "flags": [
+        "empty_state"
+      ],
+      "console_errors": [],
+      "screenshot": "screenshots/responsive_w390/vents_a8f27084-53ad-4779-9379-72d5e820664c_planner-logistics.jpg"
+    }
+  ]
+}

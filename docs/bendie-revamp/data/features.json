@@ -1,0 +1,1333 @@
+{
+  "generated": "2026-11-19",
+  "evidence_legend": {
+    "SC": "source-confirmed",
+    "BV": "browser-verified (none yet)",
+    "INF": "inferred",
+    "DOC": "documented, not re-verified"
+  },
+  "count": 55,
+  "features": [
+    {
+      "id": "auth",
+      "name": "Sign in, sign up, forgot and reset password",
+      "scope": "public",
+      "product": "studio",
+      "route": "/auth/*",
+      "what": "Supabase email/password auth. Sign-up creates an organisation and owner membership.",
+      "tables": [
+        "profiles",
+        "organizations",
+        "organization_members"
+      ],
+      "users": "Everyone",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Root `/` still says \"Event Content Portal\".",
+      "evidence": "SC"
+    },
+    {
+      "id": "access-gate",
+      "name": "Portal admission gate",
+      "scope": "platform",
+      "product": "studio",
+      "route": "src/middleware.ts",
+      "what": "Lets in Stawi admins and anyone with ≥1 organisation membership. Others go to /portal/no-access; /portal/admin/* is Stawi-only.",
+      "tables": [
+        "profiles",
+        "organization_members"
+      ],
+      "users": "Everyone",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "60s cookie cache. RLS is the real guard.",
+      "evidence": "SC"
+    },
+    {
+      "id": "profile-edit",
+      "name": "Edit own profile",
+      "scope": "platform",
+      "product": "studio",
+      "route": "EditProfileModal",
+      "what": "Edits the signed-in person’s profile fields.",
+      "tables": [
+        "profiles"
+      ],
+      "users": "Every signed-in user",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-admin",
+      "name": "Organisations admin (products, Planner connection, impact)",
+      "scope": "platform",
+      "product": "studio",
+      "route": "/portal/admin/organisations[/:id]",
+      "what": "Create organisations. Turn Bendie/Planner products on, pause or resume them per organisation and per event. Connect an organisation to a Planner organisation, with an impact preview.",
+      "tables": [
+        "organizations",
+        "organization_products",
+        "event_products",
+        "organization_planner_links"
+      ],
+      "users": "Stawi admins",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app",
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [
+        "product-entitlement"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "moderation",
+      "name": "Content moderation",
+      "scope": "platform",
+      "product": "bendie",
+      "route": "/portal/admin/moderation",
+      "what": "Review Report/Block items from the attendee app. Hide/unhide posts and comments, delete messages, remove a person from events (Planner access off too), dismiss, or mark reviewed.",
+      "tables": [
+        "content_reports",
+        "posts",
+        "post_comments",
+        "messages",
+        "event_members"
+      ],
+      "users": "Stawi admins",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [
+        "gallery"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-overview",
+      "name": "Organisation overview / home",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal → /portal/{bendie|planner}",
+      "what": "Product-resolved home: metrics, events overview table, needs-attention, next milestone, quick actions, recent activity.",
+      "tables": [
+        "events",
+        "facilitators",
+        "agenda_sessions",
+        "emergency_contacts",
+        "faqs",
+        "event_content_audit_log"
+      ],
+      "users": "All organisation members",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Uses an 8-check \"Setup progress %\" that differs from the event Dashboard (see doc 11 and 23).",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-events",
+      "name": "Events list and discovery",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal/events → /portal/{bendie|planner}/events",
+      "what": "Org-wide event list with lifecycle labels and progress, per product.",
+      "tables": [
+        "events",
+        "event_products"
+      ],
+      "users": "All organisation members",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "event-create",
+      "name": "Create event (with products)",
+      "scope": "organization",
+      "product": "studio",
+      "route": "CreateEventModal → /api/events/create",
+      "what": "Multi-step dialog: products (Bendie / Planner / both), name, dates, timezone, location, modules. Calls the `create_event_with_products` RPC, then provisions the Planner event when Planner is chosen.",
+      "tables": [
+        "events",
+        "event_products",
+        "event_creation_requests",
+        "event_planner_links"
+      ],
+      "users": "Stawi admins, org owners/admins",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app",
+        "Bendie Planner app"
+      ],
+      "depends_on": [
+        "product-entitlement"
+      ],
+      "related": [
+        "planner-provisioning"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-people",
+      "name": "Organisation people",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal/people",
+      "what": "Directory of organisation members and roles. Add a person, search existing people, CSV import, make/revoke admin. Shows contacts through Bendie RPCs.",
+      "tables": [
+        "organization_members",
+        "profiles",
+        "event_members"
+      ],
+      "users": "Org members (read); org owners/admins and Stawi admins (write)",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [
+        "event-attendees",
+        "teams"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "\"Make Admin\" grants platform-wide admin (October audit §30.6).",
+      "evidence": "SC"
+    },
+    {
+      "id": "teams",
+      "name": "Teams",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal/teams",
+      "what": "Named groups of organisation people, used as a source in \"Add attendees → From team\".",
+      "tables": [
+        "teams",
+        "team_members"
+      ],
+      "users": "Org members (read), org owners/admins (write)",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [
+        "event-attendees"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "Grants nothing on its own.",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-assets",
+      "name": "Asset library",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal/assets",
+      "what": "Upload and reuse organisation files and images (org-assets bucket). Picked from content forms via AssetPickerModal.",
+      "tables": [
+        "organization_assets"
+      ],
+      "users": "All organisation members",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [
+        "hero",
+        "activities",
+        "expo",
+        "news",
+        "excursions",
+        "event-photos"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-activity",
+      "name": "Organisation activity log",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal/activity-log",
+      "what": "Trigger-written audit trail for organisation-level changes. Also the header bell.",
+      "tables": [
+        "organization_audit_log",
+        "profiles"
+      ],
+      "users": "All organisation members",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "org-settings",
+      "name": "Organisation settings",
+      "scope": "organization",
+      "product": "studio",
+      "route": "/portal/settings",
+      "what": "Read-only organisation fields.",
+      "tables": [
+        "organizations"
+      ],
+      "users": "All organisation members",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "placeholder",
+      "usability_notes": "Two read-only fields; reached from both the sidebar and the header.",
+      "evidence": "SC"
+    },
+    {
+      "id": "product-entitlement",
+      "name": "Product entitlement and switcher",
+      "scope": "organization",
+      "product": "studio",
+      "route": "TopHeader / ProductContext",
+      "what": "Per-organisation products (`organization_products`) and per-event products (`event_products`) decide which areas and tabs exist. A paused product shows a notice.",
+      "tables": [
+        "organization_products",
+        "event_products"
+      ],
+      "users": "Everyone",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app",
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "event-dashboard",
+      "name": "Event dashboard and readiness",
+      "scope": "event",
+      "product": "studio",
+      "route": "[eventId]/dashboard",
+      "what": "Required / Recommended / Optional checklist, \"Recommended next\", area cards. For Planner events, Planner readiness counts and the next Planner step.",
+      "tables": [
+        "events",
+        "event_members",
+        "(Planner via /api/events/:id/planner-readiness)"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [
+        "event-basics",
+        "event-attendees"
+      ],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Required = name+dates and ≥1 member with role exactly `attendee`.",
+      "evidence": "SC"
+    },
+    {
+      "id": "manage-modules",
+      "name": "Manage modules",
+      "scope": "event",
+      "product": "studio",
+      "route": "ManageModulesModal (event header)",
+      "what": "Choose which content modules this event uses (`portal_setup_modules`). Decides Recommended vs Optional on the Dashboard.",
+      "tables": [
+        "events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "event-basics",
+      "name": "Basics",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/basics",
+      "what": "Name, description, dates (venue time), timezone, location, status label, event type, attendee limit.",
+      "tables": [
+        "events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app",
+        "Bendie Planner app (timezone once, at creation)"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "`status` is a manual label; there is no publish step.",
+      "evidence": "SC"
+    },
+    {
+      "id": "hero",
+      "name": "Hero & branding",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/hero",
+      "what": "Hero image, title, description and profile banner for the attendee app home.",
+      "tables": [
+        "events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [
+        "org-assets"
+      ],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "theme",
+      "name": "Theme colours / Theme designer",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/theme",
+      "what": "Primary, secondary and tertiary colours with a live app preview (ThemeDesignerModal, EventThemePreview).",
+      "tables": [
+        "events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "terminology",
+      "name": "Terminology and menu",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/terminology",
+      "what": "Speaker labels (singular/plural), category and theme labels and icon, feedback form link, disabled menu items.",
+      "tables": [
+        "events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "speakers",
+      "name": "Speakers (facilitators)",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/facilitators",
+      "what": "Speaker and presenter profiles. Can be linked to an account by email (claim). Adding from attendees is supported.",
+      "tables": [
+        "facilitators"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [
+        "agenda"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "Live data: 58 of 136 have no bio and 51 no photo.",
+      "evidence": "SC"
+    },
+    {
+      "id": "agenda",
+      "name": "Agenda and breakout rooms",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/agenda",
+      "what": "Sessions by day: block type, audience, location, accent colour, speakers (with speaker types). Breakout rooms in three modes, with capacity and assignments (people list download/upload). Org admins may edit.",
+      "tables": [
+        "agenda_sessions",
+        "agenda_session_speakers",
+        "agenda_breakout_rooms",
+        "agenda_breakout_room_items",
+        "agenda_breakout_assignments"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": "breakout people list only",
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [
+        "speakers",
+        "event-basics (timezone)"
+      ],
+      "related": [
+        "planner-agenda",
+        "planner-sync"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "1,267-line page. ~160px cards. Push to Planner is manual.",
+      "evidence": "SC"
+    },
+    {
+      "id": "activities",
+      "name": "Activities",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/activities",
+      "what": "Experiences with images, rating, location, featured flag. Duplicate is supported.",
+      "tables": [
+        "activities",
+        "activity_images"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [
+        "org-assets"
+      ],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "excursions",
+      "name": "Excursions (local recommendations)",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/excursions",
+      "what": "Categorised local recommendations. Categories can be global (event_id null).",
+      "tables": [
+        "excursions",
+        "excursion_categories"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "The header action creates a category; an excursion needs a category first.",
+      "evidence": "SC"
+    },
+    {
+      "id": "event-attendees",
+      "name": "Attendees & access",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/members",
+      "what": "Event members and roles. Add from org, team, all org people or new (CSV). Access codes are auto-issued and emailed, with resend. Add to speakers. Planner Team & Access row action.",
+      "tables": [
+        "event_members",
+        "event_user_access_codes",
+        "profiles",
+        "teams"
+      ],
+      "users": "Event host/organizer/admin, org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [
+        "org-people"
+      ],
+      "related": [
+        "planner-team-access",
+        "planner-sync"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "521 attendees; 385 members are still `pending` onboarding, a status nothing in the Portal writes.",
+      "evidence": "SC"
+    },
+    {
+      "id": "attendee-travel",
+      "name": "Attendee travel",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/attendee-travel",
+      "what": "Per-attendee flight, ground-transfer and other details shown in the app. Pull from Planner (Stawi admins).",
+      "tables": [
+        "attendee_travel_details"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [
+        "event-attendees"
+      ],
+      "related": [
+        "planner-logistics"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "One attendee at a time; free-text dates and times. Only 4 rows live.",
+      "evidence": "SC"
+    },
+    {
+      "id": "networking",
+      "name": "Networking questionnaire and matchmaking",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/networking",
+      "what": "Interest questions (single/multi select, short/long text), options, required flags, networking mode (full / attendees-only / off). Flags select questions with no options.",
+      "tables": [
+        "event_interest_options",
+        "events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Organisers type `question_key`/`option_key` by hand.",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-team-access",
+      "name": "Planner team & access (permissions)",
+      "scope": "event",
+      "product": "planner",
+      "route": "members row action → PlannerTeamAccessPanel/PlannerPermissionsModal",
+      "what": "Turn on, change or turn off a person’s Planner access with view/manage flags (Viewer / Manager / Custom). Every change is audited.",
+      "tables": [
+        "event_members",
+        "planner_permission_audit_log",
+        "(Planner) event_user_assignments"
+      ],
+      "users": "Org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [
+        "event-attendees",
+        "planner-provisioning"
+      ],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Has no screen of its own.",
+      "evidence": "SC"
+    },
+    {
+      "id": "news",
+      "name": "News feed",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/news",
+      "what": "Articles and announcements with themes, image, featured flag, registration link and read time. Can be global.",
+      "tables": [
+        "news_items"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "faqs",
+      "name": "FAQs",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/faqs",
+      "what": "Questions grouped by section.",
+      "tables": [
+        "faqs"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "info-center",
+      "name": "Info center and support contacts",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/info-center",
+      "what": "Info bullets and support contacts. One contact can be shown on the app’s access screen (\"Contact organizer\").",
+      "tables": [
+        "info_content",
+        "support_contacts"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "expo",
+      "name": "Expo directory",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/expo",
+      "what": "Exhibitors and sponsors: summary, chips, offering, contacts, CTA. Can be global.",
+      "tables": [
+        "expo_spaces"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "gallery",
+      "name": "Gallery moderation",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/gallery",
+      "what": "Attendee photo posts, likes and comments. Hide or delete through the server route so blocks don’t hide content from moderators.",
+      "tables": [
+        "posts",
+        "post_likes",
+        "post_comments"
+      ],
+      "users": "Event members (view); Stawi admins or the author (hide/delete)",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [
+        "moderation"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "event-photos",
+      "name": "Event photos",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/event-photos",
+      "what": "Organiser-curated photos (separate from the gallery).",
+      "tables": [
+        "event_photos"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [
+        "org-assets"
+      ],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "files",
+      "name": "Files",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/files",
+      "what": "Documents for attendees to download, stored in the `event-files` storage bucket.",
+      "tables": [
+        "storage: event-files"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "emergency",
+      "name": "Emergency contacts and images",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/emergency",
+      "what": "Typed emergency contacts (with location, description, image) and emergency images.",
+      "tables": [
+        "emergency_contacts",
+        "emergency_images"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "games",
+      "name": "Games / quizzes",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/games",
+      "what": "Quiz games with questions. Points and leaderboard are app-side (`game_points`).",
+      "tables": [
+        "games",
+        "game_questions"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Answer options are typed as raw JSON.",
+      "evidence": "SC"
+    },
+    {
+      "id": "push-notifications",
+      "name": "Push notifications",
+      "scope": "event",
+      "product": "bendie",
+      "route": "[eventId]/notifications",
+      "what": "Send now or schedule push messages to event attendees (send-notification-push edge function).",
+      "tables": [
+        "event_push_notifications"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "High-impact external communication. 10 sent live.",
+      "evidence": "SC"
+    },
+    {
+      "id": "event-activity",
+      "name": "Event activity log",
+      "scope": "event",
+      "product": "studio",
+      "route": "[eventId]/activity-log",
+      "what": "Trigger-written audit of content changes (INSERT/UPDATE/DELETE with diff).",
+      "tables": [
+        "event_content_audit_log"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-provisioning",
+      "name": "Planner event provisioning",
+      "scope": "event",
+      "product": "shared",
+      "route": "/api/events/create, retry-planner-provisioning",
+      "what": "Creates the linked Planner event (name, dates, location, timezone) and tracks status: not_required, pending, provisioning, succeeded or failed. Retry is available.",
+      "tables": [
+        "events (planner_provisioning_*)",
+        "event_planner_links",
+        "(Planner) events"
+      ],
+      "users": "Stawi admins, org owners/admins, event host/organizer/admin",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [
+        "event-create"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-sync",
+      "name": "Bendie Planner link and sync",
+      "scope": "event",
+      "product": "shared",
+      "route": "[eventId]/bendie-planner",
+      "what": "Link or unlink a Planner event. Staff-tier member sync (automatic). Push agenda to Planner (manual). Pull flights/hotels into attendee travel (manual).",
+      "tables": [
+        "event_planner_links",
+        "event_members (planner_*)",
+        "agenda_sessions (planner_*)",
+        "attendee_travel_details (source_planner_key)"
+      ],
+      "users": "Stawi admins (usable); listed for everyone",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app",
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Identity is bridged by email, but 353 of 409 Planner passengers have no email.",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-overview",
+      "name": "Planner overview",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-overview",
+      "what": "Planner event identity and live session status.",
+      "tables": [
+        "(Planner) events",
+        "(Planner) session_status_realtime",
+        "(Planner) session_summary_realtime"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-people",
+      "name": "Participants",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-people",
+      "what": "People tracked for travel and logistics: add new, from Bendie attendees or from the organisation; link, search, CSV. Grants no access.",
+      "tables": [
+        "(Planner) passengers",
+        "(Planner) event_passengers"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [
+        "planner-logistics",
+        "event-attendees"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-tasks",
+      "name": "Tasks",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-tasks",
+      "what": "Operational to-dos with assignees, status, priority and due date. Batch status changes.",
+      "tables": [
+        "(Planner) operational_tasks",
+        "(Planner) operational_task_assignees"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "Task notes are not built (memory.md).",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-vendors",
+      "name": "Vendors",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-vendors",
+      "what": "Supplier equipment items with packed / loaded / on-site stages.",
+      "tables": [
+        "(Planner) event_vendor_items"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-checklist",
+      "name": "Checklist",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-checklist",
+      "what": "Items to source and check on site, by category and day.",
+      "tables": [
+        "(Planner) event_checklist_items"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-logistics",
+      "name": "Logistics: flights, hotels, ground transport",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-logistics",
+      "what": "Flights, hotel bookings, movements, vehicles, and passenger-to-vehicle assignment and moves.",
+      "tables": [
+        "(Planner) all_flights_combined_table",
+        "(Planner) hotel_bookings",
+        "(Planner) transport_movements",
+        "(Planner) vehicles",
+        "(Planner) passenger_vehicle_assignments"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [
+        "planner-people"
+      ],
+      "related": [],
+      "status": "fully-implemented",
+      "usability_notes": "1,211-line page with a third navigation level (sub-tabs).",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-agenda",
+      "name": "Planner agenda (programme)",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-agenda",
+      "what": "The programme the Planner team sees: days, tracks, rooms, speakers and MCs, parallel items.",
+      "tables": [
+        "(Planner) event_agenda_items"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [
+        "agenda",
+        "planner-production"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-production",
+      "name": "Production / run-of-show",
+      "scope": "event",
+      "product": "planner",
+      "route": "[eventId]/planner-production",
+      "what": "Per-session production rows: times with shift, mode, mic, presentation, main screen, stage-hand notes, guest experience, slides.",
+      "tables": [
+        "(Planner) production_tasks"
+      ],
+      "users": "Planner identity with the module view flag (manage flag to edit), org owners/admins, Stawi admins",
+      "import": true,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [
+        "planner-agenda"
+      ],
+      "status": "fully-implemented",
+      "usability_notes": "Slides and blueprints authoring are not built (memory.md).",
+      "evidence": "SC"
+    },
+    {
+      "id": "app-social",
+      "name": "Chats, messages, connections, session ratings, feedback, game points",
+      "scope": "event",
+      "product": "bendie",
+      "route": "—",
+      "what": "Attendee runtime data. Out of scope by design (project-overview.md); moderation only.",
+      "tables": [
+        "chats",
+        "messages",
+        "connections",
+        "session_ratings",
+        "feedback",
+        "game_points"
+      ],
+      "users": "App users",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "not-in-portal",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "app-release-config",
+      "name": "App release config (minimum app version)",
+      "scope": "event",
+      "product": "bendie",
+      "route": "—",
+      "what": "Read by the mobile apps. No admin screen (memory.md: Events #5 unbuilt).",
+      "tables": [
+        "app_release_config"
+      ],
+      "users": "App users",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "not-in-portal",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "engagement-notifications",
+      "name": "Automated engagement reminders",
+      "scope": "event",
+      "product": "bendie",
+      "route": "—",
+      "what": "Queued by `enqueue_engagement_notifications`. No labels or controls in the Portal (Events #11 unbuilt).",
+      "tables": [
+        "engagement_notification_log"
+      ],
+      "users": "App users",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "not-in-portal",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-blueprints",
+      "name": "Planner blueprints (venue plans)",
+      "scope": "event",
+      "product": "planner",
+      "route": "—",
+      "what": "Versioned files per Planner event. No Portal UI.",
+      "tables": [
+        "event_blueprints"
+      ],
+      "users": "App users",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "not-in-portal",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "planner-notifications",
+      "name": "Planner in-app notifications",
+      "scope": "event",
+      "product": "planner",
+      "route": "—",
+      "what": "Planner-side notification feed and push (push-dispatch edge function).",
+      "tables": [
+        "event_notifications",
+        "event_notification_reads",
+        "notification_preferences"
+      ],
+      "users": "App users",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Planner app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "not-in-portal",
+      "usability_notes": "",
+      "evidence": "SC"
+    },
+    {
+      "id": "meeting-requests",
+      "name": "Marketing meeting requests",
+      "scope": "event",
+      "product": "bendie",
+      "route": "—",
+      "what": "Public lead-capture form (submit-meeting-request edge function). Out of scope.",
+      "tables": [
+        "meeting_requests"
+      ],
+      "users": "App users",
+      "import": false,
+      "export": false,
+      "consumed_by": [
+        "Bendie Events app"
+      ],
+      "depends_on": [],
+      "related": [],
+      "status": "not-in-portal",
+      "usability_notes": "",
+      "evidence": "SC"
+    }
+  ]
+}

@@ -44,4 +44,6 @@ Thumbs.db
 .AppleDouble
 .LSOverride
 
-docs
+# Everything in docs/ stays local except the Portal 2.0 revamp docs.
+docs/*
+!docs/bendie-revamp/

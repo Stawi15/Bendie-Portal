@@ -1,0 +1,64 @@
+# Bendie Studio 2.0: Discovery and Planning, Master Index
+
+The brief is [../Portal_2.0.md](../Portal_2.0.md). Branch: `redesign`.
+
+**How this relates to Spec Kit:** these docs are discovery and research input, playing the role of `/architect` output. They are **not** specs or plans. Each roadmap phase becomes its own Spec Kit feature (`specs/030-…`) with its own `spec.md` / `plan.md` / `tasks.md`, which stay authoritative per AGENTS.md.
+
+**Evidence labels used throughout:**
+- **[V]** or SC: verified in source or the live schema.
+- **BV:** browser-verified. Nothing is yet.
+- **[D]:** documented, not re-verified.
+- **INF:** inferred.
+- **[U]:** unknown.
+
+## Discovery (pass 1, done 2026-11-19)
+
+| # | Doc | Status |
+|---|---|---|
+| 01 | [Executive summary](01-executive-summary.md) | done |
+| 02 | [Skill registry](02-skill-registry.md) | done |
+| 03 | [Product overview](03-product-overview.md) | done |
+| 04 | [Technical architecture](04-technical-architecture.md) | done |
+| 05 | [Complete route inventory](05-complete-route-inventory.md) | done (generated) |
+| 06 | [Feature inventory](06-feature-inventory.md) | done (generated) |
+| 07 | [Database schema](07-database-schema.md) | done |
+| 08 | [Data dictionary](08-data-dictionary.md) | done |
+| 09 | [Product relationships](09-product-relationships.md) | done (mobile side unknown) |
+| 10 | [User roles and permissions](10-user-roles-and-permissions.md) | done |
+| 11 | [Feature dependencies](11-feature-dependencies.md) | done |
+| 12 | [Existing user journeys](12-existing-user-journeys.md) | done (no timings) |
+| 13 | [UX friction audit](13-ux-friction-audit.md) | done |
+| 14 | [Existing design system](14-existing-design-system.md) | done |
+| 15 | [Browser exploration report](15-browser-exploration-report.md) | done (pass 1, test env; 252 visits, 5 bugs) |
+| 16 | [Feature parity matrix](16-feature-parity-matrix.md) | done (generated; fill in per phase) |
+| 40 | [Unknowns and open questions](40-unknowns-and-open-questions.md) | live |
+
+## Machine-readable registries (`data/`)
+
+| File | Contents |
+|---|---|
+| [routes.json](data/routes.json) | 54 pages, 64 API route files: scope, product, tables, RPCs, APIs, auth helpers |
+| [features.json](data/features.json) | 55 features, including the 6 with no Portal UI |
+| [entities.json](data/entities.json) | 63 Bendie and 40 Planner tables, enums, RPCs, edge functions, buckets |
+| [permissions.json](data/permissions.json) | Tiers, capability matrix, known mismatches |
+| [feature-dependencies.json](data/feature-dependencies.json) | Dependency edges, import order |
+| `ai-tools-proposal.json` | pass 3 |
+
+## Still to write
+
+- **Pass 2, product and design (17–23):** proposed IA, navigation, journeys, design system, component architecture, responsive and accessibility strategy, event readiness architecture.
+- **Pass 3, AI (24–34):** Qwen model evaluation, Copilot architecture, context engine, action registry, smart ingestion, event builder, agenda and run-of-show, AI interface, security and privacy, evaluation, cost and performance.
+- **Pass 4, implementation (35–39, 41):** migration strategy, roadmap, testing strategy, success metrics, risks, final recommendations.
+
+## Regenerating the generated docs
+
+Docs 05, 06 and 16 and the JSON registries are generated, so don't hand-edit them. Run from the repo root:
+
+```sh
+node docs/bendie-revamp/tools/gen-routes.mjs .      # data/routes.json from src/app
+node docs/bendie-revamp/tools/gen-routes-md.mjs .   # 05 from routes.json
+node docs/bendie-revamp/tools/features.mjs .        # features.json, 06, 16
+node docs/bendie-revamp/tools/registries.mjs .      # entities, permissions, dependencies
+```
+
+`registries.mjs` holds the live-schema findings from 2026-11-19. Re-run the read-only catalog queries (doc 07) before refreshing it.
