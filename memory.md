@@ -1,56 +1,63 @@
-# Memory — Backend catch-up roadmap (Features 023–027)
+# Memory: Backend catch-up roadmap (Features 023–027), complete
 
-Last updated: 2026-11-17
+Last updated: 2026-11-19
 
 ## What was built
 
-**Feature 023, Smart Spreadsheet Import:** done, browser-accepted, committed on branch `023-smart-spreadsheet-import` (not pushed, not merged).
-- All 19 import screens (shared `src/components/portal/CsvImportModal.tsx`) now take Excel `.xlsx` as well as CSV and paste.
-- There's a sheet picker and a "Match your columns" step, plus corrected-CSV and error-report downloads.
-- New `src/lib/spreadsheetImport.ts` with 50 tests (`npm test`, vitest); `exceljs` is lazy-loaded.
-- Spec Kit artifacts in `specs/023-smart-spreadsheet-import/`. All tasks ticked, including convergence Phase 7.
-- It's a selective port of the unmerged Codex branch `codex/ux-foundations-smart-import` (import only). The AI-mapping commit and the Codex UX changes were deliberately left out. Both Codex branches are untouched.
+Everything is on one stacked local branch, `027-profiles-lockdown-readiness` (023 → 024 → 025 → 026 → 027). It is **not pushed and not merged**; `main` is unchanged. All five features are browser-verified by the developer, reviewed and converged. Spec Kit artifacts are in `specs/023…` to `specs/027…`.
 
-**Reference docs (local only):**
-- `docs/bendie-events-backend-changes.md` and `docs/bendie-planner-backend-changes.md` hold the backend-change briefs from the two app teams (16 Nov 2026).
-- `docs/` is gitignored (`.gitignore:47`), so these exist only on this machine. Move them into `context/` if they should be versioned.
+- **023 Smart spreadsheet import:** `.xlsx` and column matching in `CsvImportModal` (`src/lib/spreadsheetImport.ts`).
+- **024 Event time zone:**
+  - `events.timezone` is required on Create event and editable on Basics. Dates are venue time.
+  - Planner gets a copy of the zone once, at creation (`src/lib/eventTimeZone.ts`, `TimeZoneField.tsx`).
+  - Back-fill: all 32 events were set to Africa/Nairobi (developer-approved).
+- **025 Contact Organizer and matchmaking:**
+  - Info Center has a one-per-event "Show on access screen" toggle, with a confirmed swap.
+  - Networking flags select questions that have no options.
+- **026 Planner access alignment:**
+  - One copy of Planner's `has_event_module`: `src/lib/plannerAccessRulesCore.ts` (pure, tested) and `plannerAccessRules.ts`.
+  - New Manage switches for Production and Logistics. Clearer contractor message.
+- **027 Profiles lock-down readiness (Bendie C1):** no signed-in-user read of `profiles` email, phone, gender, location, role, `global_role` or `planner_profile_id` remains.
+  - `src/lib/callerProfile.ts`: the caller's own row, read with the service role.
+  - `src/lib/profileContacts.ts`: contact lookups through the Bendie RPCs.
+  - New routes: `api/organizations/[id]/people/contacts` and `people/search`.
+  - `src/lib/concurrency.ts` (`runWithConcurrency`, moved out of `csvImport.ts`).
 
 ## Decisions made
 
-- **Roadmap order (approved):**
-  1. 023 CSV/Excel ✅
-  2. 024 event time zone
-  3. 025 Contact Organizer toggle (plus matchmaking checks, events item #10)
-  4. 026 Planner access alignment
-  5. 027 C1 profiles lock-down readiness
-- **Each feature** gets its own Spec Kit run: `/architect` → specify → plan → tasks → analyze → implement → review → converge.
-- **No AI column mapping:** it needs a hosted Ollama service that nobody has.
-- **024 should also** pass the event's time zone to Planner at provisioning (`lib/plannerEventProvisioning.ts` sends none today, so Planner defaults to Africa/Nairobi). Planner agenda times should use the event's time zone instead of the browser's.
-- **Dependency pins:** `vitest` ^4.1.12 (2.x had advisories). `package.json` `overrides.exceljs.uuid = 11.1.1`; drop it when exceljs updates.
+- Portal writes to Planner send **no** Planner notifications. Contractor, member-type and "all events" administration stays in the Planner app.
+- Viewer/Manager presets write **explicit** Production and Logistics manage values. Existing NULLs (Planner reads them as "same as view") were not bulk-rewritten.
+- Contacts follow Bendie's `can_view_profile_contact` rule. Viewers who aren't allowed see names only, and the profile editor then locks email and phone.
+- "Search existing" in Add person: Stawi admins get a partial email match; client org admins must type the full email.
+- No AI column mapping.
 
 ## Problems solved
 
-- **exceljs merged cells:** a merged value is repeated in every covered cell. Use `cell.isMerged` and `cell.master` to detect copies, otherwise title rows look like duplicate headings.
-- **exceljs dates:** they're UTC-based. Read UTC parts only. A time-only cell comes back as a Date on 1899-12-30.
-- **Build without env:** `npm run build` stops at page-data collection unless the Supabase env vars are set. Use placeholder values for a compile check. A Google Fonts download failure (`Plus_Jakarta_Sans`) is a transient network error, so retry.
-- **No PowerShell here:** the Spec Kit `.ps1` setup scripts can't run, so set up feature dirs and `.specify/feature.json` by hand.
+- **Testing against live data safely:** run checks in one `DO` block that ends with `RAISE EXCEPTION`, so everything rolls back. To impersonate a user, `set_config('request.jwt.claims', …)` + `set local role authenticated`. This was used for the 026 equivalence check (1,850/1,850) and the 027 C1 simulation.
+- **Vitest doesn't resolve `@/` in re-exports** from modules that tests import. Use relative paths there (e.g. `csvImport.ts` → `./concurrency`).
+- **Builds:** they need placeholder Supabase env values just to compile. There are no PowerShell Spec Kit scripts on this Mac, so set `.specify/feature.json` by hand.
+- **Planner time zone:** Planner rejects unknown zones with "Unknown timezone …". Provisioning retries without the zone.
 
 ## Current state
 
-- `main` is unchanged. The `production` branch is 10 commits behind `main` (Features 020–022 are not in production).
-- **Bendie Events doc items 1–12:** none done yet except via the plans above.
-  - **Data and process items for the team, not code:** #7 hide the test event (slug `test`); #8 set `app_release_config.latest_version` to 1.0.4; #9 keep the reviewer account in `stawi-escape-2026`.
-  - **Unplanned code items:** #4 (announcement push `data`, probably in the app repo's edge function) and #5 (app version admin screen, optional).
-- **Planner doc:** access-model changes, notifications and the time zone are not done (026/024). Task notes, slides and blueprints are unplanned (optional).
-- **Biggest risk, C1:** once `profiles` column grants are revoked, `middleware.ts`, `lib/portalAuth.ts` and `lib/eventAuth.ts` (which read `global_role`) and `contexts/AuthContext.tsx` (`select('*')`) break, which locks everyone out of the portal. About 15 client email/phone reads also break.
+- All code work in the two backend briefs that was in the approved plan is done and verified.
+- Not exercised in the browser, only checked in code: creating a Bendie + Planner event and confirming the zone reaches Planner (024 quickstart #5).
+- `docs/bendie-*-backend-changes.md` exist only on this machine (`docs/` is gitignored).
 
 ## Next session starts with
 
-Feature 024 (event time zone): `/architect`, on a branch stacked on `023-smart-spreadsheet-import`. Connect the `supabase` and `supabase-planner` MCP connectors first (`/mcp`), so the `events.timezone` grant, the `events_timezone_valid` constraint and Planner's `events.timezone` trigger can be verified live.
+1. Push `027-profiles-lockdown-readiness` and open a PR to `main`. Then decide on promoting to `production`, which was already 10 commits behind `main`.
+2. Tell the Bendie team the portal is ready for C1, and agree the date.
 
 ## Open questions
 
-- 026: should portal-made Planner changes send Planner notifications? Today they don't, because the service role has no `auth.uid()`.
-- 027: the C1 date, agreed with the app team.
-- Events #12, walk-ins: a product decision.
-- Should the `docs/` references be moved into `context/` so they're versioned?
+- Team and data items, not code:
+  - Events #7: hide or rename the test event (slug `test`).
+  - Events #8: set `app_release_config.latest_version` to 1.0.4 once it's live in both stores.
+  - Events #9: keep the store-reviewer account in `stawi-escape-2026`.
+- Unbuilt:
+  - Events #4: announcement push `data` (app team's edge function).
+  - Events #5: optional app-version admin screen.
+  - Events #12: walk-ins (needs a product decision).
+  - Planner: task notes, slides and blueprints.
+- Should the `docs/` briefs move into `context/` so they're versioned?
