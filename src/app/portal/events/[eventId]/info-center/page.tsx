@@ -216,24 +216,30 @@ export default function InfoCenterPage() {
       show_on_access_screen: form.show_on_access_screen,
     };
 
-    // Untick the current one first, so the one-per-event index never sees two.
+    // Untick the current one first, so the one-per-event index never sees two. `.select('id')`: a
+    // permission rule can skip a write without an error (zero rows), so count rows, not just errors.
     if (replacing) {
-      const { error } = await supabase.from('support_contacts').update({ show_on_access_screen: false }).eq('id', replacing.id);
-      if (error) { toast.error(friendlyError(error)); setSaving(false); return; }
+      const { data: unticked, error } = await supabase.from('support_contacts').update({ show_on_access_screen: false }).eq('id', replacing.id).select('id');
+      if (error || !unticked?.length) {
+        toast.error(error ? friendlyError(error) : 'You don’t have permission to change this event’s contacts.');
+        setSaving(false);
+        return;
+      }
     }
 
-    const { error } = editing
-      ? await supabase.from('support_contacts').update(payload).eq('id', editing.id)
-      : await supabase.from('support_contacts').insert({ ...payload, event_id: eventId });
+    const { data: savedRows, error } = editing
+      ? await supabase.from('support_contacts').update(payload).eq('id', editing.id).select('id')
+      : await supabase.from('support_contacts').insert({ ...payload, event_id: eventId }).select('id');
+    const saved = !error && (savedRows?.length ?? 0) > 0;
 
-    if (error) {
+    if (!saved) {
       // Put the previous access-screen contact back (best effort) so the event isn't left without one.
       if (replacing) await supabase.from('support_contacts').update({ show_on_access_screen: true }).eq('id', replacing.id);
-      if (isUniqueViolation(error)) {
+      if (error && isUniqueViolation(error)) {
         toast.error('Another contact is already on the access screen — the list has been refreshed. Try again.');
         fetchData();
       } else {
-        toast.error(friendlyError(error));
+        toast.error(error ? friendlyError(error) : 'You don’t have permission to change this event’s contacts.');
       }
     } else {
       toast.success(editing ? 'Contact updated' : 'Contact added');

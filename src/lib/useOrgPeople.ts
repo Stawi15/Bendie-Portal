@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { organizationPeopleContacts } from '@/lib/profileContacts';
+import { organizationPeopleContacts, profileContacts, type OrganizationPeopleContacts } from '@/lib/profileContacts';
 import type { OrgPersonRow } from '@/components/portal/OrgPeoplePanel';
 
 type UseOrgPeopleOptions = {
@@ -50,18 +50,20 @@ export function useOrgPeople(organizationId: string | null, orgLoading: boolean,
 
     if (limit) membersQuery = membersQuery.range(0, limit - 1);
 
-    const [membersRes, elevatedRes, orgContacts] = await Promise.all([
+    const [membersRes, elevatedRes, allContacts] = await Promise.all([
       membersQuery,
       supabase
         .from('organization_members')
         .select('user_id', { count: 'exact', head: true })
         .eq('organization_id', organizationId)
         .in('role', ['owner', 'admin']),
-      organizationPeopleContacts(organizationId),
+      // The Overview preview (limit) only needs its own few rows' contacts, fetched below.
+      limit ? Promise.resolve<OrganizationPeopleContacts | null>(null) : organizationPeopleContacts(organizationId),
     ]);
 
     const rows = (membersRes.data as unknown as PreviewRow[]) ?? [];
     const userIds = rows.map((r) => r.user_id);
+    const orgContacts: OrganizationPeopleContacts = allContacts ?? { contacts: await profileContacts(supabase, userIds), globalRoles: null };
 
     const eventIdsByUser: Record<string, string[]> = {};
     if (userIds.length > 0) {

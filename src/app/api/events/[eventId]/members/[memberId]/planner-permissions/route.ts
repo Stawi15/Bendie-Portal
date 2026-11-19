@@ -46,6 +46,11 @@ import { readCallerProfile } from '@/lib/callerProfile';
  * planner-permissions routes (matching `planner-tasks/route.ts`'s own
  * precedent) — copied inline so no future edit to one route can silently
  * alter another's authorization behavior.
+ *
+ * Feature 027 exception: the caller's own profile row is read through the shared
+ * `readCallerProfile` (service role), because Bendie's C1 lock-down hides
+ * `global_role` / `planner_profile_id` from the user key. The authorization steps
+ * themselves are still inline here.
  */
 
 type AuthorizedContext = {

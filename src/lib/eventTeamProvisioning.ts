@@ -267,11 +267,15 @@ async function applyAccessFollowUps(
   if (!pointerAlreadySet) outcome.currentEventPointer = await pointCurrentEventAt(person.userId, eventId, organizationId);
 
   if (config.grantBendie) {
-    if (!person.email) {
+    // Feature 027 (C1): an organiser who isn't an org admin can't see an organisation member's
+    // email until that person is on the event. They are now, so look it up (Bendie's rule applies).
+    let email = person.email;
+    if (!email) email = (await profileContacts(supabase, [person.userId])).get(person.userId)?.email ?? null;
+    if (!email) {
       outcome.bendieAccess = 'failed';
       outcome.bendieAccessError = 'No email on file';
     } else {
-      outcome.bendieAccess = await issueBendieAccessCode(eventId, person.userId, person.email, eventName);
+      outcome.bendieAccess = await issueBendieAccessCode(eventId, person.userId, email, eventName);
       if (outcome.bendieAccess === 'failed') outcome.bendieAccessError = 'Could not generate or send the access code';
     }
   }

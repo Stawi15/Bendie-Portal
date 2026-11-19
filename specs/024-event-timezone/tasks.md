@@ -112,3 +112,7 @@ description: "Task list for Feature 024 — Event Time Zone"
   - **Planner `zghoaawgrmvqdlksuiam`:** `events.timezone` is `text NOT NULL DEFAULT 'Africa/Nairobi'`. Trigger `trg_validate_event_timezone` checks `pg_timezone_names` and raises "Unknown timezone …", which the provisioning retry regex `/time ?zone/i` matches.
   - **Picker vs Planner:** of the 419 picker zones, only `America/Coyhaique` (added 2025) is missing from Planner's `pg_timezone_names`. It's covered by the FR-010 fallback.
   - **Data:** 32 events, of which 2 have a zone and 30 live events have none, so they'll show the "reminders are off" notice.
+
+## Review (2026-11-19)
+
+`/review` found 1 minor issue, now fixed: while a time zone name was half-typed on Basics, the Start/End labels said "your computer’s time zone" although the times were still in the previous zone. They now always name the zone the times are written in. Converge remains to be run after the browser pass.

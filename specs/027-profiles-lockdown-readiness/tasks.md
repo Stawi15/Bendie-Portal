@@ -34,8 +34,17 @@
 - [X] T018 Rolled-back C1 simulation on live Bendie: revoke and grant as C1 will, then run the Portal's own-profile select, `portal_is_global_admin`, `get_profile_contact` and `get_event_member_contacts` as an organiser and as a Stawi admin, and confirm a hidden-column select fails (SC-002).
 - [X] T019 Docs: `context/architecture.md`, `context/progress-tracker.md`, `context/schema-reference.md`.
 - [ ] T020 Browser pass (developer, at the end with 024–026).
-- [ ] T021 `/review`, then converge.
+- [ ] T021 `/review` (done 2026-11-19, see below), then converge.
 
 ## Verification note
 
 **2026-11-17:** `tsc` and lint exit 0 (the 7 warnings in changed files all existed before), `npm test` 68/68, and the placeholder-env build passes. The code search finds no user-key hidden-column read; the remaining ones use the service role or the Planner database. C1 simulation on live Bendie, in one block rolled back by a final `RAISE`, run as an organiser, an org admin (another organisation) and a Stawi admin: own public columns 1/1/1; `portal_is_global_admin` false/false/true; own contact 1/1/1; `get_event_member_contacts` 14 / 42501 (expected: not their event) / 14; event and org embeds of public columns work; own `UPDATE … RETURNING id` 1/1/1; selecting `email`, `global_role`, `planner_profile_id` blocked (42501) for all three. Afterwards, live `authenticated` still has table SELECT (unchanged). Still open: T020 (browser pass) and T021.
+
+## Review (2026-11-19)
+
+`/review` found 1 important and 3 minor issues, all fixed:
+- **Important:** an organiser who is not an org admin, adding organisation or team people with "Grant Bendie access", got "No email on file" (Bendie hides those emails until the person is on the event). The access-code step now looks the email up after the person is added (`applyAccessFollowUps`).
+- `runWithConcurrency` moved to `src/lib/concurrency.ts` (re-exported from `csvImport.ts`), so contact lookups no longer load the CSV parser.
+- The organisation Overview preview fetches only its own rows' contacts, not the whole organisation's.
+- The four "deliberately not a shared helper" route comments now note the `readCallerProfile` exception.
+Re-checked: `tsc`, lint (no new warnings), `npm test` 68/68, placeholder-env build.

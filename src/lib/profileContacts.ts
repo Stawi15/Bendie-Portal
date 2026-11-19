@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { runWithConcurrency } from '@/lib/csvImport';
+import { runWithConcurrency } from '@/lib/concurrency';
 
 /**
  * Feature 027 (C1 readiness): other people's email/phone can't be selected from

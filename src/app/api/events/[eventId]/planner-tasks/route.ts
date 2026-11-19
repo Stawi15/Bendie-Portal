@@ -34,6 +34,11 @@ import { readCallerProfile } from '@/lib/callerProfile';
  * Deliberately NOT refactored into a shared helper with `planner-overview/route.ts`
  * (research.md Q5) — copied inline, matching that converged route's own
  * precedent, so this new feature never risks altering Feature 005's behavior.
+ *
+ * Feature 027 exception: the caller's own profile row is read through the shared
+ * `readCallerProfile` (service role), because Bendie's C1 lock-down hides
+ * `global_role` / `planner_profile_id` from the user key. The authorization steps
+ * themselves are still inline here.
  */
 
 type AuthorizedContext = { authClient: SupabaseClient; plannerEventId: number; plannerProfileId: string; capability: ResolvedTaskCapability };

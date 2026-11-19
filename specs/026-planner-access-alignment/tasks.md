@@ -12,3 +12,7 @@
 - [X] T010 Docs: `context/schema-reference.md`, `context/progress-tracker.md`, `context/architecture.md`.
 - [ ] T011 Browser pass (developer). Open a Planner event's Team access, then a person's Planner permissions. Production and Logistics show Manage; Viewer leaves both off. As an org admin who isn't assigned, the Planner modules open with full access.
 - [ ] T012 Run `/review`, then converge.
+
+## Review (2026-11-19)
+
+`/review`: no issues in 026 itself. T012 is done except converge, which runs after the browser pass (T011).

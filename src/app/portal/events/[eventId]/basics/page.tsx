@@ -290,12 +290,12 @@ export default function BasicsPage() {
           )}
 
           <div>
-            <label className="label">Start Date & Time<span className="font-normal text-on-surface-variant"> · {form.timezone && isValidTimeZone(form.timezone) ? displayZone : 'your computer’s time zone'}</span></label>
+            <label className="label">Start Date & Time<span className="font-normal text-on-surface-variant"> · {form.timezone ? displayZone : 'your computer’s time zone'}</span></label>
             <input type="datetime-local" className="input" value={form.starts_at} onChange={set('starts_at')} />
           </div>
 
           <div>
-            <label className="label" htmlFor="basics-end">End Date & Time<span className="font-normal text-on-surface-variant"> · {form.timezone && isValidTimeZone(form.timezone) ? displayZone : 'your computer’s time zone'}</span></label>
+            <label className="label" htmlFor="basics-end">End Date & Time<span className="font-normal text-on-surface-variant"> · {form.timezone ? displayZone : 'your computer’s time zone'}</span></label>
             <input
               id="basics-end"
               type="datetime-local"

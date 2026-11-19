@@ -27,3 +27,7 @@
   - `support_contacts.show_on_access_screen` is `boolean NOT NULL DEFAULT false`;
   - the index is `CREATE UNIQUE INDEX support_contacts_one_access_contact_per_event ON public.support_contacts (event_id) WHERE show_on_access_screen`;
   - 11 contacts are ticked, and no event has more than one.
+
+## Review (2026-11-19)
+
+`/review` found 1 minor issue, now fixed: in a Contact Organizer swap, a save skipped by a permission rule (zero rows, no error) could leave the event with no access contact and a success message. Both the untick and the save now count rows, and a skipped save restores the previous contact. Converge remains to be run after the browser pass.
