@@ -1,6 +1,18 @@
 import 'server-only';
 import { getPortalAdminClient } from '@/lib/orgProductsAdminServer';
 import { deactivatePlannerOnRemoval } from '@/lib/plannerRemoval';
+import {
+  actionAppliesTo,
+  normalizeNote,
+  statusAfterAction,
+  validateRemovalEventIds,
+  type ContentType,
+  type ModerationAction,
+  type ReportStatus,
+} from '@/lib/moderationRules';
+
+export { MODERATION_ACTIONS } from '@/lib/moderationRules';
+export type { ContentType, ModerationAction, ReportStatus } from '@/lib/moderationRules';
 
 /**
  * Feature 028 — content moderation for `content_reports` (Bendie Events item 13).
@@ -17,9 +29,6 @@ import { deactivatePlannerOnRemoval } from '@/lib/plannerRemoval';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AdminClient = any;
-
-export type ReportStatus = 'pending' | 'reviewed' | 'dismissed' | 'actioned';
-export type ContentType = 'post' | 'message' | 'profile';
 
 export type ReportRow = {
   id: string;
@@ -70,18 +79,6 @@ export type ReportDetail = {
   /** The person "Remove from event(s)" applies to, with their current events. */
   removal: { person: PersonSummary; events: PersonEvent[]; preselectedEventId: string | null } | null;
 };
-
-export type ModerationAction =
-  | 'hide_post'
-  | 'unhide_post'
-  | 'hide_comment'
-  | 'unhide_comment'
-  | 'delete_message'
-  | 'remove_from_events'
-  | 'dismiss'
-  | 'mark_reviewed';
-
-export const MODERATION_ACTIONS: ModerationAction[] = ['hide_post', 'unhide_post', 'hide_comment', 'unhide_comment', 'delete_message', 'remove_from_events', 'dismiss', 'mark_reviewed'];
 
 export class ModerationError extends Error {
   constructor(public code: string, message: string, public httpStatus = 400) {
@@ -337,28 +334,23 @@ export type ActionResult = { status: ReportStatus; removedFromEvents?: number };
 export async function applyModerationAction(reportId: string, input: ActionInput, actorUserId: string): Promise<ActionResult> {
   const admin = getPortalAdminClient();
   const report = await loadReport(admin, reportId);
-  const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 1000) : null;
+  const note = normalizeNote(input.note);
   const missing = () => new ModerationError('content_missing', 'The reported content no longer exists. Dismiss or mark the report reviewed instead.', 409);
-  const requireType = (type: ContentType) => {
-    if (report.content_type !== type) throw new ModerationError('invalid_action', 'That action doesn’t apply to this report.');
-  };
-
-  let status: ReportStatus = report.status;
+  if (!actionAppliesTo(input.action, report.content_type)) {
+    throw new ModerationError('invalid_action', 'That action doesn’t apply to this report.');
+  }
   let removedFromEvents: number | undefined;
 
   switch (input.action) {
     case 'hide_post':
     case 'unhide_post': {
-      requireType('post');
       const { data, error } = await admin.from('posts').update({ is_hidden: input.action === 'hide_post' }).eq('id', report.content_id).select('id');
       if (error) throw error;
       if (!data?.length) throw missing();
-      if (input.action === 'hide_post') status = 'actioned';
       break;
     }
     case 'hide_comment':
     case 'unhide_comment': {
-      requireType('post');
       if (!input.commentId) throw new ModerationError('invalid_request', 'Choose a comment.');
       // The comment must belong to the reported post — never any comment by id.
       const { data, error } = await admin
@@ -369,24 +361,20 @@ export async function applyModerationAction(reportId: string, input: ActionInput
         .select('id');
       if (error) throw error;
       if (!data?.length) throw new ModerationError('content_missing', 'That comment no longer exists on this post.', 409);
-      if (input.action === 'hide_comment') status = 'actioned';
       break;
     }
     case 'delete_message': {
-      requireType('message');
       const { data, error } = await admin.from('messages').delete().eq('id', report.content_id).select('id');
       if (error) throw error;
       if (!data?.length) throw missing();
-      status = 'actioned';
       break;
     }
     case 'remove_from_events': {
-      const eventIds = [...new Set((input.eventIds ?? []).filter((id) => typeof id === 'string' && id))];
-      if (eventIds.length === 0) throw new ModerationError('invalid_request', 'Choose at least one event.');
       const detail = await loadReportDetail(reportId);
       if (!detail.removal) throw missing();
-      const allowed = new Set(detail.removal.events.map((e) => e.eventId));
-      if (eventIds.some((id) => !allowed.has(id))) throw new ModerationError('invalid_request', 'They’re no longer in one of those events — refresh and try again.', 409);
+      const eventIds = validateRemovalEventIds(input.eventIds, detail.removal.events.map((e) => e.eventId));
+      if (eventIds === 'empty') throw new ModerationError('invalid_request', 'Choose at least one event.');
+      if (eventIds === 'not_member') throw new ModerationError('invalid_request', 'They’re no longer in one of those events — refresh and try again.', 409);
       const userId = detail.removal.person.id;
       const { data, error } = await admin.from('event_members').delete().eq('user_id', userId).in('event_id', eventIds).select('event_id');
       if (error) throw error;
@@ -397,22 +385,17 @@ export async function applyModerationAction(reportId: string, input: ActionInput
           deactivatePlannerOnRemoval(admin, r.event_id, userId, actorUserId).catch((err: unknown) => console.error('moderation: Planner deactivation failed', err))
         )
       );
-      status = 'actioned';
       break;
     }
     case 'dismiss':
-      status = 'dismissed';
-      break;
     case 'mark_reviewed':
-      status = 'reviewed';
       break;
     default:
       throw new ModerationError('invalid_action', 'Unknown action.');
   }
 
   // Un-hiding is an undo, so it leaves the report's status as it was; every other action records one.
-  if (input.action !== 'unhide_post' && input.action !== 'unhide_comment') {
-    await setStatus(admin, reportId, status, actorUserId, note);
-  }
-  return { status, removedFromEvents };
+  const next = statusAfterAction(input.action);
+  if (next) await setStatus(admin, reportId, next, actorUserId, note);
+  return { status: next ?? report.status, removedFromEvents };
 }

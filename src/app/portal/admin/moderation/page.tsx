@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/contexts/ConfirmContext';
@@ -60,6 +60,9 @@ export default function ModerationPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [removeIds, setRemoveIds] = useState<Set<string>>(new Set());
+  // The report whose detail should be on screen: a slower response for a previously
+  // selected report is ignored, so actions can never use another report's choices.
+  const latestDetailId = useRef<string | null>(null);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -78,21 +81,24 @@ export default function ModerationPage() {
   }, [view]);
 
   const loadDetail = useCallback(async (id: string) => {
+    latestDetailId.current = id;
     setDetailLoading(true);
     setDetailError(null);
     try {
       const res = await fetch(`/api/admin/moderation/${id}`);
       const body = await res.json().catch(() => ({}));
+      if (latestDetailId.current !== id) return;
       if (!res.ok) throw new Error(body.message ?? 'We couldn’t load this report. Try again.');
       const d = body as ReportDetail;
       setDetail(d);
       setNote('');
       setRemoveIds(new Set(d.removal?.preselectedEventId ? [d.removal.preselectedEventId] : []));
     } catch (err) {
+      if (latestDetailId.current !== id) return;
       setDetail(null);
       setDetailError(err instanceof Error ? err.message : 'We couldn’t load this report. Try again.');
     } finally {
-      setDetailLoading(false);
+      if (latestDetailId.current === id) setDetailLoading(false);
     }
   }, []);
 
@@ -101,12 +107,18 @@ export default function ModerationPage() {
   }, [authLoading, isGlobalAdmin, loadList]);
 
   useEffect(() => {
+    // Clear the previous report straight away (review fix): its content, ticked events and
+    // note must never be on screen, or sent, while another report is selected.
+    setDetail(null);
+    setNote('');
+    setRemoveIds(new Set());
     if (selectedId) loadDetail(selectedId);
-    else setDetail(null);
+    else latestDetailId.current = null;
   }, [selectedId, loadDetail]);
 
   const act = async (action: ModerationAction, extra: { commentId?: string; eventIds?: string[] } = {}) => {
-    if (!selectedId || !detail) return;
+    // Only act on the report whose detail is actually shown.
+    if (!selectedId || !detail || detail.report.id !== selectedId) return;
     const who = detail.removal?.person.fullName ?? 'this person';
     if (action === 'delete_message') {
       const ok = await confirm({ title: 'Delete this message?', message: 'It is removed from the chat for everyone. This can’t be undone.', confirmLabel: 'Delete message', destructive: true });
@@ -249,7 +261,7 @@ export default function ModerationPage() {
         <div className="lg:col-span-3 min-w-0">
           {!selectedId ? (
             reports.length > 0 && <EmptyState icon="flag" title="Choose a report" description="Open a report to see what was reported and decide what to do." />
-          ) : detailLoading && !detail ? (
+          ) : detailLoading || (!detail && !detailError) ? (
             <div className="animate-pulse h-64 bg-surface-container-low rounded-[20px]" />
           ) : detailError || !detail || !r ? (
             <div className="text-center py-10 bg-white border border-outline-variant rounded-[20px] panel-shadow">

@@ -17,8 +17,8 @@
 - [X] T008 `tsc`, lint, `npm test`, placeholder-env build.
 - [X] T009 Live read-only check: the detail queries return content for all 4 pending reports.
 - [X] T010 Docs: `context/architecture.md`, `context/progress-tracker.md`, `context/schema-reference.md`; write the backend request for the reviewer columns.
-- [ ] T011 Browser pass (developer).
-- [ ] T012 `/review`, then converge.
+- [X] T011 Browser pass (developer).
+- [X] T012 `/review`, then converge.
 
 ## Verification note
 
@@ -31,3 +31,13 @@ Behaviour notes:
 - **Old delete steps removed:** the browser's likes/comments pre-delete is gone; the foreign keys cascade.
 
 Still open: T011, T012.
+
+## Browser pass, review and converge (2026-11-19)
+
+- **Browser pass:** the developer reported all steps passing (28.1–28.16). When the review started, the working copy was on `027-profiles-lockdown-readiness`; the developer was told to repeat 28.1–28.12 if the Moderation menu item wasn't visible during the pass.
+- **`/review`:** 1 important and 2 minor issues, all fixed:
+  - **Important:** switching reports left the previous report's content and ticked events on screen until the new one loaded, so an action could use them. The detail is now cleared on selection, stale responses are ignored, and actions only run for the report actually shown.
+  - Gallery shows Hide/Delete only to Stawi admins and a post's author (using the route's `canModerate`).
+  - The rules moved to `src/lib/moderationRules.ts` (action-to-report-type, status after action, removal event validation, note), with 11 tests in `moderationRules.test.ts`.
+- **Re-checked:** `tsc`, lint (no new warnings), `npm test` 79/79, placeholder-env build.
+- **`/speckit.converge`:** converged. FR-001–FR-009 are present, and no tasks were appended.

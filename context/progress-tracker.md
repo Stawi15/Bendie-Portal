@@ -6,7 +6,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
-## Feature 028 — Content Moderation 🚧 built (2026-11-19) — browser pass, /review pending
+## Feature 028 — Content Moderation 🚧 built (2026-11-19) — browser pass ✅, /review ✅ (fixes applied), converged — waiting on the Bendie team's reviewer columns
 
 Spec/plan/tasks: `specs/028-content-moderation/`. Branch `028-content-moderation` (stacked on 027).
 

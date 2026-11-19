@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { eventMemberContacts } from '@/lib/profileContacts';
 import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import toast from 'react-hot-toast';
 import { useLatestRequest } from '@/lib/useLatestRequest';
@@ -26,6 +27,9 @@ export default function GalleryPage() {
   const confirm = useConfirm();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  // Feature 028 review: Hide/Delete only where the server allows it (Stawi admins, or your own post).
+  const [canModerate, setCanModerate] = useState(false);
+  const { user } = useAuth();
 
   // Feature 016 (main-tab performance pass): cancel this load when the user leaves the
   // tab (or reloads it); an aborted load never toasts or writes state.
@@ -48,6 +52,7 @@ export default function GalleryPage() {
       toast.error('Failed to load gallery');
       setPosts([]);
     } else {
+      setCanModerate(body.canModerate === true);
       setPosts(
         ((data as unknown as Post[]) ?? []).map((p) => ({
           ...p,
@@ -115,7 +120,7 @@ export default function GalleryPage() {
             <div>
               <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Visible ({visible.length})</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {visible.map(p => <PostCard key={p.id} post={p} onToggle={toggleHidden} onDelete={handleDelete} />)}
+                {visible.map(p => <PostCard key={p.id} post={p} canManage={canModerate || p.user_id === user?.id} onToggle={toggleHidden} onDelete={handleDelete} />)}
               </div>
             </div>
           )}
@@ -123,7 +128,7 @@ export default function GalleryPage() {
             <div>
               <h3 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-3">Hidden ({hidden.length})</h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {hidden.map(p => <PostCard key={p.id} post={p} onToggle={toggleHidden} onDelete={handleDelete} />)}
+                {hidden.map(p => <PostCard key={p.id} post={p} canManage={canModerate || p.user_id === user?.id} onToggle={toggleHidden} onDelete={handleDelete} />)}
               </div>
             </div>
           )}
@@ -133,7 +138,7 @@ export default function GalleryPage() {
   );
 }
 
-function PostCard({ post, onToggle, onDelete }: { post: Post; onToggle: (p: Post) => void; onDelete: (id: string) => void }) {
+function PostCard({ post, canManage, onToggle, onDelete }: { post: Post; canManage: boolean; onToggle: (p: Post) => void; onDelete: (id: string) => void }) {
   const author = post.profiles;
   const likeCount = post.post_likes[0]?.count ?? 0;
 
@@ -143,12 +148,14 @@ function PostCard({ post, onToggle, onDelete }: { post: Post; onToggle: (p: Post
       {post.is_hidden && (
         <div className="absolute top-2 left-2 bg-surface-container-high text-on-surface-variant text-xs font-semibold px-2 py-0.5 rounded-full">Hidden</div>
       )}
+      {canManage && (
       <div className="absolute inset-0 bg-black/0 sm:group-hover:bg-black/40 transition-all flex items-end justify-between opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2">
         <button onClick={() => onToggle(post)} className="text-xs bg-white text-on-surface px-2 py-1 rounded-lg font-medium hover:bg-surface-container-low transition">
           {post.is_hidden ? 'Unhide' : 'Hide'}
         </button>
         <button onClick={() => onDelete(post.id)} className="text-xs bg-error text-white px-2 py-1 rounded-lg font-medium hover:opacity-90 transition">Delete</button>
       </div>
+      )}
       <div className="px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
           <Avatar name={author?.full_name} email={author?.email} avatarUrl={author?.avatar_url} size={20} />

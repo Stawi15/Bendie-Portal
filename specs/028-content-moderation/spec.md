@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-19
 
-**Status**: Draft
+**Status**: Implemented, reviewed and browser-verified (2026-11-19)
 
 **Input**: Bendie Events update, 2026-11-17, action item 13. Every **Report** and **Block** in the attendee app now creates a row in `content_reports`. The new Terms promise a review **within 24 hours**, but today the Supabase dashboard is the only way to see reports. Users can't read the table, so the Portal must use the service role from a server route. The same update makes the database hide a blocked user's posts, comments and messages from whoever blocked them, organisers and admins included. That affects the Portal's Gallery page, which reads posts with the signed-in user's key.
 
