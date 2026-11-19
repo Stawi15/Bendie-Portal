@@ -345,7 +345,7 @@ export default function InfoCenterPage() {
             <div className="rounded-xl border border-tertiary-container bg-tertiary-fixed/40 p-3 text-xs text-on-tertiary-fixed-variant flex gap-2" role="status">
               <span className="material-symbols-outlined text-[16px]" aria-hidden="true">info</span>
               <span>
-                No contact is on the app&apos;s access screen. People whose email isn&apos;t registered will see <span className="font-semibold">Contact Bendie support</span> (bendie@stawiexperiences.com). Edit a contact and tick <span className="font-semibold">Show on access screen</span> to choose who they reach.
+                No contact is on the app&apos;s access screen. People whose email isn&apos;t registered will see <span className="font-semibold">Contact Bendie support</span> (support@bendie.app). Edit a contact and tick <span className="font-semibold">Show on access screen</span> to choose who they reach.
               </span>
             </div>
           )}

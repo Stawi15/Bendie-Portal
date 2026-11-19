@@ -35,3 +35,7 @@
 ## Browser pass and converge (2026-11-19)
 
 Developer browser pass: all steps pass (US1 #1, #2, #3, #5, #6; US2 #1, #2, #4). Checked in code only: US1 #4 (cancelling the replacement) and US2 #3 (spreadsheet preview warning, `previewWarnings={networkingPreviewWarnings}`). `/speckit.converge`: converged, all FR-001–FR-010 present, no tasks appended.
+
+## Follow-up (2026-11-19)
+
+The app's fallback support email changed to `support@bendie.app` (Bendie Events, 2026-11-17). The Info Center note and this spec were updated to match.

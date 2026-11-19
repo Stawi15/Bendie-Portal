@@ -10,7 +10,7 @@
 
 ## Background
 
-**Contact Organizer.** In the attendee app, someone who enters an email that isn't registered for an event sees "Not registered" with a **Contact Organizer** button. It shows the one support contact marked for this, with Call and Email buttons. That person isn't signed in, so the contact's **name, phone, email and group become visible to anyone with the event's link**. At most one contact per event can be marked; the database enforces it with a unique index (error `23505`). With none marked, or when the event isn't active or published, the app shows "Contact Bendie support" (bendie@stawiexperiences.com) instead. The Portal can't mark a contact today.
+**Contact Organizer.** In the attendee app, someone who enters an email that isn't registered for an event sees "Not registered" with a **Contact Organizer** button. It shows the one support contact marked for this, with Call and Email buttons. That person isn't signed in, so the contact's **name, phone, email and group become visible to anyone with the event's link**. At most one contact per event can be marked; the database enforces it with a unique index (error `23505`). With none marked, or when the event isn't active or published, the app shows "Contact Bendie support" (support@bendie.app) instead. The Portal can't mark a contact today.
 
 **Matchmaking.** The app skips a select question (single or multi) that has no options. In Stawi Escape, `goals` was hidden this way until it was fixed by hand on 10 Nov. Answers are matched by question key, so a changed key breaks matching. The Portal already has no way to rename a key, but nothing warns about select questions without options.
 
