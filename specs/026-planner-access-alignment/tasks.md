@@ -10,9 +10,13 @@
 - [X] T008 `src/types/plannerDatabase.ts`: add the new assignment columns and `profiles.member_type`.
 - [X] T009 Checks: `tsc`, lint, `npm test` (68), the placeholder-env build, and the live equivalence check (1,850 decisions, 0 mismatches).
 - [X] T010 Docs: `context/schema-reference.md`, `context/progress-tracker.md`, `context/architecture.md`.
-- [ ] T011 Browser pass (developer). Open a Planner event's Team access, then a person's Planner permissions. Production and Logistics show Manage; Viewer leaves both off. As an org admin who isn't assigned, the Planner modules open with full access.
-- [ ] T012 Run `/review`, then converge.
+- [X] T011 Browser pass (developer). Open a Planner event's Team access, then a person's Planner permissions. Production and Logistics show Manage; Viewer leaves both off. As an org admin who isn't assigned, the Planner modules open with full access.
+- [X] T012 Run `/review`, then converge.
 
 ## Review (2026-11-19)
 
 `/review`: no issues in 026 itself. T012 is done except converge, which runs after the browser pass (T011).
+
+## Browser pass and converge (2026-11-19)
+
+Developer browser pass: Team & Access shows Manage for Production and Logistics; the Viewer and Manager presets set them off/on; the team access list loads. The "org admin who isn't assigned gets full access" part wasn't exercised in the browser (no such test login); it's covered by the live equivalence check (1,850/1,850). `/speckit.converge`: converged, FR-001–FR-008 present, no tasks appended.

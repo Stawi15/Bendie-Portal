@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-17
 
-**Status**: Draft
+**Status**: Implemented, reviewed and browser-verified (2026-11-19)
 
 **Input**: Bendie Events backend brief, action items 6 and 10. (6) Add a "Show on access screen (Contact Organizer)" toggle to each support contact (`support_contacts.show_on_access_screen`, at most one per event). (10) Every matchmaking select question needs at least one option, and question keys should stay stable.
 

@@ -6,7 +6,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
-## Feature 027 — Profiles Lock-down Readiness (C1) 🚧 built (2026-11-17), C1 simulated on live Bendie — browser pass, /review pending
+## Feature 027 — Profiles Lock-down Readiness (C1) 🚧 built (2026-11-17), C1 simulated on live Bendie — browser pass ✅, /review ✅, converged (2026-11-19)
 
 Spec/plan/tasks: `specs/027-profiles-lockdown-readiness/`. Branch `027-profiles-lockdown-readiness` (stacked on 026).
 
@@ -18,7 +18,7 @@ Spec/plan/tasks: `specs/027-profiles-lockdown-readiness/`. Branch `027-profiles-
 
 ---
 
-## Feature 026 — Planner Access Alignment 🚧 built (2026-11-17), verified against live Planner — browser pass, /review pending
+## Feature 026 — Planner Access Alignment 🚧 built (2026-11-17), verified against live Planner — browser pass ✅, /review ✅, converged (2026-11-19)
 
 Spec/plan/tasks: `specs/026-planner-access-alignment/`. Branch `026-planner-access-alignment` (stacked on 025).
 
@@ -29,7 +29,7 @@ Spec/plan/tasks: `specs/026-planner-access-alignment/`. Branch `026-planner-acce
 
 ---
 
-## Feature 025 — Contact Organizer Toggle & Matchmaking Checks 🚧 built (2026-11-17), live schema verified — browser pass, /review pending
+## Feature 025 — Contact Organizer Toggle & Matchmaking Checks 🚧 built (2026-11-17), live schema verified — browser pass ✅, /review ✅, converged (2026-11-19)
 
 Spec/plan/tasks: `specs/025-contact-organizer-and-matchmaking/`. Branch `025-contact-organizer-and-matchmaking` (stacked on 024). Bendie Events brief items 6 and 10.
 
@@ -38,7 +38,7 @@ Spec/plan/tasks: `specs/025-contact-organizer-and-matchmaking/`. Branch `025-con
 
 ---
 
-## Feature 024 — Event Time Zone 🚧 built (2026-11-17), live schema verified — browser pass, /review pending
+## Feature 024 — Event Time Zone 🚧 built (2026-11-17), live schema verified — browser pass ✅, /review ✅, converged (2026-11-19)
 
 Spec/plan/tasks: `specs/024-event-timezone/`. Branch `024-event-timezone` (stacked on 023).
 

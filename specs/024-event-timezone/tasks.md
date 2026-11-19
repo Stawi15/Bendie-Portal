@@ -76,8 +76,8 @@ description: "Task list for Feature 024 — Event Time Zone"
   - `context/schema-reference.md` changelog: `events.timezone` is now Portal-managed, plus the venue-time rule;
   - `context/architecture.md`: the venue-time rule under Data Flow;
   - `context/progress-tracker.md`: a Feature 024 entry.
-- [ ] T013 Browser-verify [quickstart.md](quickstart.md) on a test event (developer).
-- [ ] T014 Run `/review`, then `/speckit.converge`, then `/remember save`.
+- [X] T013 Browser-verify [quickstart.md](quickstart.md) on a test event (developer).
+- [X] T014 Run `/review`, then `/speckit.converge`, then `/remember save`.
 
 ## Dependencies
 
@@ -116,3 +116,7 @@ description: "Task list for Feature 024 — Event Time Zone"
 ## Review (2026-11-19)
 
 `/review` found 1 minor issue, now fixed: while a time zone name was half-typed on Basics, the Start/End labels said "your computer’s time zone" although the times were still in the previous zone. They now always name the zone the times are written in. Converge remains to be run after the browser pass.
+
+## Browser pass and converge (2026-11-19)
+
+Developer browser pass on a Bendie-only test event: all steps pass (create pre-fill and validation, venue-time storage, Basics zone change and labels, reminders-off notice). Not exercised in the browser, so checked in code only: quickstart #5 (Planner copy of the zone; no Planner event was created for the test), #10 (Planner hint), #11 (feedback-link hint) and #12 (agenda Day 1). `/speckit.converge`: converged, all FR-001–FR-014 present in code, no tasks appended.

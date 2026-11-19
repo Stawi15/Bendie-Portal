@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-17
 
-**Status**: Draft
+**Status**: Implemented, reviewed and browser-verified (2026-11-19)
 
 **Input**: User description: "Add a time zone to every Bendie event (Bendie Events backend brief, action items 1 and 2): a required, searchable time zone on the event create form, pre-filled from the organiser's computer, and editable on the basics page. Dates and times organisers enter are read as venue time in that zone. When the event includes Bendie Planner, copy the time zone to the Planner event when it is created (Planner backend brief, 2026-10-07). Planner agenda day numbers use the event's time zone. Explain the new effect of the feedback form link."
 

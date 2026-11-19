@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-17
 
-**Status**: Implemented (pending browser pass and `/review`)
+**Status**: Implemented, reviewed and browser-verified (2026-11-19)
 
 **Input**: Bendie Events backend brief, action item #3 and "Coming next (Phase C1)". Bendie will revoke table-level `SELECT` on `profiles` from `authenticated` and grant back only the public columns: `id, username, full_name, avatar_url, bio, job_title, organization, linkedin_url, is_onboarded, last_seen_at, created_at, updated_at, current_event_id, current_organization_id`. After that, `email`, `phone`, `gender`, `location`, `role`, `global_role` (and `planner_profile_id`, which isn't on the list) can't be selected with a signed-in user's key. The Portal must keep working, both **before and after** C1 is applied, so the backend team can apply it on a date of their choosing.
 

@@ -33,8 +33,8 @@
 - [X] T017 `tsc`, lint, `npm test`, placeholder-env build (SC-003).
 - [X] T018 Rolled-back C1 simulation on live Bendie: revoke and grant as C1 will, then run the Portal's own-profile select, `portal_is_global_admin`, `get_profile_contact` and `get_event_member_contacts` as an organiser and as a Stawi admin, and confirm a hidden-column select fails (SC-002).
 - [X] T019 Docs: `context/architecture.md`, `context/progress-tracker.md`, `context/schema-reference.md`.
-- [ ] T020 Browser pass (developer, at the end with 024–026).
-- [ ] T021 `/review` (done 2026-11-19, see below), then converge.
+- [X] T020 Browser pass (developer, at the end with 024–026).
+- [X] T021 `/review` (done 2026-11-19, see below), then converge.
 
 ## Verification note
 
@@ -48,3 +48,7 @@
 - The organisation Overview preview fetches only its own rows' contacts, not the whole organisation's.
 - The four "deliberately not a shared helper" route comments now note the `readCallerProfile` exception.
 Re-checked: `tsc`, lint (no new warnings), `npm test` 68/68, placeholder-env build.
+
+## Browser pass and converge (2026-11-19)
+
+Developer browser pass (checklist 27.1–27.10): all pass, including sign-in, own profile, event and organisation lists with contacts, Stawi search, and an access code sent after "From organisation". `/speckit.converge`: converged, FR-001–FR-010 present (code search and the rolled-back C1 simulation), no tasks appended.

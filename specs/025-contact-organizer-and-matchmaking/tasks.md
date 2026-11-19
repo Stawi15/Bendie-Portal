@@ -16,8 +16,8 @@
   - a hint under the add-question Key field (FR-010).
 - [X] T005 Run `npx tsc --noEmit`, `npm run lint`, `npm test`, and the placeholder-env `npm run build`.
 - [X] T006 Update docs: a `context/schema-reference.md` changelog entry and a `context/progress-tracker.md` entry.
-- [ ] T007 Browser pass (developer): spec US1 #1–6, US2 #1–4.
-- [ ] T008 Run `/review`, then converge.
+- [X] T007 Browser pass (developer): spec US1 #1–6, US2 #1–4.
+- [X] T008 Run `/review`, then converge.
 
 ## Verification note
 
@@ -31,3 +31,7 @@
 ## Review (2026-11-19)
 
 `/review` found 1 minor issue, now fixed: in a Contact Organizer swap, a save skipped by a permission rule (zero rows, no error) could leave the event with no access contact and a success message. Both the untick and the save now count rows, and a skipped save restores the previous contact. Converge remains to be run after the browser pass.
+
+## Browser pass and converge (2026-11-19)
+
+Developer browser pass: all steps pass (US1 #1, #2, #3, #5, #6; US2 #1, #2, #4). Checked in code only: US1 #4 (cancelling the replacement) and US2 #3 (spreadsheet preview warning, `previewWarnings={networkingPreviewWarnings}`). `/speckit.converge`: converged, all FR-001–FR-010 present, no tasks appended.

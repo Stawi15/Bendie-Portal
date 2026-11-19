@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-17
 
-**Status**: Implemented (pending browser pass and `/review`)
+**Status**: Implemented, reviewed and browser-verified (2026-11-19)
 
 **Input**: The Bendie Planner backend brief, "Current access model (as of 2026-10-15)". Make the Portal's Planner access checks and permission writes follow Planner's current rules:
 - job titles grant nothing;
