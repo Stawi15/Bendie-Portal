@@ -8,7 +8,6 @@ import { Avatar } from '@/components/portal/Avatar';
 import { useConfirm } from '@/contexts/ConfirmContext';
 import { SectionHeader } from '@/components/portal/SectionHeader';
 import toast from 'react-hot-toast';
-import { friendlyError } from '@/lib/userFacingError';
 import { useLatestRequest } from '@/lib/useLatestRequest';
 
 type Post = {
@@ -34,16 +33,15 @@ export default function GalleryPage() {
 
   const fetchData = async () => {
     const signal = startRequest();
-    // Feature 027 (C1): author emails come from get_event_member_contacts, not the profiles embed.
-    const [{ data, error }, contacts] = await Promise.all([
-      supabase
-        .from('posts')
-        .select('id,user_id,image_url,caption,is_hidden,created_at,profiles!posts_user_id_fkey(full_name,avatar_url),post_likes(count)')
-        .eq('event_id', eventId)
-        .order('created_at', { ascending: false })
-        .abortSignal(signal),
+    // Feature 028: posts come from a service-role route, so the viewer's own blocks in the app
+    // never hide photos here. Feature 027 (C1): author emails come from get_event_member_contacts.
+    const [res, contacts] = await Promise.all([
+      fetch(`/api/events/${eventId}/gallery`, { signal }).catch(() => null), // aborted, or offline
       eventMemberContacts(supabase, eventId),
     ]);
+    const body = res ? await res.json().catch(() => ({})) : {};
+    const error = !res || !res.ok ? { message: body.message ?? 'Failed to load gallery' } : null;
+    const data = res?.ok ? (body.posts as unknown[]) : null;
     if (signal.aborted) return;
     if (error) {
       console.error(error);
@@ -62,20 +60,34 @@ export default function GalleryPage() {
 
   useEffect(() => { if (eventId) fetchData(); }, [eventId]);
 
+  // Feature 028: writes go through the gallery route (same permissions as before; see galleryServer.ts).
+  const postRequest = async (id: string, init: RequestInit, fallback: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/events/${eventId}/gallery/${id}`, init);
+      if (res.ok) return true;
+      const body = await res.json().catch(() => ({}));
+      toast.error(body.message ?? fallback);
+    } catch {
+      toast.error(fallback);
+    }
+    return false;
+  };
+
   const toggleHidden = async (post: Post) => {
-    const { error } = await supabase.from('posts').update({ is_hidden: !post.is_hidden }).eq('id', post.id);
-    if (error) toast.error(friendlyError(error)); else fetchData();
+    const ok = await postRequest(
+      post.id,
+      { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isHidden: !post.is_hidden }) },
+      'This photo couldn’t be updated — try again.'
+    );
+    if (ok) fetchData();
   };
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ message: 'Delete this post? This also removes its likes and comments.', confirmLabel: 'Delete', destructive: true }))) return;
-    const [{ error: likesError }, { error: commentsError }] = await Promise.all([
-      supabase.from('post_likes').delete().eq('post_id', id),
-      supabase.from('post_comments').delete().eq('post_id', id),
-    ]);
-    if (likesError || commentsError) { toast.error(friendlyError(likesError ?? commentsError, 'This photo couldn’t be deleted — try again.')); return; }
-    const { error } = await supabase.from('posts').delete().eq('id', id);
-    if (error) toast.error(friendlyError(error)); else { toast.success('Deleted'); fetchData(); }
+    if (await postRequest(id, { method: 'DELETE' }, 'This photo couldn’t be deleted — try again.')) {
+      toast.success('Deleted');
+      fetchData();
+    }
   };
 
   const visible = posts.filter(p => !p.is_hidden);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { deactivateAssignmentForRemoval, recordAuditEntry } from '@/lib/plannerPermissions';
+import { deactivatePlannerOnRemoval } from '@/lib/plannerRemoval';
 import { readCallerProfile } from '@/lib/callerProfile';
 
 /**
@@ -60,50 +60,5 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data: targetProfile, error: profileError } = await portalAdmin.from('profiles').select('planner_profile_id').eq('id', userId).maybeSingle();
-  if (profileError) {
-    console.error('planner-permissions/deactivate-on-removal: profile lookup failed', profileError);
-    return NextResponse.json({ ok: true, status: 'backend_error' });
-  }
-  if (!targetProfile?.planner_profile_id) {
-    return NextResponse.json({ ok: true, status: 'unavailable' });
-  }
-
-  const { data: activeLink, error: linkError } = await portalAdmin
-    .from('event_planner_links')
-    .select('planner_event_id')
-    .eq('event_id', eventId)
-    .eq('is_active', true)
-    .maybeSingle();
-  if (linkError) {
-    console.error('planner-permissions/deactivate-on-removal: event_planner_links lookup failed', linkError);
-    return NextResponse.json({ ok: true, status: 'backend_error' });
-  }
-  if (!activeLink) {
-    return NextResponse.json({ ok: true, status: 'unavailable' });
-  }
-
-  try {
-    const { deactivationConfirmed } = await deactivateAssignmentForRemoval(activeLink.planner_event_id as number, targetProfile.planner_profile_id);
-
-    // Best-effort snapshot for the audit row — a member-removal deactivation
-    // that finds no existing assignment (deactivationConfirmed: false) still
-    // gets an audit entry recording the attempt, per FR-041.
-    await recordAuditEntry(portalAdmin, {
-      eventId,
-      memberUserId: userId,
-      actorUserId: user.id,
-      actionType: 'access_disabled',
-      beforeState: null,
-      afterState: { deactivationConfirmed },
-      operationId: crypto.randomUUID(),
-    });
-
-    return NextResponse.json({ ok: true, deactivationConfirmed });
-  } catch (err) {
-    console.error('planner-permissions/deactivate-on-removal: deactivation failed', err);
-    // Never blocks or reverses the Portal-side removal (FR-041) — the caller
-    // (EventAssignmentsDropdown.tsx) fires this without awaiting the result.
-    return NextResponse.json({ ok: true, status: 'backend_error' });
-  }
+  return NextResponse.json(await deactivatePlannerOnRemoval(portalAdmin, eventId, userId, user.id));
 }

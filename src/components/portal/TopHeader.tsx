@@ -246,6 +246,16 @@ export function TopHeader({ onOpenNav }: TopHeaderProps) {
                     >
                       <span className="material-symbols-outlined text-base">domain</span> Manage organisations
                     </button>
+                    {/* Feature 028 — content moderation (reports and blocks from the Bendie app). */}
+                    <button
+                      onClick={() => {
+                        setOrgMenuOpen(false);
+                        router.push('/portal/admin/moderation');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-base">flag</span> Moderation
+                    </button>
                   </div>
                 )}
               </div>

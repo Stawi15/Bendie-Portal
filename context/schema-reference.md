@@ -17,6 +17,13 @@ Dated entries, newest first. Each entry lists exactly what changed in the backen
 means for the portal. Superseded guidance in the numbered sections below is updated in place;
 this section is the running "what's new since you last synced the portal" log.
 
+### 2026-11-19 — Feature 028: `content_reports` moderation (no Portal migration)
+
+- **`content_reports`** (Bendie, live): `id, reporter_id → profiles ON DELETE CASCADE, content_type ∈ {post, message, profile}, content_id, reason ∈ {spam, harassment, inappropriate, impersonation, other}, details, status ∈ {pending, reviewed, dismissed, actioned}, created_at`. App users can only insert. The Portal reads and writes it **only with the service role**, from `src/lib/moderation.ts`, behind `requirePlatformAdmin()`.
+- **Requested, not yet live:** `reviewed_by`, `reviewed_at`, `action_note`. The Portal writes them and falls back to `status` alone on `42703`/`PGRST204`.
+- **Blocks:** restrictive SELECT policies on `posts`, `post_comments` and `messages` hide a blocked author's rows from whoever blocked them, admins included. Any Portal screen that must see everything has to read with the service role (Gallery does, from Feature 028).
+- `messages` has no admin policy: only the service role can delete one. `message_reads` cascades, and replies keep the message as `reply_to_message_id = NULL`.
+
 ### 2026-11-17 — Feature 027: Portal ready for the `profiles` lock-down (C1) (no migration)
 
 - Signed-in-user code reads only the public `profiles` columns (`id, username, full_name, avatar_url, bio, job_title, organization, linkedin_url, is_onboarded, last_seen_at, created_at, updated_at, current_event_id, current_organization_id`). **Never add `email`, `phone`, `gender`, `location`, `role`, `global_role` or `planner_profile_id` to a user-key `profiles` select or embed.** Use `portal_is_global_admin()`, `get_profile_contact(uuid)` / `get_event_member_contacts(uuid)` (`src/lib/profileContacts.ts`), or a server route with the service role (`src/lib/callerProfile.ts` for the caller's own row).

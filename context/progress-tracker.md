@@ -6,6 +6,19 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 028 — Content Moderation 🚧 built (2026-11-19) — browser pass, /review pending
+
+Spec/plan/tasks: `specs/028-content-moderation/`. Branch `028-content-moderation` (stacked on 027).
+
+- **Moderation** (`/portal/admin/moderation`, Stawi admins only; linked from the admin menu) lists `content_reports` from the Bendie app (every Report and Block). Pending reports show oldest first, with an "over 24h" flag; a Handled tab shows the rest.
+- Opening a report shows the reported post (with its comments), the message (with up to 3 messages either side) or the profile.
+- Actions: hide/unhide a post, hide/unhide a comment, delete a message, remove the person from the events you choose (their Planner access there is switched off too), dismiss, mark reviewed.
+- Everything goes through service-role routes (`src/lib/moderation.ts`).
+- **Gallery** now loads and writes through `/api/events/[id]/gallery` (service role, same permissions as before), so an organiser's blocks in the app no longer hide photos in the Portal.
+- **Requested from the Bendie team:** `reviewed_by`, `reviewed_at`, `action_note` on `content_reports` (`specs/028-content-moderation/backend-request.md`). The screen uses them automatically once they exist.
+
+---
+
 ## Feature 027 — Profiles Lock-down Readiness (C1) 🚧 built (2026-11-17), C1 simulated on live Bendie — browser pass ✅, /review ✅, converged (2026-11-19)
 
 Spec/plan/tasks: `specs/027-profiles-lockdown-readiness/`. Branch `027-profiles-lockdown-readiness` (stacked on 026).
