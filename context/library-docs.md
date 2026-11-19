@@ -175,3 +175,12 @@ Reads `.xlsx` in the browser for the shared import dialog (`src/lib/spreadsheetI
 ## vitest (unit tests, Feature 023)
 
 `npm test` (`vitest run`), `vitest` ^4.1.12 (2.x had security advisories). No config file: tests sit beside the code (`src/lib/*.test.ts`) and use relative imports. Pure functions only — there is no DOM test setup. Run date-sensitive tests in another zone too: `TZ=Africa/Nairobi npm test`.
+
+## 2026-11-19 — Security upgrade (Feature 029)
+
+- **Next.js 15.5.29 + React 19** (from Next 14.2.35 / React 18). Next 14 had no fix for ~25 advisories, three of them critical remote-code-execution issues in the image optimiser. The code already used async `params`/`cookies()`, so no source changes were needed.
+- **`images.unoptimized: true`**: `next/image` isn't used anywhere. Keep the optimiser off unless a feature needs it, and if one does, restrict `remotePatterns` to our own project hosts, never `**.supabase.co`.
+- **`@supabase/ssr` 0.5.2** (cookie advisory). All clients already use the `getAll`/`setAll` cookie API.
+- **`zod` removed**: it was installed but never imported. Reinstall it if a form needs schema validation.
+- **`overrides.next.postcss = 8.5.33`**: Next pins postcss 8.4.31, which has advisories. Drop the override once Next ships a newer postcss.
+- **`npm audit --omit=dev`:** 0 vulnerabilities.
