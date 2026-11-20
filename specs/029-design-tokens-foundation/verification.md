@@ -65,3 +65,19 @@ Verified: `RowActionsMenu.tsx:113` shows `focus-visible:bg-surface-container-low
 | `animate-spin` | 1s × infinite | 1s × infinite (kept ✓) |
 
 Press-scale under reduce: `:active` resets `--tw-scale-*` to 1 (CSS confirmed in T017).
+
+## T020 Visual and access regression (SC-003, SC-004), 2026-11-20
+
+- **Access (SC-004): 252/252 visits identical** to the 2026-11-19 baseline across all 3 roles (same final URL, status and no-access flags). 0 differences.
+- **Screenshots (SC-003):** 80 `stawi_admin` screens compared (pixel diff, JPEG-noise threshold). 17 exceed 0.05% changed pixels, and **none is caused by this feature**:
+
+  | Screens | Cause |
+  |---|---|
+  | `summit_dashboard` + 8 `summit_planner-*` (all redirect to the dashboard) | Required now shows 2/2: bug **B1 fix** shipped 2026-11-20, after the baseline |
+  | `portal_admin_organisations_<id>` | Page now loads: **B2 fix** (baseline showed the error state) |
+  | `summit_agenda` | Speaker column filled: **B3 fix** + seed correction |
+  | `portal`, `portal_bendie`, `portal_planner` | Data: greeting (morning/afternoon), "speaker gaps 10 → 4", activity timestamps. Side-by-side checked: no styling change |
+  | `summit_activity-log`, `tester_activity-log` | New audit entries since the baseline |
+  | `tester_news` (3.3%) | Capture timing: the new shot caught the loading skeleton. **Re-captured after content loaded: 0.0% difference** |
+
+- Evidence: `evidence/regression.json`. The regenerated walk-through files were **not** committed; the repo copies were restored to the 2026-11-19 baseline.
