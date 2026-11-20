@@ -87,6 +87,12 @@ The brief is [../Portal_2.0.md](../Portal_2.0.md). Branch: `redesign`.
 
 Nothing from the Portal 2.0 document list. Next: Spec Kit features 030+ (doc 36) and the 3 Part 19 skills (doc 02).
 
+## Prompts
+
+| File | Use |
+|---|---|
+| [prompts/mobile-app-extraction.md](prompts/mobile-app-extraction.md) | Paste into an agent inside each mobile app repo; returns `studio-contract-<app>.md/.json` for `data/mobile/` |
+
 ## Regenerating the generated docs
 
 Docs 05, 06 and 16 and the JSON registries are generated, so don't hand-edit them. Run from the repo root:

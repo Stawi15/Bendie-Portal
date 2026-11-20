@@ -46,7 +46,7 @@ B1–B5 (doc 15) are on `main` as of 2026-11-20. The production Planner key expo
 
 | # | Recommendation | Docs |
 |---|---|---|
-| 1 | **Amend the constitution first** (v2.0.0): domain modules, new navigation, inspector/headless primitives, Next 15 | 36 (030) |
+| 1 | ~~Amend the constitution first~~ **Done 2026-11-20:** v2.0.0 (domain modules, workspace navigation, inspector/headless primitives, Next 15) | 36 (030) |
 | 2 | Rebuild **in place behind flags**, routes unchanged, parity matrix as the gate | 35, 16 |
 | 3 | **6-area event workspace** with a context strip and one right panel; products as tags, not a mode | 17, 18 |
 | 4 | **One server-side readiness engine** with severities, no percentage | 23 |
@@ -59,10 +59,10 @@ B1–B5 (doc 15) are on `main` as of 2026-11-20. The production Planner key expo
 
 ## Immediate next steps
 
-1. **Feature 030:** `/speckit.constitution` amendment (needs your go-ahead to change the constitution).
+1. ~~Feature 030: constitution amendment~~ done (v2.0.0). Follow-ups: reconcile `context/code-standards.md`, `ui-rules.md`, `architecture.md` (listed in its Sync Impact Report).
 2. **Feature 031:** tokens, focus ring, reduced motion.
 3. **Feature 032:** app shell behind a flag.
-4. In parallel: send the legal/DPA questions (doc 32) and ask the app team for the mobile codebases.
+4. In parallel: extract the mobile apps' data usage with `prompts/mobile-app-extraction.md` (run by agents in each app repo). The legal/DPA questions (doc 32) wait until the AI prototype is approved.
 
 ## Not verified or still unknown
 

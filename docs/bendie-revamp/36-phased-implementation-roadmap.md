@@ -55,7 +55,11 @@ Server-side `evaluateReadiness` + rules (doc 23); Overview and org lists switch 
 
 Guided-build rail (doc 19), 3-field create sheet with Retry for stale provisioning, CSV/XLSX export, ⌘K palette (deterministic). **M.**
 
-## Phase 7: Copilot foundation (045). **Gate: legal/DPA + region decision (doc 32).**
+## Phase 7: Copilot foundation (045). **Built as a working prototype first; legal gate only before real data.**
+
+Developer direction (2026-11-20): the concept must be approved as a **working solution** before the data-protection questions are raised. So Phase 7 runs in two steps:
+1. **Prototype:** built and demonstrated on the **test environment with synthetic data only**. It uses a developer-owned Model Studio key; Singapore's free quota is enough. No real organisation has AI enabled. The design already validates every model output, so the lack of strict JSON Schema in Singapore doesn't matter here.
+2. **Production enablement:** only after concept approval **and** the doc 32 decisions (region, DPA, transfer review). Then AI is switched on per organisation.
 
 Provider adapter (`@ai-sdk/alibaba`), orchestrator, context engine, **read and draft tools only**, drawer UI, `ai_*` tables with RLS, per-organisation entitlement (off by default), kill switch, eval harness. **L.** Acceptance: doc 24 pass bars on synthetic data; adversarial suite 0% injection-following; Studio fully usable with AI off.
 
@@ -93,4 +97,4 @@ gantt
   049 Rollout                     :p10, after p6, 20d
 ```
 
-Dates are illustrative, assuming a start on 2026-11-23. Phase 7 can run in parallel with Phase 5 once its legal gate clears.
+Dates are illustrative, assuming a start on 2026-11-23. Phase 7's prototype step can run in parallel with Phase 5. It needs no legal gate because it only touches synthetic test data.

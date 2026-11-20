@@ -28,7 +28,9 @@
 | Sensitive | passport, dietary requirements, gender, emergency contacts | **Never** |
 | Attendee runtime | messages, chats, posts, reports | **Never** (outside Copilot scope) |
 
-## Provider and legal (decisions needed; doc 40)
+## Provider and legal (decisions needed before any **real** data; doc 40)
+
+Timing (developer, 2026-11-20): these are answered **after** the concept is approved as a working prototype on synthetic test data (doc 36 Phase 7, step 1). They must be settled before any organisation's real data reaches Qwen.
 
 1. **Region:** Frankfurt EU scope recommended (doc 24). Confirm model availability, ZDR and strict-schema support there.
 2. **DPA / contract terms** with Alibaba Cloud covering retention (≤30 days, or ZDR), no training without consent, and sub-processors.
