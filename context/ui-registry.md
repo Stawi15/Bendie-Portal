@@ -279,6 +279,32 @@ Last updated: 2026-11-16
 
 `.input`, `.label`, `.hint`, `.btn-primary`, `.btn-secondary`, `.btn-danger`, `.panel-shadow`, `.custom-scrollbar` — see `ui-tokens.md` for exact definitions. Always reuse these classes rather than rebuilding equivalent styles per component.
 
+### Studio 2.0 Foundation Tokens (Feature 029)
+
+File: `tailwind.config.js`, `src/globals.css` (full reference: `ui-tokens.md` → "Studio 2.0 tokens (Feature 029)"; contract: `specs/029-design-tokens-foundation/contracts/ui-tokens-contract.md`)
+Last updated: 2026-11-20
+
+| Property | Class |
+| --- | --- |
+| Border radius: chip / tag / dense input | `rounded-ui-sm` (6px) |
+| Border radius: button / menu / popover | `rounded-ui-md` (10px) |
+| Border radius: panel / card / dialog / sheet / inspector | `rounded-ui-lg` (14px) |
+| Shadow | `shadow-elev-0` flat · `shadow-elev-1` raised · `shadow-elev-2` floating · `shadow-elev-3` modal |
+| Status badge | `text-status-<s>-fg bg-status-<s>-bg border-status-<s>-border` + its Material icon + a text label (`s` = blocking/`error`, warning/`warning`, done/`check_circle`, info/`info`, neutral/`radio_button_unchecked`) |
+| Product tag | `text-product-<p>-fg bg-product-<p>-bg`; dot `bg-product-<p>-dot` (`p` = bendie / planner) |
+| Row height | `h-row` (44px) default · `h-row-compact` (36px) tables only |
+| Control height | `h-control` (36px) pointer · `h-control-touch` (44px) touch |
+| Motion | `duration-motion-{fast,base,panel}` + `ease-motion-{standard,panel}` |
+| Focus state | Global `:focus-visible` outline (2px `primary`, 2px offset); explicit `.focus-ring` |
+| Accent usage | Product accents on tags only; actions stay `primary` |
+
+**Pattern notes:**
+- **Foundation only (2026-11-20):** no existing component uses these yet. Existing components keep their current classes (`rounded-[20px]`, `rounded-xl`, `panel-shadow`, `EVENT_STATUS_PILL_CLASSES`) until each page is migrated in its own Studio 2.0 feature. New Studio 2.0 components (shell, data table, inspector, readiness) must use these tokens, not the legacy values.
+- **Status is never colour alone:** a status badge without its icon **and** label doesn't match the pattern.
+- **Focus:** don't add per-component focus rings in new code. The global rule covers links, buttons, tabs, menu items, options and tabbable elements. Use `.focus-ring` only on elements outside that list. Never `outline-none` without a visible replacement. Form fields keep the `.input` ring.
+- **Motion:** use only the `motion-*` tokens. The global `prefers-reduced-motion` rule makes them instant; spinners and skeleton pulses keep running.
+- **Consistency flag (from 029 verification):** the selected segment in `EventsOverviewPanel.tsx:85` uses `panel-shadow` as its "selected" marker. It's fine today, but when migrated it should use a token-based selected state (`bg-white shadow-elev-1`) so a soft shadow isn't confused with focus.
+
 ---
 
 ## Not Yet Captured

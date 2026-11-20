@@ -118,8 +118,8 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 - [X] T018 Start `next dev` against the **test** environment (`set -a; source .env.test.local; set +a; npm run dev`, in the background); every Playwright script keeps the production-request guard from `tools/walkthrough.py` so it aborts if production is reached. Then the keyboard focus check (quickstart §4, SC-001) on the test env with Playwright: Tab through 4 screens, screenshot focused controls, confirm single indicators and no indicator after a click. Save evidence under `specs/029-design-tokens-foundation/evidence/`.
 - [X] T019 Reduced-motion check (quickstart §5, SC-002) with `emulateMedia({ reducedMotion: 'reduce' })`: sidebar expand, button press, dialog open and close; confirm no positional or scale animation and that spinners still run. Record in verification.md.
 - [ ] T020 Visual and access regression (SC-003, SC-004): re-run `docs/bendie-revamp/tools/walkthrough.py` against the test env; diff screenshots against the T002 baseline (pixel diff, flagging non-data differences) and diff `walkthrough.json` access results per role and path. Record in verification.md. **Don't** commit the regenerated baseline screenshots unless they're intentionally updated.
-- [ ] T021 Run `/imprint` to record the new token families and the global focus/motion behaviour in `context/ui-registry.md`.
-- [ ] T022 Update `context/progress-tracker.md` with a Feature 029 entry (constitution VII).
+- [X] T021 Run `/imprint` to record the new token families and the global focus/motion behaviour in `context/ui-registry.md`.
+- [X] T022 Update `context/progress-tracker.md` with a Feature 029 entry (constitution VII).
 - [ ] T023 Run `/review`, then `/speckit-converge`, before declaring done (constitution VIII).
 
 ---
