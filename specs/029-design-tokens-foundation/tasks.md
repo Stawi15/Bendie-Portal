@@ -120,7 +120,7 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 - [X] T020 Visual and access regression (SC-003, SC-004): re-run `docs/bendie-revamp/tools/walkthrough.py` against the test env; diff screenshots against the T002 baseline (pixel diff, flagging non-data differences) and diff `walkthrough.json` access results per role and path. Record in verification.md. **Don't** commit the regenerated baseline screenshots unless they're intentionally updated.
 - [X] T021 Run `/imprint` to record the new token families and the global focus/motion behaviour in `context/ui-registry.md`.
 - [X] T022 Update `context/progress-tracker.md` with a Feature 029 entry (constitution VII).
-- [ ] T023 Run `/review`, then `/speckit-converge`, before declaring done (constitution VIII).
+- [X] T023 Run `/review`, then `/speckit-converge`, before declaring done (constitution VIII).
 
 ---
 
@@ -145,3 +145,10 @@ In parallel: T013 (code-standards.md) | T014 (ui-rules.md) | T003→T004→T006 
 - **Increment 3:** US3 tokens + docs (unblocks the app-shell feature).
 - **Increment 4:** US4 rule reconciliation.
 - Then the polish/verification gate. Each increment leaves every page looking as it did (FR-009).
+
+---
+
+## Phase 8: Convergence
+
+- [X] T024 Record in `specs/029-design-tokens-foundation/spec.md` (Assumptions) the developer's 2026-11-20 decision that the two existing TopHeader controls with weak component-owned focus (product switcher ring 1.93:1; header search ring not rendering), known issue K1 in `docs/bendie-revamp/40`, are deferred to the app-shell feature, so FR-007/SC-001 scope matches the delivered behaviour per FR-007 (partial)
+- [X] T025 Record `.eslintignore` and `.prettierignore` (added by `/speckit-implement`'s ignore-file setup step; generated folders only, lint output unchanged) in `specs/029-design-tokens-foundation/plan.md` Project Structure per plan: Project Structure (unrequested)

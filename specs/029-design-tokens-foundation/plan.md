@@ -79,6 +79,7 @@ context/ui-tokens.md          # + "Studio 2.0 tokens" section
 context/ui-rules.md           # reconciled with constitution v2.0.0
 context/code-standards.md     # reconciled with constitution v2.0.0
 context/progress-tracker.md   # feature entry
+.eslintignore, .prettierignore # added by /speckit-implement's ignore-file setup step (generated folders only; lint output unchanged)
 ```
 
 **Structure Decision**: Single Next.js app. All changes are in the two existing style sources and the three rule documents. No components are touched (research R4 found no missing focus replacement that needs a code change).

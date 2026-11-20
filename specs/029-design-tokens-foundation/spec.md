@@ -127,3 +127,4 @@ Anyone reading the project's day-to-day rules (code standards, UI rules, UI toke
 - "No visual change" is verified on the test environment with synthetic data, using the existing walk-through screenshots as the baseline.
 - Migrating existing components to the new radius and status tokens happens later, page by page (docs/bendie-revamp/35), not here.
 - Dark mode is out of scope (Studio has none today).
+- **Deferred, known issue K1 (developer decision, 2026-11-20):** two existing TopHeader controls keep their own component-owned focus style, which falls below 3:1: the product switcher ring (1.93:1), and the header search, whose `focus:ring` doesn't render. FR-007's shared indicator doesn't override component styles by design, and fixing these belongs to the app-shell feature, which replaces the header (`docs/bendie-revamp/40`, K1). SC-001 is assessed on the controls the shared rule covers.
