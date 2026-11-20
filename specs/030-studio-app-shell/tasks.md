@@ -14,8 +14,8 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Record baseline checks (tsc, lint 0/28, vitest count, worktree build) in `specs/030-studio-app-shell/verification.md`; copy the 2026-11-19 walk-through baseline (json + `stawi_admin` screenshots) to the scratch folder
-- [ ] T002 [P] Add `STUDIO_SHELL` (`v1`|`v2`, default `v1`) to `docs/bendie-revamp/tools/walkthrough.py`: set the `studio_shell` cookie for `localhost` on each browser context before login; record `shell` in each result
+- [X] T001 Record baseline checks (tsc, lint 0/28, vitest count, worktree build) in `specs/030-studio-app-shell/verification.md`; copy the 2026-11-19 walk-through baseline (json + `stawi_admin` screenshots) to the scratch folder
+- [X] T002 [P] Add `STUDIO_SHELL` (`v1`|`v2`, default `v1`) to `docs/bendie-revamp/tools/walkthrough.py`: set the `studio_shell` cookie for `localhost` on each browser context before login; record `shell` in each result
 
 ---
 
@@ -23,10 +23,10 @@
 
 **Purpose**: Behaviour-preserving extraction that both layouts depend on. **No visible change.**
 
-- [ ] T003 Create `src/lib/useEventWorkspace.ts` by moving the logic half of `src/app/portal/events/[eventId]/layout.tsx` **verbatim** (state, effects in the same order, redirects, `isSectionAvailable`, `visibleSections`, `groupedVisibleSections`, `journey`, Manage modules state, content-gate flags, `sectionHref`); return everything the render uses (research R1)
-- [ ] T004 Create `src/components/shell/EventWorkspaceV1.tsx` containing today's render JSX **verbatim**, consuming `useEventWorkspace()`'s return; extract the content gate (auth pending/denied screens, paused notice, unavailable message, Planner deferral handling, page `children`) into `src/components/shell/EventContentGate.tsx` with **identical markup**, used by V1 (and later V2); reduce `src/app/portal/events/[eventId]/layout.tsx` to call the hook and render `EventWorkspaceV1`
-- [ ] T005 Extract `TopHeader` pieces into `src/components/header/{OrgSwitcher,ProductSwitcher,EventSearch,ActivityBell,AccountMenu,NewEventButton}.tsx` with **identical markup and behaviour**; `src/components/portal/TopHeader.tsx` composes them (research R7)
-- [ ] T006 Move today's client body of `src/app/portal/layout.tsx` into `src/components/shell/PortalShell.tsx` (providers, `OrgSideNav`, `TopHeader`, `main`, `Toaster`); make `src/app/portal/layout.tsx` a server component rendering `<PortalShell initialShell={...}>` (cookie read is added in T008)
+- [X] T003 Create `src/lib/useEventWorkspace.ts` by moving the logic half of `src/app/portal/events/[eventId]/layout.tsx` **verbatim** (state, effects in the same order, redirects, `isSectionAvailable`, `visibleSections`, `groupedVisibleSections`, `journey`, Manage modules state, content-gate flags, `sectionHref`); return everything the render uses (research R1)
+- [X] T004 Create `src/components/shell/EventWorkspaceV1.tsx` containing today's render JSX **verbatim**, consuming `useEventWorkspace()`'s return; extract the content gate (auth pending/denied screens, paused notice, unavailable message, Planner deferral handling, page `children`) into `src/components/shell/EventWorkspaceParts.tsx` (`EventContentGate`, `EventWorkspaceLoading`, `EventWorkspaceDenied`, `EventStepNav`) with **identical markup**, used by V1 (and later V2); reduce `src/app/portal/events/[eventId]/layout.tsx` to call the hook and render `EventWorkspaceV1`
+- [X] T005 Extract `TopHeader` into `src/components/header/useHeaderModel.ts` (its state and derived data, moved verbatim) and `src/components/header/HeaderParts.tsx` (`HeaderContextControls` = menu button, org switcher incl. Stawi items, product switcher; `HeaderActions` = event search, activity, settings, account menu, New event; `HeaderCreateOrganization`) with **identical markup and behaviour**; `src/components/portal/TopHeader.tsx` composes them (research R7). *Cut at the component's natural seams instead of six files; the v2 shell composes or wraps these parts.*
+- [X] T006 Move today's client body of `src/app/portal/layout.tsx` into `src/components/shell/PortalShell.tsx` (providers, `OrgSideNav`, `TopHeader`, `main`, `Toaster`); make `src/app/portal/layout.tsx` a server component rendering `<PortalShell initialShell={...}>` (cookie read is added in T008)
 - [ ] T007 **Checkpoint (no-change proof):** tsc, lint, tests, worktree build pass; run the walk-through with `STUDIO_SHELL=v1` and diff access results against the baseline (expect 0 differences) and screenshots (expect data-only differences). Record in verification.md
 
 **Checkpoint**: Extraction proven behaviour-identical; v2 work can start.
