@@ -42,6 +42,9 @@ This file is updated as discovery continues. **Owner** is who can answer.
 
 ## AI (for docs 24–34)
 
+The recommendations are now in docs 24 and 32: Frankfurt EU scope + ZDR models + per-organisation opt-in, default off. The questions below remain for the developer and counsel.
+
+
 | # | Question |
 |---|---|
 | Q14 | Which Qwen hosting route is acceptable for data residency (Alibaba Model Studio international or Singapore, a third-party host, self-hosted)? Attendee, travel and passport data is involved. |

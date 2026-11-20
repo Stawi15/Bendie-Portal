@@ -1,0 +1,718 @@
+{
+  "generated": "2026-11-20",
+  "status": "PROPOSAL (doc 27). 'to_create' = domain module approved in doc 21, not yet built.",
+  "counts": {
+    "read": 14,
+    "draft": 7,
+    "write": 9,
+    "high": 5
+  },
+  "tools": [
+    {
+      "name": "search_navigation",
+      "risk": "read",
+      "scope": "global",
+      "description": "Find a Studio page or feature by name or intent.",
+      "executes": "registry: data/routes.json filtered by the user's products and permissions",
+      "permission": "any signed-in user",
+      "entities": [
+        "routes"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "query": "string"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": "Deterministic; also used by the \u2318K palette."
+    },
+    {
+      "name": "navigate_to",
+      "risk": "read",
+      "scope": "global",
+      "description": "Open a verified Studio route (returns a URL the UI navigates to).",
+      "executes": "registry lookup only; never builds arbitrary URLs",
+      "permission": "any",
+      "entities": [
+        "routes"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "route_key": "enum from routes.json",
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "get_event_summary",
+      "risk": "read",
+      "scope": "event",
+      "description": "Event basics, products, status/visibility, counts per area.",
+      "executes": "events + event_products (caller client) + readiness counts",
+      "permission": "event access",
+      "entities": [
+        "events"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "get_event_readiness",
+      "risk": "read",
+      "scope": "event",
+      "description": "Readiness report: blocking, warnings, recommended, with affected records.",
+      "executes": "src/lib/readiness/evaluate.ts (doc 23; to_create)",
+      "permission": "event access",
+      "entities": [
+        "*"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "list_speakers",
+      "risk": "read",
+      "scope": "event",
+      "description": "Speakers with completeness flags (bio, photo, sessions).",
+      "executes": "src/lib/speakers.ts listSpeakers (to_create; from facilitators/page.tsx)",
+      "permission": "event access",
+      "entities": [
+        "facilitators"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "filter": "missing_bio|missing_photo|no_sessions|all"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "get_agenda",
+      "risk": "read",
+      "scope": "event",
+      "description": "Sessions by day with speakers, locations, breakouts.",
+      "executes": "src/lib/agenda.ts listSessions (to_create; from agenda/page.tsx fetchData)",
+      "permission": "event access",
+      "entities": [
+        "agenda_sessions",
+        "agenda_session_speakers"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "day": "date (venue time) optional"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "check_schedule_conflicts",
+      "risk": "read",
+      "scope": "event",
+      "description": "Overlaps by location and speaker; sessions outside event dates.",
+      "executes": "src/lib/agenda/conflicts.ts (to_create; deterministic)",
+      "permission": "event access",
+      "entities": [
+        "agenda_sessions"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "list_attendees",
+      "risk": "read",
+      "scope": "event",
+      "description": "Event members with role, access status, travel coverage. Contacts only if the caller may see them.",
+      "executes": "event_members (caller client) + profileContacts.eventMemberContacts",
+      "permission": "event host/organizer/admin, org admin, Stawi",
+      "entities": [
+        "event_members"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "filter": "no_access_code|no_email|no_travel|all",
+        "include_contacts": "boolean (default false)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": "Contacts never go to the model unless the request needs them (doc 32)."
+    },
+    {
+      "name": "list_participants",
+      "risk": "read",
+      "scope": "event",
+      "description": "Planner participants with flight/hotel/transport coverage.",
+      "executes": "src/lib/plannerPeople.listParticipants after resolvePeopleCapability",
+      "permission": "Planner people view",
+      "entities": [
+        "passengers",
+        "event_passengers"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "filter": "no_flight|no_hotel|no_transport|unlinked|all"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "list_tasks",
+      "risk": "read",
+      "scope": "event",
+      "description": "Planner tasks by status, assignee, due date.",
+      "executes": "src/lib/plannerTasks.listEventTasks after resolveTaskCapability",
+      "permission": "Planner tasks view",
+      "entities": [
+        "operational_tasks"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "status": "Pending|In progress|Completed|any"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "list_vendor_items",
+      "risk": "read",
+      "scope": "event",
+      "description": "Vendor items and packed/loaded/on-site stages.",
+      "executes": "src/lib/plannerVendors.listVendorItems after resolveVendorCapability",
+      "permission": "Planner vendors view",
+      "entities": [
+        "event_vendor_items"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "list_checklist",
+      "risk": "read",
+      "scope": "event",
+      "description": "Checklist items and sourcing/on-site status.",
+      "executes": "src/lib/plannerChecklist.listChecklistItems after resolveChecklistCapability",
+      "permission": "Planner checklist view",
+      "entities": [
+        "event_checklist_items"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "get_run_of_show",
+      "risk": "read",
+      "scope": "event",
+      "description": "Planner programme with production rows.",
+      "executes": "plannerAgenda.listAgendaItems + plannerProduction.listSessions after capability",
+      "permission": "Planner production view",
+      "entities": [
+        "event_agenda_items",
+        "production_tasks"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "get_recent_activity",
+      "risk": "read",
+      "scope": "event",
+      "description": "Recent changes (who, what, when) from the audit log.",
+      "executes": "event_content_audit_log (caller client)",
+      "permission": "event access",
+      "entities": [
+        "event_content_audit_log"
+      ],
+      "approval": "none",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "limit": "int \u2264 50"
+      },
+      "audit": "ai_action_log",
+      "recovery": "none needed",
+      "notes": ""
+    },
+    {
+      "name": "draft_text",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Draft or improve copy (event description, session description, speaker bio, FAQ answer, welcome message) ONLY from supplied facts.",
+      "executes": "model only; output validated by zod",
+      "permission": "same as the page the draft is for",
+      "entities": [],
+      "approval": "user edits then saves through the normal page/inspector",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "kind": "enum",
+        "source_facts": "string[] (from records/user)",
+        "tone": "enum"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "draft_networking_questions",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Propose networking questions and options for the event's themes.",
+      "executes": "model only; output validated by zod",
+      "permission": "same as the page the draft is for",
+      "entities": [],
+      "approval": "user edits then saves through the normal page/inspector",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "kind": "enum",
+        "source_facts": "string[] (from records/user)",
+        "tone": "enum"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "draft_notification",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Draft a push notification title/body (never sends).",
+      "executes": "model only; output validated by zod",
+      "permission": "same as the page the draft is for",
+      "entities": [],
+      "approval": "user edits then saves through the normal page/inspector",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "kind": "enum",
+        "source_facts": "string[] (from records/user)",
+        "tone": "enum"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "draft_agenda",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Draft sessions from a brief/schedule, validated by check_schedule_conflicts before preview.",
+      "executes": "model (deep tier) + deterministic validator",
+      "permission": "agenda editors",
+      "entities": [
+        "agenda_sessions"
+      ],
+      "approval": "preview \u2192 becomes a write proposal",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "source_document_id": "uuid optional",
+        "instructions": "string",
+        "constraints": "object (days, rooms, break rules)"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "draft_run_of_show",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Draft production rows (cues, mics, screens, buffers) from the programme. Marked INTERNAL.",
+      "executes": "model + validator",
+      "permission": "Planner production manage",
+      "entities": [
+        "production_tasks"
+      ],
+      "approval": "preview \u2192 write proposal",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "session_ids": "uuid[] optional"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "parse_document",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Extract structured records from an uploaded file into staging (doc 28).",
+      "executes": "deterministic parser (CSV/XLSX via spreadsheetImport.ts) \u2192 model only for mapping/semantic extraction",
+      "permission": "same as the target import",
+      "entities": [
+        "ai_import_jobs"
+      ],
+      "approval": "staging review",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "file_id": "uuid",
+        "hint": "entity type optional"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "propose_field_mapping",
+      "risk": "draft",
+      "scope": "event",
+      "description": "Map spreadsheet columns to Studio fields when deterministic matching is unsure.",
+      "executes": "spreadsheetImport.ts column matcher first; model only for unmatched columns",
+      "permission": "same as the import",
+      "entities": [],
+      "approval": "shown in the import mapping step",
+      "input_schema": {
+        "columns": "string[]",
+        "samples": "string[][] (redacted)",
+        "target_entity": "enum"
+      },
+      "audit": "ai_action_log",
+      "recovery": "discard draft",
+      "notes": ""
+    },
+    {
+      "name": "upsert_speaker",
+      "risk": "write",
+      "scope": "event",
+      "description": "Create or update a speaker.",
+      "executes": "src/lib/speakers.ts saveSpeaker (to_create)",
+      "permission": "event content editors",
+      "entities": [
+        "facilitators"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "upsert_sessions",
+      "risk": "write",
+      "scope": "event",
+      "description": "Create/update sessions (and their speakers; breakouts via save_breakout_rooms RPC).",
+      "executes": "src/lib/agenda.ts saveSession (to_create) + rpc save_breakout_rooms",
+      "permission": "agenda editors (platform/org admin per Feature 021)",
+      "entities": [
+        "agenda_sessions",
+        "agenda_session_speakers",
+        "agenda_breakout_rooms"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "upsert_faqs",
+      "risk": "write",
+      "scope": "event",
+      "description": "Create/update FAQs.",
+      "executes": "src/lib/faqs.ts (to_create)",
+      "permission": "event content editors",
+      "entities": [
+        "faqs"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "update_event_details",
+      "risk": "write",
+      "scope": "event",
+      "description": "Change name, description, dates (venue time via eventTimeZone.ts), location.",
+      "executes": "src/lib/events.ts updateEventDetails (to_create; from basics/page.tsx)",
+      "permission": "event host/organizer/admin",
+      "entities": [
+        "events"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "apply_import",
+      "risk": "write",
+      "scope": "event",
+      "description": "Write the approved rows of a staged import, in dependency order (doc 11).",
+      "executes": "the existing per-entity importers (CsvImportModal handlers) moved into domain modules",
+      "permission": "same as each target entity",
+      "entities": [
+        "*"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "create_planner_tasks",
+      "risk": "write",
+      "scope": "event",
+      "description": "Create Planner tasks.",
+      "executes": "src/lib/plannerTasks.createTask after resolveTaskCapability (manage)",
+      "permission": "Planner tasks manage",
+      "entities": [
+        "operational_tasks"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "upsert_participants",
+      "risk": "write",
+      "scope": "event",
+      "description": "Add or update Planner participants.",
+      "executes": "plannerPeople.createNewParticipant / updateParticipant after resolvePeopleCapability (manage)",
+      "permission": "Planner people manage / org admin",
+      "entities": [
+        "passengers",
+        "event_passengers"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "upsert_flights_hotels",
+      "risk": "write",
+      "scope": "event",
+      "description": "Add/update flights and hotel bookings.",
+      "executes": "plannerLogistics.createFlight/updateFlight/createHotelBooking/updateHotelBooking after resolveLogisticsCapability",
+      "permission": "Planner logistics manage / org admin",
+      "entities": [
+        "all_flights_combined_table",
+        "hotel_bookings"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "upsert_run_of_show",
+      "risk": "write",
+      "scope": "event",
+      "description": "Write approved production rows / programme items.",
+      "executes": "plannerProduction.createSession/updateSession, plannerAgenda.createAgendaItem/updateAgendaItem",
+      "permission": "Planner production manage",
+      "entities": [
+        "production_tasks",
+        "event_agenda_items"
+      ],
+      "approval": "per-proposal approval in the UI; diff shows before/after; bound to user+org+event+record versions",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "records": "array (validated per entity zod schema)",
+        "proposal_id": "uuid (on execute)"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "proposal shows before-values; revert by applying the inverse proposal; trigger audit keeps the diff",
+      "notes": ""
+    },
+    {
+      "name": "bulk_update",
+      "risk": "high",
+      "scope": "event",
+      "description": "Apply one change to many records (e.g. assign track, set status).",
+      "executes": "domain module per entity, row by row in a transaction where possible",
+      "permission": "as per entity",
+      "entities": [
+        "*"
+      ],
+      "approval": "typed confirmation showing exact affected count and consequences; never auto-run; never in background",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "proposal_id": "uuid",
+        "confirmation_text": "string"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "confirmation with affected count; inverse proposal where possible; sends can't be undone, so they require a typed confirmation",
+      "notes": ""
+    },
+    {
+      "name": "delete_records",
+      "risk": "high",
+      "scope": "event",
+      "description": "Delete records.",
+      "executes": "domain module delete functions; Planner delete* functions",
+      "permission": "as per entity",
+      "entities": [
+        "*"
+      ],
+      "approval": "typed confirmation showing exact affected count and consequences; never auto-run; never in background",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "proposal_id": "uuid",
+        "confirmation_text": "string"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "confirmation with affected count; inverse proposal where possible; sends can't be undone, so they require a typed confirmation",
+      "notes": ""
+    },
+    {
+      "name": "add_event_members",
+      "risk": "high",
+      "scope": "event",
+      "description": "Give people app access. Triggers access-code emails.",
+      "executes": "POST /api/events/[eventId]/members (Feature 017 roster route + guards) plus the follow-ups the browser runs today (current-event pointer, access code via trigger), moved into one shared module so the AI and UI run the same steps",
+      "permission": "event host/organizer/admin, org admin",
+      "entities": [
+        "event_members",
+        "event_user_access_codes"
+      ],
+      "approval": "typed confirmation showing exact affected count and consequences; never auto-run; never in background",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "proposal_id": "uuid",
+        "confirmation_text": "string"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "confirmation with affected count; inverse proposal where possible; sends can't be undone, so they require a typed confirmation",
+      "notes": ""
+    },
+    {
+      "name": "schedule_push_notification",
+      "risk": "high",
+      "scope": "event",
+      "description": "Send or schedule a push to attendees.",
+      "executes": "event_push_notifications insert (existing page logic \u2192 domain module)",
+      "permission": "event managers",
+      "entities": [
+        "event_push_notifications"
+      ],
+      "approval": "typed confirmation showing exact affected count and consequences; never auto-run; never in background",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "proposal_id": "uuid",
+        "confirmation_text": "string"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "confirmation with affected count; inverse proposal where possible; sends can't be undone, so they require a typed confirmation",
+      "notes": ""
+    },
+    {
+      "name": "set_event_visibility",
+      "risk": "high",
+      "scope": "event",
+      "description": "Change status/visibility (public readability, doc 09).",
+      "executes": "events update via domain module",
+      "permission": "event host/organizer/admin",
+      "entities": [
+        "events"
+      ],
+      "approval": "typed confirmation showing exact affected count and consequences; never auto-run; never in background",
+      "input_schema": {
+        "event_id": "uuid (taken from context, never from the model)",
+        "proposal_id": "uuid",
+        "confirmation_text": "string"
+      },
+      "audit": "ai_action_log + ai_proposals + content audit triggers",
+      "recovery": "confirmation with affected count; inverse proposal where possible; sends can't be undone, so they require a typed confirmation",
+      "notes": ""
+    }
+  ],
+  "excluded": [
+    {
+      "capability": "Planner permission changes (Team & access)",
+      "why": "Grants access to another product; keep human-only (doc 32)"
+    },
+    {
+      "capability": "Platform admin: organisations, products, moderation",
+      "why": "Stawi-only governance; not delegated to AI"
+    },
+    {
+      "capability": "Account creation / make admin",
+      "why": "Identity and privilege changes"
+    },
+    {
+      "capability": "Raw SQL, arbitrary HTTP, file system, shell",
+      "why": "Portal 2.0 \u00a715.1"
+    },
+    {
+      "capability": "Reading passports / dietary data into model context",
+      "why": "Sensitive; doc 32 redaction"
+    }
+  ]
+}
