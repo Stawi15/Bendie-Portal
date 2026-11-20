@@ -61,6 +61,17 @@ The brief is [../Portal_2.0.md](../Portal_2.0.md). Branch: `redesign`.
 | 33 | [AI evaluation and testing](33-ai-evaluation-and-testing.md) | Unit → tool contract → scenario evals → adversarial → E2E → fallback |
 | 34 | [AI cost and performance](34-ai-cost-and-performance-strategy.md) | Estimates ≈ $5–7 per org per month; hard limits |
 
+## Implementation planning (pass 4, 2026-11-20, PROPOSALS)
+
+| # | Doc | Key point |
+|---|---|---|
+| 35 | [Migration strategy](35-migration-strategy.md) | Strangler pattern in the same app; routes unchanged; flags; no schema changes for the UI phases; mobile compatibility rules |
+| 36 | [Phased implementation roadmap](36-phased-implementation-roadmap.md) | Phases 0–10 → Spec Kit features 030–049; **030 = constitution v2.0.0 amendment** (Principles II and V conflict with the approved decisions) |
+| 37 | [Testing strategy](37-testing-strategy.md) | Test env only; per-role data-access tests; Playwright parity + axe; gates per feature |
+| 38 | [Success metrics](38-success-metrics.md) | No baselines yet; how to measure; proposed targets clearly labelled |
+| 39 | [Risks and mitigations](39-risks-and-mitigations.md) | 13 risks; top: mobile compatibility, parity, permission regressions |
+| 41 | [Final recommendations](41-final-recommendations.md) | Part 25 discovery report + 10 recommendations + next steps |
+
 ## Machine-readable registries (`data/`)
 
 | File | Contents |
@@ -74,7 +85,7 @@ The brief is [../Portal_2.0.md](../Portal_2.0.md). Branch: `redesign`.
 
 ## Still to write
 
-- **Pass 4, implementation (35–39, 41):** migration strategy, roadmap, testing strategy, success metrics, risks, final recommendations.
+Nothing from the Portal 2.0 document list. Next: Spec Kit features 030+ (doc 36) and the 3 Part 19 skills (doc 02).
 
 ## Regenerating the generated docs
 
