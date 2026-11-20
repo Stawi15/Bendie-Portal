@@ -59,21 +59,22 @@ export function PlannerProvisioningBanner({ event }: { event: Event }) {
     }
   };
 
+  // A stale `pending` row means setup never started (e.g. the create request stopped after the
+  // event was created). The backend's CAS claim reclaims from `pending`/`failed`, so it can be
+  // retried. A stale `provisioning` row cannot (the claim would return 409), so it still only
+  // gets the support message.
+  const stalePending = status === 'pending' && stale;
   const copy = status === 'failed'
     ? 'Bendie Planner setup didn’t complete — try again, or contact support if this keeps happening.'
-    : stale
-      ? 'Bendie Planner setup is taking longer than expected. Please contact your administrator or support for assistance.'
-      : 'Setting up Bendie Planner for this event…';
+    : stalePending
+      ? 'Bendie Planner setup didn’t start — try again, or contact support if this keeps happening.'
+      : stale
+        ? 'Bendie Planner setup is taking longer than expected. Please contact your administrator or support for assistance.'
+        : 'Setting up Bendie Planner for this event…';
 
-  const icon = status === 'failed' ? 'error' : stale ? 'support_agent' : 'hourglass_top';
+  const icon = status === 'failed' || stalePending ? 'error' : stale ? 'support_agent' : 'hourglass_top';
 
-  // A stale `pending`/`provisioning` row cannot be safely retried from
-  // here — the backend's CAS claim only reclaims from `pending`/`failed`,
-  // and a row that never actually stalled at `pending` (i.e. is still
-  // `provisioning`) offering a Retry button would either no-op
-  // (`409 provisioning_in_progress`) or, worse, imply a capability that
-  // doesn't exist. Only a genuinely `failed` event gets the Retry action.
-  const showRetry = status === 'failed';
+  const showRetry = status === 'failed' || stalePending;
 
   return (
     <div className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
