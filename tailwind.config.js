@@ -90,6 +90,53 @@ module.exports = {
         'surface-container-lowest': '#ffffff',
         'surface-bright': '#f9f9ff',
         'outline-variant': '#bfc7d2',
+        // Feature 029 — semantic status (always pair with an icon + text label;
+        // never colour alone). fg/bg contrast ≥ 4.5:1 (specs/029 research R5).
+        status: {
+          blocking: { fg: '#ba1a1a', bg: '#ffdad6', border: '#ffb4ab' },
+          warning: { fg: '#8c4f06', bg: '#ffdcc0', border: '#ffb877' },
+          done: { fg: '#146c2e', bg: '#d6f5dc', border: '#9ad9a8' },
+          info: { fg: '#00629d', bg: '#cfe5ff', border: '#99cbff' },
+          neutral: { fg: '#404751', bg: '#e8eeff', border: '#bfc7d2' },
+        },
+        // Feature 029 — product accents: tags/chips only, never actions.
+        product: {
+          bendie: { fg: '#00629d', bg: '#e3f0fb', dot: '#00629d' },
+          planner: { fg: '#c2410c', bg: '#fff1e6', dot: '#f97316' },
+        },
+      },
+      // Feature 029 — namespaced so Tailwind's built-in rounded-sm/md/lg stay unchanged.
+      borderRadius: {
+        'ui-sm': '6px',
+        'ui-md': '10px',
+        'ui-lg': '14px',
+      },
+      boxShadow: {
+        'elev-0': 'none',
+        'elev-1': '0 1px 2px rgba(17,28,45,0.06), 0 1px 3px rgba(17,28,45,0.04)',
+        'elev-2': '0 8px 24px rgba(17,28,45,0.10), 0 2px 6px rgba(17,28,45,0.06)',
+        'elev-3': '0 20px 48px rgba(17,28,45,0.18), 0 4px 12px rgba(17,28,45,0.08)',
+      },
+      height: {
+        row: '44px',
+        'row-compact': '36px',
+        control: '36px',
+        'control-touch': '44px',
+      },
+      minHeight: {
+        row: '44px',
+        'row-compact': '36px',
+        control: '36px',
+        'control-touch': '44px',
+      },
+      transitionDuration: {
+        'motion-fast': '120ms',
+        'motion-base': '200ms',
+        'motion-panel': '300ms',
+      },
+      transitionTimingFunction: {
+        'motion-standard': 'cubic-bezier(0.2, 0, 0, 1)',
+        'motion-panel': 'cubic-bezier(0.32, 0.72, 0, 1)',
       },
       spacing: {
         xs: '4px',

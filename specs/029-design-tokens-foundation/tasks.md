@@ -23,8 +23,8 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 
 **Purpose**: Capture the baseline so "no visual change" (SC-003) and "same access" (SC-004) can be proven.
 
-- [ ] T001 Record baseline check results (tsc, lint error/warning counts (expect 0 errors / 28 warnings), vitest 79/79, build) into `specs/029-design-tokens-foundation/verification.md`
-- [ ] T002 [P] Copy the 2026-11-19 walk-through baseline (`docs/bendie-revamp/data/walkthrough.json` and `docs/bendie-revamp/screenshots/stawi_admin/`) to a scratch baseline folder outside the repo, for comparison in T020
+- [X] T001 Record baseline check results (tsc, lint error/warning counts (expect 0 errors / 28 warnings), vitest 79/79, build) into `specs/029-design-tokens-foundation/verification.md`
+- [X] T002 [P] Copy the 2026-11-19 walk-through baseline (`docs/bendie-revamp/data/walkthrough.json` and `docs/bendie-revamp/screenshots/stawi_admin/`) to a scratch baseline folder outside the repo, for comparison in T020
 
 ---
 
@@ -44,9 +44,9 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] In `src/globals.css`, add an `@layer base` rule: `:where(a[href], button, [role="button"], [role="tab"], [role="menuitem"], [role="option"], summary, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid theme('colors.primary'); outline-offset: 2px; }`. It must have **zero specificity** (`:where`) so existing component focus styles win; form fields (`input`, `select`, `textarea`) are deliberately not in the selector (research R2).
-- [ ] T004 [US1] In `src/globals.css`, add `@layer utilities { .focus-ring { … } }`, giving the same 2px `primary` outline with a 2px offset on `:focus-visible` only. This is the single shared utility required by constitution v2.0.0 Principle V.
-- [ ] T005 [US1] Verify the two known `outline-none` cases need no change (research R4): `src/components/portal/RowActionsMenu.tsx:113` (has `focus-visible:bg-surface-container-low`) and `src/components/portal/ThemeDesignerModal.tsx:51` (`tabIndex={-1}`). Record the result in `specs/029-design-tokens-foundation/verification.md`.
+- [X] T003 [US1] In `src/globals.css`, add an `@layer base` rule: `:where(a[href], button, [role="button"], [role="tab"], [role="menuitem"], [role="option"], summary, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid theme('colors.primary'); outline-offset: 2px; }`. It must have **zero specificity** (`:where`) so existing component focus styles win; form fields (`input`, `select`, `textarea`) are deliberately not in the selector (research R2).
+- [X] T004 [US1] In `src/globals.css`, add `@layer utilities { .focus-ring { … } }`, giving the same 2px `primary` outline with a 2px offset on `:focus-visible` only. This is the single shared utility required by constitution v2.0.0 Principle V.
+- [X] T005 [US1] Verify the two known `outline-none` cases need no change (research R4): `src/components/portal/RowActionsMenu.tsx:113` (has `focus-visible:bg-surface-container-low`) and `src/components/portal/ThemeDesignerModal.tsx:51` (`tabIndex={-1}`). Record the result in `specs/029-design-tokens-foundation/verification.md`.
 
 **Checkpoint**: Focus is visible everywhere it should be (US1 done).
 
@@ -60,7 +60,7 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 
 ### Implementation for User Story 2
 
-- [ ] T006 [US2] In `src/globals.css`, add `@media (prefers-reduced-motion: reduce)`:
+- [X] T006 [US2] In `src/globals.css`, add `@media (prefers-reduced-motion: reduce)`:
   - `*, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }`
   - `:active { --tw-scale-x: 1 !important; --tw-scale-y: 1 !important; }`
   - Exempt `.animate-spin` and `.animate-pulse` by restoring their animation duration and iteration count.
@@ -78,12 +78,12 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 
 ### Implementation for User Story 3
 
-- [ ] T007 [US3] In `tailwind.config.js` `theme.extend.borderRadius`, add `'ui-sm': '6px'`, `'ui-md': '10px'`, `'ui-lg': '14px'`. Don't redefine the built-in `sm`/`md`/`lg`/`xl` (research R1).
-- [ ] T008 [US3] In `tailwind.config.js` `theme.extend.boxShadow`, add `'elev-0': 'none'`, `'elev-1': '0 1px 2px rgba(17,28,45,0.06), 0 1px 3px rgba(17,28,45,0.04)'`, `'elev-2': '0 8px 24px rgba(17,28,45,0.10), 0 2px 6px rgba(17,28,45,0.06)'`, `'elev-3': '0 20px 48px rgba(17,28,45,0.18), 0 4px 12px rgba(17,28,45,0.08)'` (data-model.md).
-- [ ] T009 [US3] In `tailwind.config.js` `theme.extend.colors`, add `status: { blocking: { fg: '#ba1a1a', bg: '#ffdad6', border: '#ffb4ab' }, warning: { fg: '#8c4f06', bg: '#ffdcc0', border: '#ffb877' }, done: { fg: '#146c2e', bg: '#d6f5dc', border: '#9ad9a8' }, info: { fg: '#00629d', bg: '#cfe5ff', border: '#99cbff' }, neutral: { fg: '#404751', bg: '#e8eeff', border: '#bfc7d2' } }` and `product: { bendie: { fg: '#00629d', bg: '#e3f0fb', dot: '#00629d' }, planner: { fg: '#c2410c', bg: '#fff1e6', dot: '#f97316' } }`. Contrast as in research R5, all ≥4.5:1.
-- [ ] T010 [US3] In `tailwind.config.js` `theme.extend`, add `height` and `minHeight` entries `row: '44px'`, `'row-compact': '36px'`, `control: '36px'`, `'control-touch': '44px'`.
-- [ ] T011 [US3] In `tailwind.config.js` `theme.extend`, add `transitionDuration` `{ 'motion-fast': '120ms', 'motion-base': '200ms', 'motion-panel': '300ms' }` and `transitionTimingFunction` `{ 'motion-standard': 'cubic-bezier(0.2, 0, 0, 1)', 'motion-panel': 'cubic-bezier(0.32, 0.72, 0, 1)' }`.
-- [ ] T012 [US3] In `context/ui-tokens.md`, add a "Studio 2.0 tokens (Feature 029)" section with tables for radius, elevation, status (fg/bg/border + **icon** + "never colour alone"), product ("tags only, never actions"), density, motion (each with its **reduced-motion fallback**), the global focus behaviour and `.focus-ring`. Include one example per family, using only token classes (FR-010, contract).
+- [X] T007 [US3] In `tailwind.config.js` `theme.extend.borderRadius`, add `'ui-sm': '6px'`, `'ui-md': '10px'`, `'ui-lg': '14px'`. Don't redefine the built-in `sm`/`md`/`lg`/`xl` (research R1).
+- [X] T008 [US3] In `tailwind.config.js` `theme.extend.boxShadow`, add `'elev-0': 'none'`, `'elev-1': '0 1px 2px rgba(17,28,45,0.06), 0 1px 3px rgba(17,28,45,0.04)'`, `'elev-2': '0 8px 24px rgba(17,28,45,0.10), 0 2px 6px rgba(17,28,45,0.06)'`, `'elev-3': '0 20px 48px rgba(17,28,45,0.18), 0 4px 12px rgba(17,28,45,0.08)'` (data-model.md).
+- [X] T009 [US3] In `tailwind.config.js` `theme.extend.colors`, add `status: { blocking: { fg: '#ba1a1a', bg: '#ffdad6', border: '#ffb4ab' }, warning: { fg: '#8c4f06', bg: '#ffdcc0', border: '#ffb877' }, done: { fg: '#146c2e', bg: '#d6f5dc', border: '#9ad9a8' }, info: { fg: '#00629d', bg: '#cfe5ff', border: '#99cbff' }, neutral: { fg: '#404751', bg: '#e8eeff', border: '#bfc7d2' } }` and `product: { bendie: { fg: '#00629d', bg: '#e3f0fb', dot: '#00629d' }, planner: { fg: '#c2410c', bg: '#fff1e6', dot: '#f97316' } }`. Contrast as in research R5, all ≥4.5:1.
+- [X] T010 [US3] In `tailwind.config.js` `theme.extend`, add `height` and `minHeight` entries `row: '44px'`, `'row-compact': '36px'`, `control: '36px'`, `'control-touch': '44px'`.
+- [X] T011 [US3] In `tailwind.config.js` `theme.extend`, add `transitionDuration` `{ 'motion-fast': '120ms', 'motion-base': '200ms', 'motion-panel': '300ms' }` and `transitionTimingFunction` `{ 'motion-standard': 'cubic-bezier(0.2, 0, 0, 1)', 'motion-panel': 'cubic-bezier(0.32, 0.72, 0, 1)' }`.
+- [X] T012 [US3] In `context/ui-tokens.md`, add a "Studio 2.0 tokens (Feature 029)" section with tables for radius, elevation, status (fg/bg/border + **icon** + "never colour alone"), product ("tags only, never actions"), density, motion (each with its **reduced-motion fallback**), the global focus behaviour and `.focus-ring`. Include one example per family, using only token classes (FR-010, contract).
 
 **Checkpoint**: Tokens are available and documented (US3 done).
 
@@ -97,15 +97,15 @@ Single Next.js app at the repo root: `tailwind.config.js`, `src/globals.css`, `c
 
 ### Implementation for User Story 4
 
-- [ ] T013 [P] [US4] Update `context/code-standards.md`:
+- [X] T013 [P] [US4] Update `context/code-standards.md`:
   - "Next.js 14 Conventions" becomes Next.js 15 App Router / React 19.
   - Replace "no service layer / no Server Actions" wording with constitution v2.0.0 Principle II: domain modules in `src/lib/<domain>.ts` taking a passed-in Supabase client, required when logic has more than one caller, created on demand; still no Server Actions or repository/ORM.
   - In Dependencies, add "headless primitives (Radix UI primitives, TanStack Table/Virtual, cmdk) allowed when pinned and listed here; none installed yet".
-- [ ] T014 [P] [US4] Update `context/ui-rules.md`:
+- [X] T014 [P] [US4] Update `context/ui-rules.md`:
   - Replace "Add/edit forms … are always a FormModal" with Inspector (list records) / Sheet (short tasks), FormModal valid until a page is migrated, and the inline-panel ban kept (with its history).
   - Add rules: shared focus ring (`.focus-ring`; never remove focus without a replacement), reduced motion (every motion needs a fallback), status never by colour alone.
   - Cite constitution v2.0.0 Principle V.
-- [ ] T015 [US4] Grep `context/code-standards.md` and `context/ui-rules.md` for "Next.js 14", "no service layer", "always a `FormModal`" and "component library"; confirm each remaining hit is reconciled. Note that `context/architecture.md` is deliberately deferred (research R7) in `specs/029-design-tokens-foundation/verification.md`.
+- [X] T015 [US4] Grep `context/code-standards.md` and `context/ui-rules.md` for "Next.js 14", "no service layer", "always a `FormModal`" and "component library"; confirm each remaining hit is reconciled. Note that `context/architecture.md` is deliberately deferred (research R7) in `specs/029-design-tokens-foundation/verification.md`.
 
 **Checkpoint**: Rules are consistent (US4 done).
 

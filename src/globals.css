@@ -167,3 +167,64 @@ button {
       disabled:opacity-50 disabled:cursor-not-allowed;
   }
 }
+
+/* ── Feature 029 — Studio 2.0 foundation (constitution v2.0.0, Principle V) ── */
+
+/* Shared keyboard focus indicator. :where() gives ZERO specificity, so any
+   component that already styles its own focus (e.g. `focus-visible:outline-none
+   focus-visible:ring-*`, the `.input` ring) keeps it — no doubled rings.
+   Form fields are deliberately not listed: `.input` already shows focus.
+   :focus-visible = keyboard focus only; mouse clicks don't show it. */
+@layer base {
+  :where(
+      a[href],
+      button,
+      [role='button'],
+      [role='tab'],
+      [role='menuitem'],
+      [role='option'],
+      summary,
+      [tabindex]:not([tabindex='-1'])
+    ):focus-visible {
+    outline: 2px solid theme('colors.primary');
+    outline-offset: 2px;
+  }
+}
+
+/* The single shared focus-ring utility for new components (same look, explicit). */
+@layer utilities {
+  .focus-ring:focus-visible {
+    outline: 2px solid theme('colors.primary');
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion: transitions/animations finish immediately, press-scale is
+   disabled, smooth scrolling is off. Transition *delays* are untouched, so the
+   sidebar's hover-intent delay still works. Spinners (essential progress) and
+   skeleton pulses (opacity only) keep running. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  :active {
+    --tw-scale-x: 1 !important;
+    --tw-scale-y: 1 !important;
+  }
+
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  .animate-pulse {
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
