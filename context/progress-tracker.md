@@ -6,7 +6,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
-## Feature 029 — Design Tokens, Focus Ring and Reduced-Motion Foundation 🚧 built (2026-11-20) — awaiting /review + converge
+## Feature 029 — Design Tokens, Focus Ring and Reduced-Motion Foundation ✅ Built (2026-11-20) — /review ✅ (fixes applied), converged ✅
 
 Spec/plan/tasks: `specs/029-design-tokens-foundation/`. Branch `029-design-tokens-foundation` (from `redesign`). First build feature of Bendie Studio 2.0 (roadmap `docs/bendie-revamp/36`, Phase 1), under constitution **v2.0.0** (amended 2026-11-20).
 
