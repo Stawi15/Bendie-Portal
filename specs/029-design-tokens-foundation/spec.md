@@ -27,7 +27,7 @@ An organiser who navigates Studio with the keyboard (Tab / Shift+Tab) sees a cle
 **Acceptance Scenarios**:
 
 1. **Given** any Studio page, **When** the user moves focus with the keyboard, **Then** the focused control shows the shared focus indicator with at least 3:1 contrast against its surroundings.
-2. **Given** a button clicked with the mouse, **When** it receives focus from the click, **Then** no focus indicator appears (keyboard focus only).
+2. **Given** a control that relies on the shared indicator, **When** it receives focus from a mouse click, **Then** the shared indicator doesn't appear (keyboard focus only). Components that already define their own focus style keep today's behaviour unchanged.
 3. **Given** a text input that already shows its own focus style, **When** it receives focus, **Then** exactly one focus treatment is visible (no doubled rings).
 
 ---
@@ -113,7 +113,7 @@ Anyone reading the project's day-to-day rules (code standards, UI rules, UI toke
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of interactive controls on the 4 audited screens (org Overview, event Dashboard, Agenda, Create event) show a visible keyboard focus indicator, and none shows a doubled indicator.
+- **SC-001**: 100% of interactive controls on the 4 audited screens (org Overview, event Dashboard, Agenda, Create event) show a visible keyboard focus indicator, none shows a doubled indicator, and the shared indicator never appears on mouse focus.
 - **SC-002**: With reduced motion on, 0 sliding, scaling or width animations occur on the audited screens; all state changes are still perceivable.
 - **SC-003**: Screenshot comparison of the existing walk-through screens (docs/bendie-revamp/15) at 1440px shows no visual differences, apart from focus indicators.
 - **SC-004**: The browser walk-through for all 3 test roles returns identical access results to the 2026-11-19 baseline (252 visits).

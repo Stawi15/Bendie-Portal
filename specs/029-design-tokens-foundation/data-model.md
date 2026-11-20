@@ -56,7 +56,7 @@ Classes: `text-status-<s>-fg`, `bg-status-<s>-bg`, `border-status-<s>-border`.
 |---|---|---|
 | `duration-motion-fast` | 120ms | instant (0.01ms) |
 | `duration-motion-base` | 200ms | instant |
-| `duration-motion-panel` | 300ms | instant, or an opacity-only fade where the component opts in |
+| `duration-motion-panel` | 300ms | instant (no opt-in fade in this feature; the app-shell feature may add a documented exception) |
 | `ease-motion-standard` | `cubic-bezier(0.2, 0, 0, 1)` | n/a |
 | `ease-motion-panel` | `cubic-bezier(0.32, 0.72, 0, 1)` (critically damped feel, no bounce) | n/a |
 

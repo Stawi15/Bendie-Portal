@@ -37,6 +37,12 @@ These are app-side or cross-product issues. Studio can warn about them, but most
 | M8 | The Planner app saves `event_user_assignments` as **whole-row upserts** (from an offline outbox that replays later), resetting switches and turning `org_default` into `manual`. | Studio Team & access edits can be silently overwritten by a Planner save | Planner team: partial updates; Studio shows "last changed in Planner app" |
 | M9 | Legacy Planner tables `capetown`, `johburg_one/two`, `slt_vip`, `shuttles`, `transport_logistics`, `users`, `vehicle_passengers`, `staging_production_csv` are **not used by the Planner app code** (`vehicle_boardings` still is). | Candidates for retirement (Q11), after checking RPC/view bodies and edge functions | Planner team |
 
+## Deferred reconciliations (constitution Governance)
+
+| # | Item | Deferred to |
+|---|---|---|
+| G1 | `context/architecture.md` still says Next.js 14, "no service layer" and admin-only access, which conflicts with constitution v2.0.0. Flagged by the 029 analysis. | The app-shell feature, which changes structure (constitution VII) |
+
 ## Product
 
 | # | Question | Context |
