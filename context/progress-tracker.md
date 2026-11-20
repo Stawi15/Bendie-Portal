@@ -2,9 +2,24 @@
 
 Update this file after every completed feature. Any AI agent reading this should immediately know what is done, what is in progress, and what is next.
 
-**Last synced against the actual codebase:** 2026-09-17, for the "Product-Level Navigation & Product-Aware Event Discovery" (Feature 006) entry below; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
+**Last synced against the actual codebase:** 2026-11-20, for the Feature 029 entry below; the Feature 006 entry was last synced 2026-09-17; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
 
 ---
+
+## Feature 029 — Design Tokens, Focus Ring and Reduced-Motion Foundation ✅ Built (2026-11-20) — /review ✅ (fixes applied), converged ✅
+
+Spec/plan/tasks: `specs/029-design-tokens-foundation/`. Branch `029-design-tokens-foundation` (from `redesign`). First build feature of Bendie Studio 2.0 (roadmap `docs/bendie-revamp/36`, Phase 1), under constitution **v2.0.0** (amended 2026-11-20).
+
+- **Tokens (additive, namespaced):** `rounded-ui-{sm,md,lg}`, `shadow-elev-{0..3}`, `status-{blocking,warning,done,info,neutral}-{fg,bg,border}` (always with icon + label), `product-{bendie,planner}-{fg,bg,dot}` (tags only), `h-row`/`h-row-compact`/`h-control`/`h-control-touch`, `duration-motion-*`/`ease-motion-*`. No existing class changed value (CSS diff in `verification.md`).
+- **Global keyboard focus:** a zero-specificity `:where(…):focus-visible` outline; `.focus-ring` utility; form fields keep `.input`'s ring.
+- **Reduced motion:** a global `prefers-reduced-motion` rule (instant transitions, no press-scale; delays, spinners and pulses kept).
+- **Docs:** `context/ui-tokens.md` (new section), `ui-rules.md` (Inspector/Sheet, focus, motion, colour-not-alone), `code-standards.md` (Next 15/React 19, domain modules, headless primitives). `architecture.md` is deferred to the app-shell feature (doc 40 G1).
+- **Verified:**
+  - tsc clean; lint 0 errors / 28 warnings (unchanged); 79/79 tests; build OK
+  - focus: 104 keyboard stops on 4 screens, every control covered by the shared rule at 6.49:1. Known issue K1: 2 existing TopHeader controls (product switcher, header search) have weak focus, deferred to the app-shell feature (doc 40)
+  - reduced motion confirmed in the browser
+  - walk-through regression: see `verification.md` T020
+- No pages migrated yet (by design).
 
 ## Feature 028 — Content Moderation 🚧 built (2026-11-19) — browser pass ✅, /review ✅ (fixes applied), converged — waiting on the Bendie team's reviewer columns
 

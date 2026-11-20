@@ -67,7 +67,8 @@ Always pair a `text-*` size token with its matching `font-*` weight class (they'
 - Save via a `handleSave` async function calling `supabase.from(...).update(...)`, with a `saving` boolean disabling the button and swapping its label to `"Saving..."`.
 - Always confirm success/failure with `react-hot-toast` (`toast.success(...)` / `toast.error(error.message)`) — never fail silently, never show a raw Supabase error object.
 - Textareas that accept free text should disable Grammarly's inline UI (`data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false"`) — established in `basics/page.tsx`, prevents Grammarly's overlay from clashing with the styled textarea.
-- **Add/edit forms for any list-based section are always a `FormModal` (`components/portal/FormModal.tsx`), never an inline panel rendered above the list.** An inline panel appears at the top of the page/tab regardless of which item was clicked — for a long list, editing something near the bottom yanks the page back to the top with no visual link to what was clicked, which reads as a bug, not a feature. Single-entity pages with no list (`basics`, `hero`, `theme`, `terminology`) don't have this problem and don't need a modal — their one form is always visible in its natural position.
+- **Records in a list are created and edited in a right-hand Inspector; short standalone tasks use a Sheet** (constitution v2.0.0, Principle V). The Inspector keeps the list's filters, selection and scroll, and closing it never discards typed input without confirmation. **`FormModal` (`components/portal/FormModal.tsx`) remains the correct pattern on any page that hasn't been migrated yet** — don't mix Inspector and FormModal on the same page.
+- **Never an inline panel rendered above the list.** An inline panel appears at the top of the page/tab regardless of which item was clicked — for a long list, editing something near the bottom yanks the page back to the top with no visual link to what was clicked, which reads as a bug, not a feature. (This is why FormModal became the rule on 2026-08-19; the Inspector solves the same problem while keeping the list in view.) Single-entity pages with no list (`basics`, `hero`, `theme`, `terminology`) don't need either — their one form is always visible in its natural position.
 
 ---
 
@@ -101,6 +102,9 @@ Event status pills (draft/published/active/completed/archived) use `EVENT_STATUS
 - Never use raw Tailwind color classes (`bg-blue-500`, `text-gray-600`) for portal chrome — use the tokens in `ui-tokens.md`.
 - Never introduce a second icon set alongside Material Symbols Outlined.
 - Never show a raw Supabase/JS error message to the user beyond `error.message` in a toast — no stack traces, no raw error objects rendered in the UI.
-- Never build a new inline add/edit panel above a list — use `FormModal`. This was a real, recurring bug across 8 pages (fixed 2026-08-19) before it was written down here.
+- Never build a new inline add/edit panel above a list — use the Inspector (migrated pages) or `FormModal` (pages not yet migrated). This was a real, recurring bug across 8 pages (fixed 2026-08-19) before it was written down here.
+- Never remove focus (`outline-none`) without a visible replacement. Keyboard focus is shown by the global rule in `globals.css`; new components that need it explicitly use `.focus-ring` (the single shared utility — constitution v2.0.0, Principle V).
+- Never add motion without a reduced-motion fallback. Use the `duration-motion-*` / `ease-motion-*` tokens; the global `prefers-reduced-motion` rule makes them instant. Don't animate frequent, routine admin actions.
+- Never communicate status or product by colour alone — status badges pair the `status-*` tokens with their icon and a text label; product tags (`product-*`) are for tags only, never actions.
 - Never skip the `event_id` scoping check when writing — every mutation on this page must be scoped to `eventId` from `useParams`, not a stale/cached value.
 - Never build a new "page title" pattern — always route through `SectionHeader` for event-section pages.

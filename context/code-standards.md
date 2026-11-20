@@ -9,7 +9,8 @@ Implementation rules and conventions for this project, reflecting what's actuall
 - **Read context files first** — verify against `architecture.md` and `project-overview.md` before assuming.
 - **Match the existing pattern, don't introduce a new one** — this codebase already has an established shape for content-editor pages (see `ui-registry.md`'s "Event Basics form pattern"). A new section page should look like a sibling of the existing 16, not a fresh design.
 - **Scope is sacred** — only build what the current feature requires.
-- **Clean over clever** — this codebase favors plain `useState` + direct Supabase calls over abstraction layers (no service layer, no Server Actions, no react-hook-form in practice). Don't add an abstraction layer for its own sake just because it "would be cleaner" — match the grain of the existing code.
+- **Clean over clever** — this codebase favors plain `useState` + direct Supabase calls over abstraction layers (no Server Actions, no repository/ORM layer). Don't add an abstraction layer for its own sake just because it "would be cleaner" — match the grain of the existing code.
+- **Domain modules when logic has a second caller** (constitution v2.0.0, Principle II) — when the same read/write logic is needed by more than one caller (a page, an inspector, a bulk action, an importer, an AI tool), it moves into `src/lib/<domain>.ts` (the pattern `src/lib/planner*.ts` already follows). A domain module takes the Supabase client as an argument so it runs under the caller's RLS in the browser or in a route; it never creates its own client or uses the service role. Create one only when the second caller appears — never copy the logic instead, and never refactor everything up front.
 
 ---
 
@@ -21,11 +22,13 @@ Implementation rules and conventions for this project, reflecting what's actuall
 
 ---
 
-## Next.js 14 Conventions
+## Next.js 15 Conventions
+
+Stack: Next.js 15 App Router + React 19 (updated from Next.js 14 in constitution v2.0.0).
 
 - App Router only.
-- **Every content-editor page is a Client Component** (`'use client'` at the top) that fetches and mutates data directly via the shared `supabase` browser client — this project does **not** use the Server Components + Server Actions split that an earlier, now-superseded planning pass assumed. Don't introduce Server Actions for a single new page; it would be inconsistent with all 16 existing sections.
-- Route handlers are reserved for privileged operations that need the Supabase **service-role** key — never expose the service-role key to client code, and never do a privileged mutation from a page component. Platform-wide operations live in `app/api/admin/*` (platform admin only); organization-scoped ones live under `app/api/events/*` or `app/api/organizations/*` (platform admin or owner/admin of the target's own organization) — constitution v1.1.0, Principle II.
+- **Every content-editor page is a Client Component** (`'use client'` at the top) that fetches and mutates data via the shared `supabase` browser client (directly, or through a `src/lib/<domain>.ts` module when the logic has a second caller — see Engineering Mindset). This project does **not** use the Server Components + Server Actions split that an earlier, now-superseded planning pass assumed. Don't introduce Server Actions.
+- Route handlers are reserved for privileged operations that need the Supabase **service-role** key — never expose the service-role key to client code, and never do a privileged mutation from a page component. Platform-wide operations live in `app/api/admin/*` (platform admin only); organization-scoped ones live under `app/api/events/*` or `app/api/organizations/*` (platform admin or owner/admin of the target's own organization) — constitution v2.0.0, Principle II (authorization tiers unchanged since v1.1.0).
 - Dynamic event routes: `app/portal/events/[eventId]/...`, read via `useParams<{ eventId: string }>()`.
 
 ---
@@ -142,13 +145,15 @@ Never skip step 3 because "the UI already checks this" — the route must re-ver
 
 ## Dependencies
 
-Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `clsx`, `tailwind-merge`.
+Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `exceljs` (lazy-loaded for `.xlsx` import, Feature 023), `clsx`, `tailwind-merge`.
 
 Installed **but not yet wired up anywhere** — available for future features, don't assume they're the current convention until something actually uses them:
 - `react-hook-form` + `@hookform/resolvers` + `zod` — forms today are plain `useState`.
 - `@dnd-kit/*` — intended for drag-to-reorder (e.g. the Networking Questionnaire Builder), not used yet.
 - `react-color` — Theme Colors uses a native `<input type="color">` instead.
 - `zustand` — state today is React Context (`AuthContext`, `EventContext`, `OrganizationContext`, `ConfirmContext`).
+
+Allowed when needed, **none installed yet** (constitution v2.0.0, Principle V): headless, unstyled primitives — Radix UI primitives, TanStack Table / TanStack Virtual, and `cmdk`. Each must be added at a pinned version and listed here when first used. A second *visual* design system or styled component library is still not allowed.
 
 Before installing anything new: check if an existing dependency already covers it, and update this list if you do add something.
 

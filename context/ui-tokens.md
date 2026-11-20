@@ -184,6 +184,93 @@ Applies to `<input>`, `<select>`, and `<textarea>` alike — same `.input` class
 
 ---
 
+## Studio 2.0 tokens (Feature 029)
+
+Added 2026-11-20 for the Studio 2.0 redesign (constitution v2.0.0 Principle V). They're **additive**: no existing class changed value, and existing pages adopt them only when migrated (docs/bendie-revamp/35). Defined in `tailwind.config.js` (`theme.extend`) and `src/globals.css`. Contract for later features: `specs/029-design-tokens-foundation/contracts/ui-tokens-contract.md`.
+
+### Radius
+
+Namespaced `ui-*`, so Tailwind's built-in `rounded-sm/md/lg` are untouched.
+
+| Class | Value | Use |
+|---|---|---|
+| `rounded-ui-sm` | 6px | Chips, tags, inputs in dense tables |
+| `rounded-ui-md` | 10px | Buttons, menus, popovers |
+| `rounded-ui-lg` | 14px | Panels, cards, dialogs, sheets, inspector |
+| `rounded-full` | built-in | Pills, avatars, status dots |
+
+### Elevation
+
+| Class | Use |
+|---|---|
+| `shadow-elev-0` | Flat: tables, sidebars |
+| `shadow-elev-1` | Raised: cards; a sticky toolbar once scrolled |
+| `shadow-elev-2` | Floating: popovers, menus, overlay inspector |
+| `shadow-elev-3` | Modal: dialogs and sheets |
+
+`.panel-shadow` stays for existing cards until they're migrated.
+
+### Status: always with an icon **and** a text label, never colour alone
+
+| Status | Classes | Icon (Material Symbols) |
+|---|---|---|
+| Blocking | `text-status-blocking-fg bg-status-blocking-bg border-status-blocking-border` | `error` |
+| Warning | `text-status-warning-fg bg-status-warning-bg border-status-warning-border` | `warning` |
+| Done | `text-status-done-fg bg-status-done-bg border-status-done-border` | `check_circle` |
+| Info | `text-status-info-fg bg-status-info-bg border-status-info-border` | `info` |
+| Neutral | `text-status-neutral-fg bg-status-neutral-bg border-status-neutral-border` | `radio_button_unchecked` |
+
+Every fg/bg pair is at least 4.5:1 contrast (specs/029 research R5).
+
+```tsx
+<span className="inline-flex items-center gap-1 rounded-ui-sm border px-2 h-6 text-label-sm font-label-sm text-status-warning-fg bg-status-warning-bg border-status-warning-border">
+  <span className="material-symbols-outlined text-label-sm" aria-hidden="true">warning</span>
+  2 overlaps
+</span>
+```
+
+### Product accent: **tags and chips only, never actions**
+
+| Product | Classes |
+|---|---|
+| Bendie | `text-product-bendie-fg bg-product-bendie-bg`; dot `bg-product-bendie-dot` |
+| Planner | `text-product-planner-fg bg-product-planner-bg`; dot `bg-product-planner-dot` |
+
+Buttons and links always use `primary`.
+
+### Density
+
+| Class | Value | Use |
+|---|---|---|
+| `h-row` / `min-h-row` | 44px | Default table/list row |
+| `h-row-compact` / `min-h-row-compact` | 36px | Compact table rows only |
+| `h-control` / `min-h-control` | 36px | Buttons and inputs on desktop (pointer) |
+| `h-control-touch` / `min-h-control-touch` | 44px | Buttons and inputs on touch |
+
+### Motion: every motion has a reduced-motion fallback
+
+| Class | Value | When the OS asks for reduced motion |
+|---|---|---|
+| `duration-motion-fast` | 120ms | Instant |
+| `duration-motion-base` | 200ms | Instant |
+| `duration-motion-panel` | 300ms | Instant |
+| `ease-motion-standard` | `cubic-bezier(0.2, 0, 0, 1)` | — |
+| `ease-motion-panel` | `cubic-bezier(0.32, 0.72, 0, 1)` (critically damped feel, no bounce) | — |
+
+A global rule in `globals.css` makes all transitions and animations finish immediately under `prefers-reduced-motion: reduce`, disables press-scale and turns off smooth scrolling. Transition **delays** are kept, so the sidebar's hover intent still works. `animate-spin` (progress) and `animate-pulse` (skeletons) keep running. Components can't opt out in this version.
+
+```tsx
+<aside className="transition-transform duration-motion-panel ease-motion-panel">…</aside>
+```
+
+### Focus
+
+- **Global:** keyboard focus (`:focus-visible`) on links, buttons, tabs, menu items, options, `summary` and tabbable elements shows a 2px `primary` outline with a 2px offset. It has zero specificity (`:where`), so components with their own focus style keep it, and form fields keep the `.input` ring. Mouse clicks don't show it.
+- **`.focus-ring`:** the single shared utility for new components that want the same indicator explicitly.
+- Never remove focus (`outline-none`) without a visible replacement.
+
+---
+
 ## Invariants
 
 - Never hardcode a hex value or use a raw Tailwind color class for anything representing portal chrome (surfaces, text, primary/secondary/error) — use the tokens above.
