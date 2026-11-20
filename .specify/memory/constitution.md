@@ -1,5 +1,41 @@
 <!--
 Sync Impact Report
+Version change: 1.1.1 → 2.0.0 (MAJOR — two principles redefined in a backward-incompatible way)
+Modified principles:
+  - II. Architecture Boundaries:
+    * "no service/repository layer" is redefined. Shared per-domain modules
+      (`src/lib/<domain>.ts`, taking a passed-in Supabase client, running under RLS) are allowed,
+      and required for logic needed by more than one caller. Server Actions and repository/ORM
+      layers stay out of scope.
+    * "event work MUST fit the [eventId]/<section> tab model" is replaced. Routes are kept (or
+      permanently redirected when sections merge), and navigation may use the approved workspace
+      (sidebar areas ≤2 levels, canvas, one right panel). Further new navigation still needs a
+      spec. Section availability stays decided in one place.
+    * Stack updated from Next.js 14 to Next.js 15 + React 19 (matches package.json).
+    * Authorization tiers unchanged.
+  - V. UI Consistency:
+    * FormModal-everywhere is replaced by Inspector (list records) and Sheet (short tasks), with
+      FormModal valid until each page migrates. Inline panels above lists are still forbidden.
+      Closing must not discard typed input.
+    * "No second design system or component library" is narrowed: pinned headless primitives
+      (Radix UI, TanStack Table/Virtual, cmdk) are allowed; a second visual design system is
+      still forbidden.
+    * Added obligations: no status/product by color alone, a single focus-ring utility,
+      prefers-reduced-motion variants, and dialog semantics/focus management.
+Added sections: none
+Removed sections: none
+Approved by: the developer, 2026-11-20 (Bendie Studio 2.0 decisions; docs/bendie-revamp/17–23,
+  roadmap Feature 030 in docs/bendie-revamp/36).
+Templates: .specify/templates/{plan,spec,tasks,checklist}-template.md checked. None hard-code
+  the changed rules (they reference the constitution at runtime), so no template edits are needed.
+Follow-up TODOs (reconcile per Governance; not done by this amendment):
+  - context/code-standards.md: "Next.js 14 Conventions", "no service layer", the Dependencies list
+    (add pinned headless primitives when first used).
+  - context/ui-rules.md: "always FormModal" becomes Inspector/Sheet; focus ring; reduced motion.
+  - context/architecture.md: stack (Next 15/React 19), domain modules, admission rules.
+  - context/ui-registry.md: record Inspector/Sheet/DataTable via /imprint when first built.
+
+Previous amendment —
 Version change: 1.1.0 → 1.1.1 (PATCH — wording/clarification only; no new obligation)
 Modified principles:
   - III. Supabase and Database Safety — migration naming now describes the real repository
@@ -44,11 +80,19 @@ be documented and flagged, not silently fixed, unless it blocks the current feat
 explicitly approved.
 
 ### II. Architecture Boundaries
-The application is a standard Next.js 14 App Router project (TypeScript) with no Server Actions
-layer and no service/repository layer — pages under `app/portal/**` own their own data fetching
-and mutation directly via the shared browser Supabase client. This MUST NOT change without an
-approved specification; do not introduce Server Actions or a service layer for a single new
-feature. Privileged operations (anything requiring the Supabase service-role key) MUST live only in
+The application is a standard Next.js 15 App Router project (TypeScript, React 19) with no Server
+Actions layer and no repository/ORM layer. Pages under `app/portal/**` fetch and mutate data
+through the shared browser Supabase client, under Row Level Security, which remains the
+enforcement point.
+Shared per-domain modules in `src/lib/<domain>.ts` (the pattern `src/lib/planner*.ts` already
+follows) are allowed, and are the REQUIRED home for any read/write logic needed by more than one
+caller (a page, an inspector, a bulk action, an importer, an AI tool). A domain module MUST take
+the Supabase client as an argument so the same function runs under the caller's RLS in the
+browser or in a server route; it MUST NOT create its own client or reach for the service role.
+Domain modules are created on demand, when a second caller needs the logic, not as a
+repository-wide refactor; logic MUST NOT be copied into a second caller instead. Server Actions
+and repository/ORM layers remain out of scope without an approved specification. Privileged
+operations (anything requiring the Supabase service-role key) MUST live only in
 server-side route handlers, each independently re-verifying the caller's authorization server-side
 immediately before performing the privileged action — never trust a client-supplied authorization
 flag, and never assume a UI-level check is sufficient. Exactly two authorization tiers are allowed:
@@ -64,10 +108,15 @@ flag, and never assume a UI-level check is sufficient. Exactly two authorization
 Organization-scoped privilege MUST NOT allow escalation: it can never grant platform admin, never
 grant organization owner/admin roles unless an approved spec explicitly allows it, and never read or
 act on another organization's people or records. New features
-MUST reuse existing helpers, hooks, and shared components (`src/lib/**`, `src/components/portal/**`,
-`src/contexts/**`) before writing new ones, and event-scoped work MUST fit within the existing
-`app/portal/events/[eventId]/<section>` tab-section model rather than inventing a new navigational
-structure.
+MUST reuse existing helpers, hooks, and shared components (`src/lib/**`, `src/components/**`,
+`src/contexts/**`) before writing new ones. Event-scoped pages MUST keep their
+`/portal/events/[eventId]/<section>` routes; when sections are merged, the old route MUST
+permanently redirect to the new one so existing links keep working. Event navigation MAY be
+organised into the approved workspace structure (a left sidebar of areas with at most two levels,
+a central canvas, and one right-hand panel shared by the record inspector and the Copilot); any
+further new navigational structure still requires an approved specification. Section
+availability (product entitlement, Planner capability, role) MUST continue to be decided by the
+existing rules in one place, not re-implemented per page.
 
 ### III. Supabase and Database Safety
 Every schema change MUST go through a migration file in `supabase/migrations/`, following the
@@ -105,18 +154,29 @@ the service-role client only when the operation genuinely requires bypassing RLS
 convenience.
 
 ### V. UI Consistency
-New UI MUST be visually and structurally indistinguishable from the existing portal: reuse
-`SectionHeader`, `FormModal`, `.btn-primary`/`.btn-secondary`/`.btn-danger`, `.input`/`.label`/
-`.hint`, and the established card/grid/loading-skeleton shapes documented in
-`context/ui-registry.md` before building a new equivalent. Colors and surfaces MUST use the tokens
-defined in `tailwind.config.js` (per `context/ui-tokens.md`) — hardcoded hex values or raw Tailwind
-color utility classes MUST NOT be used for portal chrome (the one documented legacy exception,
-`border-[#E4EAF0]`/`rounded-[20px]`, is normalized opportunistically, not treated as a new
-precedent). Established loading, error, and empty-state patterns MUST be reused, not reinvented per
-page. Material Symbols Outlined MUST remain the only icon set, and this project MUST NOT adopt a
-second design system or component library. When a feature introduces a materially new, reusable UI
-pattern, the `/imprint` skill SHOULD be run to record it in the UI registry before the pattern is
-treated as established.
+New UI MUST follow one shared design system: the patterns recorded in `context/ui-registry.md`
+and `context/ui-rules.md`, and the tokens in `tailwind.config.js` (per `context/ui-tokens.md`).
+Reuse an existing component or pattern before building a new equivalent.
+- **Records and tasks.** Records in a list are created and edited in a right-hand **Inspector**
+  that keeps the list's filters, selection, and scroll; short standalone tasks use a **Sheet**.
+  `FormModal` remains valid on any page until that page is migrated. An add/edit panel MUST NEVER
+  be rendered inline above a list. Closing an inspector, sheet, or modal MUST NOT discard typed
+  input without confirmation.
+- **Tokens.** Colors, surfaces, radii, elevation, status, and motion MUST use tokens; hardcoded hex
+  values or raw Tailwind color utility classes MUST NOT be used for portal chrome (the documented
+  legacy exception, `border-[#E4EAF0]`/`rounded-[20px]`, is normalized opportunistically, not a
+  precedent). Status and product MUST NOT be communicated by color alone.
+- **Accessibility and motion.** New UI MUST use the single shared focus-ring utility, provide a
+  `prefers-reduced-motion` variant for any motion, and give dialogs/sheets/inspectors correct
+  dialog semantics and focus management.
+- **States.** Established loading, error, and empty-state patterns MUST be reused, not reinvented
+  per page.
+- **Libraries.** Material Symbols Outlined MUST remain the only icon set. Headless, unstyled
+  primitives — Radix UI primitives, TanStack Table/Virtual, and cmdk — MAY be used when their
+  versions are pinned and recorded in `context/code-standards.md`; the project MUST NOT adopt a
+  second *visual* design system or styled component library.
+When a feature introduces a materially new, reusable UI pattern, the `/imprint` skill SHOULD be run
+to record it in the UI registry before the pattern is treated as established.
 
 ### VI. Scope Discipline
 A specification defines the intended behavior for a feature; implementation MUST stay within that
@@ -179,4 +239,4 @@ MUST be flagged and reconciled explicitly, not silently overridden in either dir
 and `/review` MUST check proposed and completed work against these principles as part of their
 existing validation/review responsibilities.
 
-**Version**: 1.1.1 | **Ratified**: 2026-09-10 | **Last Amended**: 2026-10-09
+**Version**: 2.0.0 | **Ratified**: 2026-09-10 | **Last Amended**: 2026-11-20
