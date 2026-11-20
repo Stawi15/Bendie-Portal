@@ -75,7 +75,8 @@ specs/030-studio-app-shell/
 ```text
 src/app/portal/layout.tsx                    # becomes a SERVER component: reads `studio_shell` cookie → <PortalShell initialShell>
 src/components/shell/PortalShell.tsx         # (client) today's providers + v1/v2 switch (moved from layout.tsx)
-src/components/shell/AppShell.tsx            # v2 frame: sidebar | canvas (toolbar slot, breadcrumbs) | right panel slot
+src/components/shell/AppShell.tsx            # v2 frame: sidebar | global top bar (search, bell, New event, account menu) | canvas (toolbar slot, breadcrumbs) | right panel slot
+src/components/shell/EventContentGate.tsx    # content gate shared by V1 and V2 (identical markup)
 src/components/shell/OrgSidebar.tsx          # v2 org destinations + footer
 src/components/shell/EventSidebar.tsx        # v2 6 areas × sections + footer utilities
 src/components/shell/ContextStrip.tsx        # org › event, product chips, visibility line, role

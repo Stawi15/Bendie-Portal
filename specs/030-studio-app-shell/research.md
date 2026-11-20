@@ -22,6 +22,8 @@ Checked against `redesign` @ `304fa5c` on 2026-11-20.
   - The query override also writes the cookie, so links "stick", and is read client-side through `useSearchParams` in `PortalShell`.
 - **Rationale:** the blueprint said `localStorage`. That's readable only after hydration, so v2 users would see the v1 layout flash on every full load. A cookie is still **per browser, no database**, which satisfies FR-002 and the confirmed intent. The middleware is untouched.
 - **Edge:** if cookies are blocked, v1 shows (spec edge case).
+- **Consequence (analysis U2):** reading `cookies()` in the `/portal` layout makes every `/portal/*` route dynamically rendered (some are prerendered as static today). Accepted: all are behind authentication and middleware already runs per request. Checked in T025.
+- **Loop guard (analysis U1):** the override writes the cookie and refreshes only when the value differs.
 
 ## R4: Role label
 
