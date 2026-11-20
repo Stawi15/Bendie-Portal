@@ -1,0 +1,59 @@
+{
+  "focus": {
+    "org_overview": {
+      "tabbed": 30,
+      "no_visible_indicator": [],
+      "double_indicator": [
+        {
+          "tag": "button",
+          "role": null,
+          "label": "All",
+          "outline": true,
+          "ring": true,
+          "bgfocus": "rgb(255, 255, 255)",
+          "fv": true
+        }
+      ]
+    },
+    "event_dashboard": {
+      "tabbed": 30,
+      "no_visible_indicator": [],
+      "double_indicator": []
+    },
+    "agenda": {
+      "tabbed": 30,
+      "no_visible_indicator": [],
+      "double_indicator": []
+    },
+    "create_event": {
+      "tabbed": 14,
+      "no_visible_indicator": [],
+      "double_indicator": []
+    },
+    "mouse_click_manage_modules": {
+      "tag": "button",
+      "role": null,
+      "label": "tune\nManage modules",
+      "outline": false,
+      "ring": false,
+      "bgfocus": "rgba(0, 0, 0, 0)",
+      "fv": false
+    }
+  },
+  "reduced_motion": {
+    "no-preference": {
+      "sidebar_transition_duration": "0.2s, 0.2s",
+      "sidebar_transition_delay": "0.25s, 0.25s",
+      "button_transition_duration": "0.2s",
+      "pulse": "2s xinfinite",
+      "spin": "1s xinfinite"
+    },
+    "reduce": {
+      "sidebar_transition_duration": "1e-05s",
+      "sidebar_transition_delay": "0.25s, 0.25s",
+      "button_transition_duration": "1e-05s",
+      "pulse": "2s xinfinite",
+      "spin": "1s xinfinite"
+    }
+  }
+}
