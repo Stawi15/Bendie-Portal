@@ -29,7 +29,7 @@ Upgrades doc 10 from source-confirmed to **[BV]**:
 
 ## Bugs found (production code; reproduced on the test copy)
 
-> **Fixed 2026-11-20** on branch `fix/dashboard-and-planner-bugs` (from `main`, commit `992e198`, not yet merged or pushed). They were verified in the browser on the test copy. While fixing them:
+> **Fixed 2026-11-20** on branch `fix/dashboard-and-planner-bugs` (from `main`, commit `992e198`, **pushed to `main` 2026-11-20** and merged into `redesign`). They were verified in the browser on the test copy. While fixing them:
 > - B1 turned out wider: the dashboard's generic section counts also used `select('*')` and included `event_members`.
 > - B2 was worse than recorded: the failed count made the **whole** admin organisation page show "We couldn't load this organisation".
 
