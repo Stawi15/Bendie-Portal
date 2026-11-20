@@ -95,7 +95,7 @@ erDiagram
 4. **Mixed date and time types in Planner:** `timestamp without time zone` plus a separate `date` and `time`, with `events.timezone` for interpretation. Bendie uses `timestamptz` with `events.timezone` (Feature 024).
 5. **Bendie `attendee_travel_details` stores dates and times as text.**
 6. **`agenda_sessions.breakout_rooms` (jsonb) is derived.** A trigger rebuilds it and a guard refuses direct writes.
-7. **Global rows:** `news_items`, `expo_spaces`, `excursions` and `excursion_categories` allow `event_id IS NULL` to mean "every event".
+7. **Global rows:** `news_items`, `expo_spaces`, `excursions`, `excursion_categories` and `info_content` allow `event_id IS NULL` to mean "every event". The Events app shows them in every event [M, doc 40 M6].
 8. **`event_members.onboarding_status`** is written by the app, not Studio. 385 of 632 are `pending`.
 
 No schema was modified (Portal 2.0 rule 5).

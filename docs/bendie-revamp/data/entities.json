@@ -17,7 +17,8 @@
             "profiles"
           ],
           "rls_policies": 5,
-          "studio_screen": "admin/organisations, settings"
+          "studio_screen": "admin/organisations, settings",
+          "mobile_app": null
         },
         {
           "name": "organization_members",
@@ -29,7 +30,8 @@
             "profiles"
           ],
           "rls_policies": 5,
-          "studio_screen": "people"
+          "studio_screen": "people",
+          "mobile_app": null
         },
         {
           "name": "organization_products",
@@ -41,7 +43,8 @@
             "profiles"
           ],
           "rls_policies": 2,
-          "studio_screen": "admin/organisations"
+          "studio_screen": "admin/organisations",
+          "mobile_app": null
         },
         {
           "name": "organization_planner_links",
@@ -53,7 +56,8 @@
             "profiles"
           ],
           "rls_policies": 1,
-          "studio_screen": "admin/organisations/[id]"
+          "studio_screen": "admin/organisations/[id]",
+          "mobile_app": null
         },
         {
           "name": "organization_assets",
@@ -65,7 +69,8 @@
             "profiles"
           ],
           "rls_policies": 3,
-          "studio_screen": "assets"
+          "studio_screen": "assets",
+          "mobile_app": null
         },
         {
           "name": "organization_audit_log",
@@ -77,7 +82,8 @@
             "profiles"
           ],
           "rls_policies": 2,
-          "studio_screen": "activity-log"
+          "studio_screen": "activity-log",
+          "mobile_app": null
         },
         {
           "name": "teams",
@@ -89,7 +95,8 @@
             "profiles"
           ],
           "rls_policies": 8,
-          "studio_screen": "teams"
+          "studio_screen": "teams",
+          "mobile_app": null
         },
         {
           "name": "team_members",
@@ -101,7 +108,8 @@
             "teams"
           ],
           "rls_policies": 6,
-          "studio_screen": "teams"
+          "studio_screen": "teams",
+          "mobile_app": null
         },
         {
           "name": "profiles",
@@ -113,7 +121,36 @@
             "organizations"
           ],
           "rls_policies": 3,
-          "studio_screen": "people, members (contacts via RPC only)"
+          "studio_screen": "people, members (contacts via RPC only)",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "update"
+            ],
+            "columns": [
+              "avatar_url",
+              "bio",
+              "current_event_id",
+              "current_organization_id",
+              "email",
+              "full_name",
+              "gender",
+              "id",
+              "is_onboarded",
+              "job_title",
+              "linkedin_url",
+              "location",
+              "organization",
+              "phone",
+              "updated_at",
+              "username"
+            ],
+            "fragile": [
+              "current_event_id: Null makes most screens empty ('No active event'); chats, posts, photos and games return nothing."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "events",
@@ -125,7 +162,56 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "basics, hero, theme, terminology, modules"
+          "studio_screen": "basics, hero, theme, terminology, modules",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "attendee_limit",
+              "category_label",
+              "description",
+              "disabled_menu_items",
+              "ends_at",
+              "event_type",
+              "facilitator_label_plural",
+              "facilitator_label_singular",
+              "feedback_form_url",
+              "gallery_background",
+              "gallery_external_url",
+              "hero_description",
+              "hero_image_url",
+              "hero_title",
+              "id",
+              "image_url",
+              "in_house",
+              "interests_enabled",
+              "location",
+              "name",
+              "networking_mode",
+              "organization_id",
+              "profile_banner_image_url",
+              "slug",
+              "starts_at",
+              "status",
+              "theme_icon",
+              "theme_label",
+              "theme_primary",
+              "theme_secondary",
+              "theme_tertiary"
+            ],
+            "fragile": [
+              "status: Exact strings 'active'/'published' gate public visibility, the scanner and walk-in; any other value hides the event publicly.",
+              "starts_at / ends_at: Decide ongoing/upcoming/past; with both null only 'active' is shown as ongoing.",
+              "slug: Key for access codes, walk-in, scanner and resend; must be lowercase-safe (the scanner lowercases it).",
+              "ACTIVE_EVENT_COLUMNS set (e.g. disabled_menu_items, networking_mode, feedback_form_url, in_house): Selected by explicit name; a dropped or renamed column makes the whole query error, so the menu, labels and networking mode fail to load.",
+              "theme_primary / theme_secondary / theme_tertiary / profile_banner_image_url: Embedded by name in the profile fetch; a rename makes the profile load fail and fall back to the default theme / fallback profile.",
+              "interests_enabled: Only an explicit false skips the interests step; null means the step is shown.",
+              "feedback_form_url: Null disables the feedback form WebView."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "event_products",
@@ -139,7 +225,8 @@
             "profiles"
           ],
           "rls_policies": 2,
-          "studio_screen": "create event, admin/organisations"
+          "studio_screen": "create event, admin/organisations",
+          "mobile_app": null
         },
         {
           "name": "event_creation_requests",
@@ -150,7 +237,8 @@
             "events"
           ],
           "rls_policies": 0,
-          "studio_screen": "create event (idempotency)"
+          "studio_screen": "create event (idempotency)",
+          "mobile_app": null
         },
         {
           "name": "event_members",
@@ -163,7 +251,26 @@
             "profiles"
           ],
           "rls_policies": 6,
-          "studio_screen": "members"
+          "studio_screen": "members",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "update"
+            ],
+            "columns": [
+              "event_id",
+              "onboarding_completed_at",
+              "onboarding_status",
+              "organization_id",
+              "role",
+              "user_id"
+            ],
+            "fragile": [
+              "onboarding_status: Must equal 'completed' or the user is treated as not onboarded and re-routed to onboarding."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "event_user_access_codes",
@@ -176,7 +283,8 @@
             "profiles"
           ],
           "rls_policies": 3,
-          "studio_screen": "members (resend code)"
+          "studio_screen": "members (resend code)",
+          "mobile_app": null
         },
         {
           "name": "event_planner_links",
@@ -188,7 +296,8 @@
             "profiles"
           ],
           "rls_policies": 1,
-          "studio_screen": "bendie-planner"
+          "studio_screen": "bendie-planner",
+          "mobile_app": null
         },
         {
           "name": "planner_permission_audit_log",
@@ -200,7 +309,8 @@
             "profiles"
           ],
           "rls_policies": 1,
-          "studio_screen": "members → Team & Access"
+          "studio_screen": "members \u2192 Team & Access",
+          "mobile_app": null
         },
         {
           "name": "event_content_audit_log",
@@ -212,7 +322,8 @@
             "profiles"
           ],
           "rls_policies": 2,
-          "studio_screen": "activity-log"
+          "studio_screen": "activity-log",
+          "mobile_app": null
         },
         {
           "name": "facilitators",
@@ -224,7 +335,25 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "facilitators"
+          "studio_screen": "facilitators",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "avatar_url",
+              "email",
+              "facilitator_group",
+              "full_name",
+              "id",
+              "job_title",
+              "organization",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "facilitator_favorites",
@@ -236,7 +365,22 @@
             "profiles"
           ],
           "rls_policies": 6,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "delete",
+              "insert",
+              "select"
+            ],
+            "columns": [
+              "*",
+              "facilitator_id",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "agenda_sessions",
@@ -249,7 +393,36 @@
             "profiles"
           ],
           "rls_policies": 10,
-          "studio_screen": "agenda"
+          "studio_screen": "agenda",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "accent_color",
+              "audience",
+              "block_type",
+              "breakout_rooms",
+              "created_at",
+              "created_by",
+              "description",
+              "display_order",
+              "ends_at",
+              "event_id",
+              "facilitator_id",
+              "id",
+              "location",
+              "starts_at",
+              "title",
+              "updated_at"
+            ],
+            "fragile": [
+              "breakout_rooms: The only breakout source; an empty or invalid JSON hides the rooms.",
+              "starts_at: Sort key; displayed in Africa/Nairobi regardless of the event's location."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "agenda_session_speakers",
@@ -261,7 +434,21 @@
             "facilitators"
           ],
           "rls_policies": 5,
-          "studio_screen": "agenda"
+          "studio_screen": "agenda",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "display_order",
+              "facilitator_id",
+              "session_id",
+              "speaker_type"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "agenda_breakout_rooms",
@@ -273,7 +460,8 @@
             "facilitators"
           ],
           "rls_policies": 8,
-          "studio_screen": "agenda"
+          "studio_screen": "agenda",
+          "mobile_app": null
         },
         {
           "name": "agenda_breakout_room_items",
@@ -284,7 +472,8 @@
             "agenda_breakout_rooms"
           ],
           "rls_policies": 8,
-          "studio_screen": "agenda"
+          "studio_screen": "agenda",
+          "mobile_app": null
         },
         {
           "name": "agenda_breakout_assignments",
@@ -298,7 +487,8 @@
             "profiles"
           ],
           "rls_policies": 8,
-          "studio_screen": "agenda (BreakoutAssignmentsModal)"
+          "studio_screen": "agenda (BreakoutAssignmentsModal)",
+          "mobile_app": null
         },
         {
           "name": "session_attendees",
@@ -310,7 +500,25 @@
             "profiles"
           ],
           "rls_policies": 4,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "delete",
+              "insert",
+              "select"
+            ],
+            "columns": [
+              "action_type",
+              "match_percent",
+              "session_id",
+              "user_id"
+            ],
+            "fragile": [
+              "action_type: Only 'add' rows count as favourites or attendees."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "session_ratings",
@@ -323,7 +531,22 @@
             "profiles"
           ],
           "rls_policies": 3,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "event_id",
+              "rating",
+              "session_id",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "activities",
@@ -335,7 +558,28 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "activities"
+          "studio_screen": "activities",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "created_at",
+              "created_by",
+              "description",
+              "display_order",
+              "id",
+              "is_featured",
+              "location",
+              "rating",
+              "slug",
+              "title",
+              "updated_at"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "activity_images",
@@ -346,7 +590,24 @@
             "activities"
           ],
           "rls_policies": 6,
-          "studio_screen": "activities"
+          "studio_screen": "activities",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "activity_id",
+              "alt_text",
+              "created_at",
+              "display_order",
+              "id",
+              "image_type",
+              "image_url"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "excursion_categories",
@@ -357,7 +618,22 @@
             "events"
           ],
           "rls_policies": 4,
-          "studio_screen": "excursions"
+          "studio_screen": "excursions",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "display_order",
+              "icon",
+              "id",
+              "key",
+              "label"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "excursions",
@@ -369,7 +645,23 @@
             "excursion_categories"
           ],
           "rls_policies": 4,
-          "studio_screen": "excursions"
+          "studio_screen": "excursions",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "category_id",
+              "description",
+              "display_order",
+              "id",
+              "image_url",
+              "title"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "attendee_travel_details",
@@ -381,7 +673,31 @@
             "profiles"
           ],
           "rls_policies": 10,
-          "studio_screen": "attendee-travel"
+          "studio_screen": "attendee-travel",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "*",
+              "boarding_time",
+              "date",
+              "destination",
+              "id",
+              "origin",
+              "pickup_location",
+              "pickup_vehicle",
+              "route",
+              "title",
+              "travel_time",
+              "type"
+            ],
+            "fragile": [
+              "title / route / travel_time / pickup_location: A row is dropped if all of these are empty; times are text columns (boarding_time, travel_time, date)."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "event_interest_options",
@@ -392,7 +708,27 @@
             "events"
           ],
           "rls_policies": 5,
-          "studio_screen": "networking"
+          "studio_screen": "networking",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "*",
+              "display_order",
+              "event_id",
+              "id",
+              "is_required",
+              "option_key",
+              "option_label",
+              "question_key",
+              "question_label",
+              "question_type"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "networking_preferences",
@@ -404,7 +740,38 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "— (attendee answers)"
+          "studio_screen": "\u2014 (attendee answers)",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "*",
+              "advisor_expertise",
+              "answers",
+              "availability",
+              "event_id",
+              "gov_has_projects",
+              "gov_sector_focus",
+              "investor_preferred_sectors",
+              "investor_risk",
+              "investor_ticket_size",
+              "location",
+              "meeting_preference",
+              "objectives",
+              "organization_name",
+              "private_goals",
+              "project_stages",
+              "role",
+              "sectors",
+              "short_intro",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "connections",
@@ -416,7 +783,26 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "insert",
+              "select",
+              "update"
+            ],
+            "columns": [
+              "created_at",
+              "event_id",
+              "id",
+              "receiver_id",
+              "requester_id",
+              "status",
+              "updated_at"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "news_items",
@@ -427,7 +813,30 @@
             "events"
           ],
           "rls_policies": 4,
-          "studio_screen": "news"
+          "studio_screen": "news",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "body",
+              "display_order",
+              "id",
+              "image_url",
+              "is_featured",
+              "published_at",
+              "read_time_minutes",
+              "registration_url",
+              "summary",
+              "themes",
+              "title"
+            ],
+            "fragile": [
+              "published_at: Ordering only; there is no future-date filter, so scheduled news shows immediately."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "faqs",
@@ -438,7 +847,22 @@
             "events"
           ],
           "rls_policies": 7,
-          "studio_screen": "faqs"
+          "studio_screen": "faqs",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "answer",
+              "event_id",
+              "id",
+              "question",
+              "section"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "info_content",
@@ -449,7 +873,19 @@
             "events"
           ],
           "rls_policies": 4,
-          "studio_screen": "info-center"
+          "studio_screen": "info-center",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "bullets",
+              "event_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "support_contacts",
@@ -460,7 +896,25 @@
             "events"
           ],
           "rls_policies": 7,
-          "studio_screen": "info-center"
+          "studio_screen": "info-center",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "avatar_url",
+              "contact_group",
+              "display_order",
+              "email",
+              "event_id",
+              "id",
+              "name",
+              "phone"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "expo_spaces",
@@ -471,7 +925,31 @@
             "events"
           ],
           "rls_policies": 4,
-          "studio_screen": "expo"
+          "studio_screen": "expo",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "chips",
+              "contact_email",
+              "contact_name",
+              "contact_phone",
+              "cta_description",
+              "display_order",
+              "id",
+              "image_url",
+              "intro",
+              "is_exhibitor",
+              "is_sponsor",
+              "name",
+              "offering",
+              "summary"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "event_photos",
@@ -483,7 +961,23 @@
             "profiles"
           ],
           "rls_policies": 8,
-          "studio_screen": "event-photos"
+          "studio_screen": "event-photos",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "insert",
+              "select"
+            ],
+            "columns": [
+              "*",
+              "caption",
+              "event_id",
+              "image_url",
+              "uploaded_by"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "posts",
@@ -495,7 +989,25 @@
             "profiles"
           ],
           "rls_policies": 11,
-          "studio_screen": "gallery"
+          "studio_screen": "gallery",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "delete",
+              "insert",
+              "select",
+              "update"
+            ],
+            "columns": [
+              "caption",
+              "event_id",
+              "id",
+              "image_url",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "post_likes",
@@ -507,7 +1019,21 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "gallery"
+          "studio_screen": "gallery",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "delete",
+              "insert",
+              "select"
+            ],
+            "columns": [
+              "post_id",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "post_comments",
@@ -519,7 +1045,22 @@
             "profiles"
           ],
           "rls_policies": 10,
-          "studio_screen": "gallery, moderation"
+          "studio_screen": "gallery, moderation",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "content",
+              "created_at",
+              "id",
+              "post_id",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "emergency_contacts",
@@ -530,7 +1071,26 @@
             "events"
           ],
           "rls_policies": 7,
-          "studio_screen": "emergency"
+          "studio_screen": "emergency",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "description",
+              "display_order",
+              "event_id",
+              "id",
+              "image_url",
+              "location",
+              "name",
+              "phone",
+              "type"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "emergency_images",
@@ -541,7 +1101,22 @@
             "events"
           ],
           "rls_policies": 5,
-          "studio_screen": "emergency"
+          "studio_screen": "emergency",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "caption",
+              "display_order",
+              "event_id",
+              "id",
+              "image_url"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "games",
@@ -553,7 +1128,18 @@
             "profiles"
           ],
           "rls_policies": 6,
-          "studio_screen": "games"
+          "studio_screen": "games",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "*"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "game_questions",
@@ -564,7 +1150,18 @@
             "games"
           ],
           "rls_policies": 6,
-          "studio_screen": "games"
+          "studio_screen": "games",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "*"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "game_results",
@@ -576,7 +1173,23 @@
             "profiles"
           ],
           "rls_policies": 4,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "*",
+              "answers",
+              "game_id",
+              "score",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "game_points",
@@ -588,7 +1201,8 @@
             "profiles"
           ],
           "rls_policies": 1,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": null
         },
         {
           "name": "event_push_notifications",
@@ -600,7 +1214,8 @@
             "profiles"
           ],
           "rls_policies": 4,
-          "studio_screen": "notifications"
+          "studio_screen": "notifications",
+          "mobile_app": null
         },
         {
           "name": "notifications",
@@ -612,7 +1227,33 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "— (in-app feed)"
+          "studio_screen": "\u2014 (in-app feed)",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "delete",
+              "select",
+              "update"
+            ],
+            "columns": [
+              "actor_id",
+              "body",
+              "created_at",
+              "event_id",
+              "id",
+              "read_at",
+              "related_id",
+              "related_type",
+              "subtitle",
+              "title",
+              "type",
+              "user_id"
+            ],
+            "fragile": [
+              "related_type / related_id / event_id: Drive push deep links and the event switch; unknown types go to /notifications."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "engagement_notification_log",
@@ -624,7 +1265,8 @@
             "profiles"
           ],
           "rls_policies": 0,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": null
         },
         {
           "name": "user_push_tokens",
@@ -635,7 +1277,22 @@
             "profiles"
           ],
           "rls_policies": 4,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "expo_push_token",
+              "id",
+              "platform",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "user_settings",
@@ -646,7 +1303,21 @@
             "profiles"
           ],
           "rls_policies": 3,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "*",
+              "<UserSettings fields>",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "user_blocks",
@@ -657,7 +1328,22 @@
             "profiles"
           ],
           "rls_policies": 3,
-          "studio_screen": "moderation (effects)"
+          "studio_screen": "moderation (effects)",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "delete",
+              "insert",
+              "select"
+            ],
+            "columns": [
+              "blocked_id",
+              "blocker_id",
+              "created_at"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "content_reports",
@@ -668,7 +1354,22 @@
             "profiles"
           ],
           "rls_policies": 1,
-          "studio_screen": "admin/moderation (service role only)"
+          "studio_screen": "admin/moderation (service role only)",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "insert"
+            ],
+            "columns": [
+              "content_id",
+              "content_type",
+              "details",
+              "reason",
+              "reporter_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "chats",
@@ -680,7 +1381,22 @@
             "profiles"
           ],
           "rls_policies": 7,
-          "studio_screen": "moderation"
+          "studio_screen": "moderation",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "created_at",
+              "event_id",
+              "id"
+            ],
+            "fragile": [
+              "event_id: Chats whose event_id doesn't match the active event are hidden, and sending is blocked."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "chat_participants",
@@ -692,7 +1408,22 @@
             "profiles"
           ],
           "rls_policies": 4,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select",
+              "update"
+            ],
+            "columns": [
+              "*",
+              "chat_id",
+              "last_read_at",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "messages",
@@ -704,7 +1435,33 @@
             "profiles"
           ],
           "rls_policies": 5,
-          "studio_screen": "moderation"
+          "studio_screen": "moderation",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "insert",
+              "select",
+              "update"
+            ],
+            "columns": [
+              "audio_duration_seconds",
+              "audio_url",
+              "chat_id",
+              "content",
+              "created_at",
+              "emoji",
+              "id",
+              "image_url",
+              "message_type",
+              "reply_to_message_id",
+              "sender_id",
+              "updated_at"
+            ],
+            "fragile": [
+              "content: The sentinel '__EVENTLY_DELETED_MESSAGE__' means a soft-deleted message."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "message_reads",
@@ -716,7 +1473,8 @@
             "profiles"
           ],
           "rls_policies": 2,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": null
         },
         {
           "name": "feedback",
@@ -728,7 +1486,19 @@
             "profiles"
           ],
           "rls_policies": 5,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "insert"
+            ],
+            "columns": [
+              "<Feedback payload fields>",
+              "user_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "app_release_config",
@@ -737,7 +1507,22 @@
           "approx_rows": 2,
           "fk_to": [],
           "rls_policies": 2,
-          "studio_screen": "— (no screen)"
+          "studio_screen": "\u2014 (no screen)",
+          "mobile_app": {
+            "app": "bendie-events",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "message",
+              "min_supported_version",
+              "store_url"
+            ],
+            "fragile": [
+              "min_supported_version: Setting it above the installed version blocks the app; null disables the gate."
+            ],
+            "source": "data/mobile/studio-contract-bendie-events.json @ b64159b"
+          }
         },
         {
           "name": "meeting_requests",
@@ -746,7 +1531,8 @@
           "approx_rows": null,
           "fk_to": [],
           "rls_policies": 0,
-          "studio_screen": "—"
+          "studio_screen": "\u2014",
+          "mobile_app": null
         }
       ]
     },
@@ -762,7 +1548,8 @@
           "category": "tenancy",
           "approx_rows": null,
           "fk_to": [],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": null
         },
         {
           "name": "profiles",
@@ -772,7 +1559,37 @@
           "fk_to": [
             "organizations"
           ],
-          "rls_policies": 6
+          "rls_policies": 6,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "avatar_url",
+              "created_at",
+              "email",
+              "first_name",
+              "full_name",
+              "gender",
+              "id",
+              "is_org_admin",
+              "is_platform_admin",
+              "member_type",
+              "organization_id",
+              "role",
+              "updated_at"
+            ],
+            "fragile": [
+              "first_name, full_name, email, role, gender: Own row must have all five non-empty or user is routed to Setup; must stay self-readable via direct select",
+              "organization_id: Null routes user to awaiting-organization holding screen",
+              "is_org_admin: Grants admin access to all org events; read from own row",
+              "email, role, is_platform_admin, member_type (other users): Selected directly on Event Access and checklist owner picker; a column revoke fails the whole query",
+              "avatar_url: Treated as bucket path unless it starts with http(s)"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "org_member_access",
@@ -783,7 +1600,34 @@
             "organizations",
             "profiles"
           ],
-          "rls_policies": 4
+          "rls_policies": 4,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "delete",
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "*",
+              "can_manage_checklist",
+              "can_manage_logistics",
+              "can_manage_production",
+              "can_manage_tasks",
+              "can_manage_vendors",
+              "can_view_checklist",
+              "can_view_logistics",
+              "can_view_notifications",
+              "can_view_overview",
+              "can_view_production",
+              "can_view_tasks",
+              "can_view_vendors",
+              "organization_id",
+              "profile_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "events",
@@ -793,7 +1637,40 @@
           "fk_to": [
             "organizations"
           ],
-          "rls_policies": 5
+          "rls_policies": 5,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "insert",
+              "select",
+              "update"
+            ],
+            "columns": [
+              "*",
+              "attendees",
+              "created_at",
+              "description",
+              "end_date",
+              "end_time",
+              "event_id",
+              "event_title",
+              "lead_coordinators",
+              "location",
+              "organization_id",
+              "setup_date",
+              "setup_time",
+              "start_date",
+              "start_time",
+              "support_team",
+              "timezone",
+              "updated_at"
+            ],
+            "fragile": [
+              "timezone: Required on insert/update; all venue times depend on it",
+              "(any new NOT NULL column): Planner inserts events with a fixed column set; a NOT NULL column without default breaks creation"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "event_user_assignments",
@@ -804,7 +1681,37 @@
             "events",
             "profiles"
           ],
-          "rls_policies": 8
+          "rls_policies": 8,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select",
+              "upsert"
+            ],
+            "columns": [
+              "access_ends_on",
+              "access_role",
+              "assignment_id",
+              "assignment_source",
+              "can_manage_checklist",
+              "can_manage_logistics",
+              "can_manage_production",
+              "can_manage_tasks",
+              "can_manage_vendors",
+              "can_view_checklist",
+              "can_view_logistics",
+              "can_view_notifications",
+              "can_view_overview",
+              "can_view_production",
+              "can_view_tasks",
+              "can_view_vendors",
+              "event_id",
+              "is_active",
+              "profile_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "passengers",
@@ -812,7 +1719,8 @@
           "category": "people",
           "approx_rows": 409,
           "fk_to": [],
-          "rls_policies": 1
+          "rls_policies": 1,
+          "mobile_app": null
         },
         {
           "name": "event_passengers",
@@ -823,7 +1731,8 @@
             "events",
             "passengers"
           ],
-          "rls_policies": 1
+          "rls_policies": 1,
+          "mobile_app": null
         },
         {
           "name": "all_flights_combined_table",
@@ -834,7 +1743,23 @@
             "events",
             "passengers"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select",
+              "update"
+            ],
+            "columns": [
+              "fullname",
+              "marked",
+              "record_id"
+            ],
+            "fragile": [
+              "flight, date_time, event_id: Passenger list matches flight code + date_time day range"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "hotel_bookings",
@@ -845,7 +1770,31 @@
             "events",
             "passengers"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "accommodation_required",
+              "booking_id",
+              "check_in_date",
+              "check_out_date",
+              "country",
+              "event_id",
+              "nights_count",
+              "notes",
+              "passenger_id",
+              "room_number",
+              "rooming_label",
+              "special_stay_pattern"
+            ],
+            "fragile": [
+              "passenger_id (FK to passengers): Embedded select passengers(full_name,gender) needs the FK relationship"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "transport_movements",
@@ -855,7 +1804,8 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "vehicles",
@@ -866,7 +1816,24 @@
             "events",
             "transport_movements"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "* (uses date, status)",
+              "date",
+              "max_capacity",
+              "pickup_time",
+              "route",
+              "vehicle_id",
+              "vehicle_no"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "passenger_vehicle_assignments",
@@ -879,7 +1846,18 @@
             "transport_movements",
             "vehicles"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "vehicle_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "vehicle_boardings",
@@ -890,7 +1868,18 @@
             "all_flights_combined_table",
             "vehicles"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "vehicle_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "vehicle_passengers",
@@ -900,7 +1889,8 @@
           "fk_to": [
             "vehicles"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "operational_tasks",
@@ -912,7 +1902,8 @@
             "profiles",
             "users"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": null
         },
         {
           "name": "operational_task_assignees",
@@ -923,7 +1914,8 @@
             "operational_tasks",
             "profiles"
           ],
-          "rls_policies": 1
+          "rls_policies": 1,
+          "mobile_app": null
         },
         {
           "name": "operational_task_notes",
@@ -934,7 +1926,8 @@
             "operational_tasks",
             "profiles"
           ],
-          "rls_policies": 1
+          "rls_policies": 1,
+          "mobile_app": null
         },
         {
           "name": "event_task_counters",
@@ -944,7 +1937,8 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "event_vendor_items",
@@ -955,7 +1949,29 @@
             "events",
             "profiles"
           ],
-          "rls_policies": 4
+          "rls_policies": 4,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "delete",
+              "update",
+              "upsert"
+            ],
+            "columns": [
+              "category",
+              "event_id",
+              "is_loaded",
+              "is_on_site",
+              "is_packed",
+              "item_description",
+              "notes",
+              "quantity_text",
+              "unit",
+              "vendor_item_id"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "event_checklist_items",
@@ -966,7 +1982,31 @@
             "events",
             "profiles"
           ],
-          "rls_policies": 4
+          "rls_policies": 4,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "delete",
+              "update",
+              "upsert"
+            ],
+            "columns": [
+              "category",
+              "checklist_item_id",
+              "day_number",
+              "event_day_date",
+              "event_id",
+              "is_on_site",
+              "is_sourced",
+              "item_name",
+              "notes",
+              "owner_profile_id",
+              "quantity_text",
+              "specification"
+            ],
+            "fragile": [],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "event_agenda_items",
@@ -976,7 +2016,38 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select"
+            ],
+            "columns": [
+              "agenda_date",
+              "agenda_item_id",
+              "day_label",
+              "day_number",
+              "description",
+              "end_at",
+              "end_time",
+              "event_id",
+              "is_parallel",
+              "item_title",
+              "item_type",
+              "mc",
+              "room_name",
+              "sort_order",
+              "speakers",
+              "start_at",
+              "start_time",
+              "subtitle",
+              "track_name"
+            ],
+            "fragile": [
+              "start_time, is_parallel, track_name, room_name, sort_order: Define breakout slots, track filter and room label"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "production_tasks",
@@ -987,7 +2058,27 @@
             "events",
             "users"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "select",
+              "update"
+            ],
+            "columns": [
+              "*",
+              "event_id",
+              "production_id",
+              "production_id (count exact, head)",
+              "slides_bucket_name",
+              "slides_file_name",
+              "slides_file_path"
+            ],
+            "fragile": [
+              "slides_bucket_name, slides_file_path: Both required for View presentation; bucket read from the row"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "event_blueprints",
@@ -998,7 +2089,31 @@
             "events",
             "profiles"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "insert",
+              "select"
+            ],
+            "columns": [
+              "blueprint_id",
+              "bucket_name",
+              "created_at",
+              "event_id",
+              "file_name",
+              "file_path",
+              "file_type",
+              "is_active",
+              "mime_type",
+              "title",
+              "version_no"
+            ],
+            "fragile": [
+              "version_no, bucket_name: Next version computed client-side as max+1; bucket taken from existing rows"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "event_notifications",
@@ -1009,7 +2124,20 @@
             "events",
             "profiles"
           ],
-          "rls_policies": 3
+          "rls_policies": 3,
+          "mobile_app": {
+            "app": "bendie-planner",
+            "ops": [
+              "update"
+            ],
+            "columns": [
+              "is_read"
+            ],
+            "fragile": [
+              "module, source_id, notification_type: Push and feed deep links parse these (task code, numeric id, '<flight>|<YYYY-MM-DD>')"
+            ],
+            "source": "data/mobile/studio-contract-bendie-planner.json @ 0eeaac4"
+          }
         },
         {
           "name": "event_notification_reads",
@@ -1020,7 +2148,8 @@
             "event_notifications",
             "profiles"
           ],
-          "rls_policies": 2
+          "rls_policies": 2,
+          "mobile_app": null
         },
         {
           "name": "notification_preferences",
@@ -1030,7 +2159,8 @@
           "fk_to": [
             "profiles"
           ],
-          "rls_policies": 3
+          "rls_policies": 3,
+          "mobile_app": null
         },
         {
           "name": "device_push_tokens",
@@ -1040,7 +2170,8 @@
           "fk_to": [
             "profiles"
           ],
-          "rls_policies": 3
+          "rls_policies": 3,
+          "mobile_app": null
         },
         {
           "name": "sent_reminders",
@@ -1048,7 +2179,8 @@
           "category": "system",
           "approx_rows": 53,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "session_status_realtime",
@@ -1056,7 +2188,8 @@
           "category": "production",
           "approx_rows": 1,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "session_summary_realtime",
@@ -1064,7 +2197,8 @@
           "category": "production",
           "approx_rows": 33,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "overall_session_summary",
@@ -1072,7 +2206,8 @@
           "category": "production",
           "approx_rows": 1,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "users",
@@ -1080,7 +2215,8 @@
           "category": "legacy",
           "approx_rows": null,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "transport_logistics",
@@ -1091,7 +2227,8 @@
             "events",
             "users"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "shuttles",
@@ -1099,7 +2236,8 @@
           "category": "legacy",
           "approx_rows": 10,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "capetown",
@@ -1109,7 +2247,8 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "johburg_one",
@@ -1119,7 +2258,8 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "johburg_two",
@@ -1129,7 +2269,8 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "slt_vip",
@@ -1139,7 +2280,8 @@
           "fk_to": [
             "events"
           ],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "staging_production_csv",
@@ -1147,7 +2289,8 @@
           "category": "legacy-import",
           "approx_rows": null,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         },
         {
           "name": "planner_access_backup_022",
@@ -1155,7 +2298,8 @@
           "category": "backup",
           "approx_rows": null,
           "fk_to": [],
-          "rls_policies": 0
+          "rls_policies": 0,
+          "mobile_app": null
         }
       ]
     }
@@ -1316,5 +2460,146 @@
     "avatars",
     "post-images",
     "chat-media"
-  ]
+  ],
+  "mobile_contracts": {
+    "bendie-events": {
+      "git_commit": "b64159b",
+      "tables_used": [
+        "activities",
+        "activity_images",
+        "agenda_session_speakers",
+        "agenda_sessions",
+        "app_release_config",
+        "attendee_travel_details",
+        "chat_participants",
+        "chats",
+        "connections",
+        "content_reports",
+        "emergency_contacts",
+        "emergency_images",
+        "event_interest_options",
+        "event_members",
+        "event_photos",
+        "events",
+        "excursion_categories",
+        "excursions",
+        "expo_spaces",
+        "facilitator_favorites",
+        "facilitators",
+        "faqs",
+        "feedback",
+        "game_questions",
+        "game_results",
+        "games",
+        "info_content",
+        "messages",
+        "networking_preferences",
+        "news_items",
+        "notifications",
+        "post_comments",
+        "post_likes",
+        "posts",
+        "profiles",
+        "session_attendees",
+        "session_ratings",
+        "support_contacts",
+        "user_blocks",
+        "user_push_tokens",
+        "user_settings"
+      ],
+      "views_or_other_used": [
+        "agenda_sessions_summary",
+        "post_feed"
+      ],
+      "tables_not_used_directly": [
+        "agenda_breakout_assignments",
+        "agenda_breakout_room_items",
+        "agenda_breakout_rooms",
+        "engagement_notification_log",
+        "event_content_audit_log",
+        "event_creation_requests",
+        "event_planner_links",
+        "event_products",
+        "event_push_notifications",
+        "event_user_access_codes",
+        "game_points",
+        "meeting_requests",
+        "message_reads",
+        "organization_assets",
+        "organization_audit_log",
+        "organization_members",
+        "organization_planner_links",
+        "organization_products",
+        "organizations",
+        "planner_permission_audit_log",
+        "team_members",
+        "teams"
+      ],
+      "note": "Not used DIRECTLY by app code. The app may still reach these through RPCs or views (see the contract's rpcs list), e.g. Planner tasks via get_operational_tasks_for_mobile_v2."
+    },
+    "bendie-planner": {
+      "git_commit": "0eeaac4",
+      "tables_used": [
+        "all_flights_combined_table",
+        "event_agenda_items",
+        "event_blueprints",
+        "event_checklist_items",
+        "event_notifications",
+        "event_user_assignments",
+        "event_vendor_items",
+        "events",
+        "hotel_bookings",
+        "org_member_access",
+        "passenger_vehicle_assignments",
+        "production_tasks",
+        "profiles",
+        "vehicle_boardings",
+        "vehicles"
+      ],
+      "views_or_other_used": [
+        "event_checklist_items_v",
+        "event_summary_realtime",
+        "event_vendor_items_v",
+        "flights_cards_v",
+        "flights_feed_v",
+        "flights_status_counts_v",
+        "ground_routes_feed_v",
+        "ground_routes_status_counts_v",
+        "ground_routes_v",
+        "ground_status_counts_v",
+        "production_events_v",
+        "production_sessions_v",
+        "task_assignee_options_v",
+        "user_event_assignments_v"
+      ],
+      "tables_not_used_directly": [
+        "capetown",
+        "device_push_tokens",
+        "event_notification_reads",
+        "event_passengers",
+        "event_task_counters",
+        "johburg_one",
+        "johburg_two",
+        "notification_preferences",
+        "operational_task_assignees",
+        "operational_task_notes",
+        "operational_tasks",
+        "organizations",
+        "overall_session_summary",
+        "passengers",
+        "planner_access_backup_022",
+        "sent_reminders",
+        "session_status_realtime",
+        "session_summary_realtime",
+        "shuttles",
+        "slt_vip",
+        "staging_production_csv",
+        "transport_logistics",
+        "transport_movements",
+        "users",
+        "vehicle_passengers"
+      ],
+      "note": "Not used DIRECTLY by app code. The app may still reach these through RPCs or views (see the contract's rpcs list), e.g. Planner tasks via get_operational_tasks_for_mobile_v2."
+    }
+  }
 }

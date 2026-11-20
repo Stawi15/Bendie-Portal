@@ -8,7 +8,7 @@ This file is updated as discovery continues. **Owner** is who can answer.
 |---|---|---|---|
 | Q1 | ~~Test environment~~ **Resolved 2026-11-19:** two free test projects were loaded from schema-only `pg_dump`s plus the exact production permissions, storage buckets and policies, and Bendie's sign-up trigger. Counts match production. Scheduled jobs, Vault secrets, edge functions and the Planner push webhook were deliberately not copied (doc 15). Bendie test ref `baqivpboykobrqlxxoph`, Planner test ref `xwqhisiwvnhluihcpliz`. Seeded the same day with synthetic data and 3 logins; permissions verified equal to production. (Production hasn't yet applied the Feature 027 "C1" `profiles` column lock-down, so `email`/`phone` are still column-readable by `anon` and `authenticated` there and in the test copy. Row visibility is still governed by RLS.) | — | — |
 | Q1b | ~~Production Planner service-role key embedded in the `push_dispatch_on_notification` webhook~~ **Resolved 2026-11-20: the developer rotated the key.** How it was exposed (no evidence of public disclosure or misuse): (1) Supabase's Database Webhooks feature stores request headers, including `Authorization: Bearer <service-role key>`, in plain text in the trigger definition, readable by anyone with project/database access; (2) it was therefore included in the local schema dump `~/planner-schema-full.sql`; (3) a diagnostic command in the Claude session printed that trigger line unmasked, putting the key in the conversation history. Still recommended: rebuild the webhook to read its key from Vault (or use a narrowly scoped secret) so the current key isn't stored in plain text too. | — | — |
-| Q2 | Can we read the Bendie Events and Bendie Planner mobile codebases? **2026-11-20:** the developer will run `prompts/mobile-app-extraction.md` with agents in each app repo; results go to `data/mobile/`. | How each app reads `events.status`, `disabled_menu_items` and paused products, and whether it caches data, is unknown (doc 09) | Developer, app team |
+| Q2 | ~~Mobile codebases?~~ **Resolved 2026-11-20:** both apps were audited with `prompts/mobile-app-extraction.md` (Events @ b64159b, Planner @ 0eeaac4). Results: `data/mobile/`, doc 09 "What the apps actually do", `entities.json` → `mobile_app`. New findings M1–M8 below. | — | — |
 | Q3 | ~~Should `docs/` stay gitignored?~~ **Resolved:** `docs/bendie-revamp/` is now tracked; the rest of `docs/` stays local. | — | — |
 | Q4 | ~~Link the JSM skills?~~ **Resolved:** symlinked into `.claude/skills`, and the skill set was consolidated (doc 02). | — | — |
 
@@ -20,6 +20,22 @@ This file is updated as discovery continues. **Owner** is who can answer.
 | T2 | The live Bendie project has **no `event-assets` bucket**, although `architecture.md`, doc 04 and `supabase/migrations/004_storage_policies.sql` describe one. The live buckets are avatars, activity-images, event-photos, chat-media, post-images, org-assets and event-files. Doc 04 needs correcting once it's clear which bucket content images really use. | Live `storage.buckets` |
 
 | T3 | When Planner setup succeeds after a failure, the old `events.planner_provisioning_error` text isn't cleared (only the failure path writes it, `plannerEventProvisioning.ts:85`). The UI hides it, but readiness or AI logic reading it would get stale data. | Test event `tester` after Retry |
+
+## Found in the mobile app audit (2026-11-20)
+
+These are app-side or cross-product issues. Studio can warn about them, but most need the app teams.
+
+| # | Finding | Impact | Owner / next step |
+|---|---|---|---|
+| **M1** | **The Events app hard-codes `Africa/Nairobi`** for agenda and speaker times and never reads `events.timezone` (Feature 024). | Any event outside East Africa shows **wrong session times to attendees**, although Studio stores them correctly | Events app team. Meanwhile Studio warns when `timezone ≠ Africa/Nairobi` (doc 23 rule `event.app_timezone`). |
+| **M2** | **The `agenda_sessions_summary` view (security invoker) reads `profiles.email`.** When Feature 027's C1 lock-down revokes that column, the view fails for attendees, and the app falls back to one speaker per session. | **Blocks C1 as planned** | Bendie backend: change the view to `f.email` only (or drop email from the JSON) **before** C1 |
+| M3 | `facilitator_label_singular/plural` are fetched but **never displayed** in the Events app. | Studio's "speaker label" setting has no visible effect | Decide: the app displays them, or Studio marks the field "not used by the app yet" |
+| M4 | Neither app reads `event_products` / `organization_products`. | Pausing **Bendie** for an organisation doesn't affect the attendee app | Product decision: is pause meant to hide the event in the app? |
+| M5 | The Planner app never reads `events.status`. | Studio "Visibility" affects the attendee app only (the doc 17 visibility line must say so) | Studio copy |
+| M6 | Global rows: `info_content` with `event_id IS NULL` is also shown in **every** event (in addition to news, excursions, categories, expo). | Studio must never use null as "unassigned" | Studio rule (doc 07 updated) |
+| M7 | `news_items.published_at` isn't a schedule; future-dated news shows immediately. | Studio mustn't present it as scheduling | Studio copy, or the app adds a filter |
+| M8 | The Planner app saves `event_user_assignments` as **whole-row upserts** (from an offline outbox that replays later), resetting switches and turning `org_default` into `manual`. | Studio Team & access edits can be silently overwritten by a Planner save | Planner team: partial updates; Studio shows "last changed in Planner app" |
+| M9 | Legacy Planner tables `capetown`, `johburg_one/two`, `slt_vip`, `shuttles`, `transport_logistics`, `users`, `vehicle_passengers`, `staging_production_csv` are **not used by the Planner app code** (`vehicle_boardings` still is). | Candidates for retirement (Q11), after checking RPC/view bodies and edge functions | Planner team |
 
 ## Product
 

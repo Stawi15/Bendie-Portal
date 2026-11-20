@@ -2,7 +2,7 @@
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | **Breaking the mobile apps** by changing data they read | Medium | High | No column renames or drops (doc 35); app code unavailable (Q2), so get it before Phase 5; contract tests on read shapes |
+| R1 | **Breaking the mobile apps** by changing data they read | Medium | High | No column renames or drops (doc 35). **App contracts now known** (`data/mobile/`, 2026-11-20): every column and view the apps read is in `entities.json`; turn them into contract tests (doc 37). Watch: explicit-column selects on `events`; `select('*')` in Planner; view and RPC output shapes |
 | R2 | **Losing functionality** in the redesign | Medium | High | Parity matrix (doc 16) gate per feature; flags; old pages kept until signed off |
 | R3 | **Permission regressions** (like B1, found only in the browser) | Medium | High | Data-access contract tests per role on the test DB; walk-through access matrix in CI |
 | R4 | **Constitution conflicts** stall work or get silently ignored | High (known) | Medium | Feature 030 amends the constitution first (doc 36) |

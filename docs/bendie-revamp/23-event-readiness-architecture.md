@@ -71,6 +71,7 @@ type ReadinessRule = {
 | `planner.participants` → `flights` → `hotels` → `transport` | Recommended (Planner) | Coverage counts, e.g. "12 of 40 have no flight" | Today's chain, now counts not a chain |
 | `planner.basics_drift` | Warning | Planner event name/dates differ from Bendie | Doc 09 (copied once) |
 | `planner.identity_gaps` | Warning | Participants with no email (can't link to attendees or pull travel) | 86% live |
+| `event.app_timezone` | Warning | `events.timezone` isn't `Africa/Nairobi`: the attendee app shows Nairobi times (until the app is fixed) | Doc 40 M1 |
 | `visibility.public` | Info | Status `active`/`published` makes the event publicly readable | Doc 09 |
 
 ### Scoring: no single percentage
