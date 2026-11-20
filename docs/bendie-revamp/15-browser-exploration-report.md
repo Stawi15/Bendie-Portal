@@ -29,6 +29,10 @@ Upgrades doc 10 from source-confirmed to **[BV]**:
 
 ## Bugs found (production code; reproduced on the test copy)
 
+> **Fixed 2026-11-20** on branch `fix/dashboard-and-planner-bugs` (from `main`, commit `992e198`, not yet merged or pushed). They were verified in the browser on the test copy. While fixing them:
+> - B1 turned out wider: the dashboard's generic section counts also used `select('*')` and included `event_members`.
+> - B2 was worse than recorded: the failed count made the **whole** admin organisation page show "We couldn't load this organisation".
+
 | # | Bug | Impact | Evidence | Fix size |
 |---|---|---|---|---|
 | **B1** | The event dashboard counts attendees with `event_members.select('*', {head: true})`. Five `planner_*` columns on `event_members` aren't readable by signed-in users (live production grants), so the request is **refused (403) for every role, including Stawi admins**. | Since Feature 016, every dashboard shows **"At least one attendee with access" as not done** and the Attendees area as "Not started", whatever the real count. The Summit has 26 attendees and still shows 1 of 2 required. | `dashboard/page.tsx:170`; prod `has_column_privilege` false for 5 columns; screenshot `stawi_admin/summit_dashboard.jpg` | One line: `select('user_id', …)` |

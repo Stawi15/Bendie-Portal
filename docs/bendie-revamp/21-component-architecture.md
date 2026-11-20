@@ -55,6 +55,8 @@ flowchart TB
 - **`ImportButton`** keeps `CsvImportModal` as is (doc 16 invariant 8).
 - **Explicit variants, not flags:** `StatusBadge.Blocking`, `StatusBadge.Done`, rather than `<StatusBadge isBlocking …>`.
 
+> **Decisions 1 and 2 APPROVED (developer, 2026-11-20):** adopt the recommended options. `code-standards.md` is updated and dependencies are pinned in the implementing Spec Kit features, which also confirm current versions at install time.
+
 ## DECISION 1: shared domain modules for Bendie writes
 
 | | |

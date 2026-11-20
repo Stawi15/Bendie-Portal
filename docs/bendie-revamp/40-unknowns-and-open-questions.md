@@ -25,7 +25,7 @@ This file is updated as discovery continues. **Owner** is who can answer.
 
 | # | Question | Context |
 |---|---|---|
-| Q5 | Should Studio get a real draft/publish model for content? | Today content is live on save and `status` controls public visibility (doc 09). This affects Portal 2.0 §11 "do not auto-publish". |
+| Q5 | ~~Draft/publish model for content?~~ **Decided 2026-11-20 (developer took the recommended approach).** Phase 1 does **not** add content drafts: that needs every attendee-app query changed (doc 09), which is out of reach without the mobile codebases (Q2). Instead, visibility is made explicit: `events.status` becomes a "Visibility" control that says what each value does (members see edits immediately; Active/Published = publicly readable), and AI-generated content is never saved without approval (§11). Revisit content drafts once the app code is available. | — |
 | Q6 | Should Bendie attendees and Planner participants become one person concept in the UI? | Four people concepts; email bridge misses 86% (docs 09, 13) |
 | Q7 | Should Basics edits keep the Planner event in sync after creation? | Currently copied once |
 | Q8 | Who are the target users of 2.0: Stawi staff, client organisers, or both equally? | `project-overview.md` says internal staff; the code admits client organisations |

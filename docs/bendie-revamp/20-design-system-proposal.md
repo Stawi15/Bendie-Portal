@@ -52,7 +52,11 @@ Explicitly avoided (frontend-design, §9.1):
 | **Command palette** | Header event search | Doc 18 |
 | **Toast / inline status** | `react-hot-toast` everywhere | Toasts for completion only; errors inline next to the cause; `aria-live="polite"` |
 
-## Conflict with current project rules (needs your decision)
+## Conflict with current project rules: APPROVED 2026-11-20
+
+**Decision (developer, 2026-11-20):** adopt the recommended approaches. The inspector replaces `FormModal` for list records. `context/ui-rules.md` is updated in the first implementing Spec Kit feature, not before. The copy standard (sentence case, British spelling) is adopted.
+
+Original analysis:
 
 `context/ui-rules.md` says: *"Add/edit forms for any list-based section are always a `FormModal`… never an inline panel."* That rule exists because inline panels above lists were a real, recurring bug (2026-08-19). This proposal replaces **modal editing** with a **side inspector**, not with an inline panel above the list, so the original bug can't come back. If approved, `ui-rules.md` is updated to: *"Records in lists are created and edited in the Inspector; short standalone tasks use a Sheet; never an inline panel above a list."*
 
