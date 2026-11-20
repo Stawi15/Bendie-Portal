@@ -33,6 +33,18 @@ The brief is [../Portal_2.0.md](../Portal_2.0.md). Branch: `redesign`.
 | 16 | [Feature parity matrix](16-feature-parity-matrix.md) | done (generated; fill in per phase) |
 | 40 | [Unknowns and open questions](40-unknowns-and-open-questions.md) | live |
 
+## Product and design proposals (pass 2, 2026-11-20, PROPOSALS awaiting review)
+
+| # | Doc | Key proposal |
+|---|---|---|
+| 17 | [Proposed information architecture](17-proposed-information-architecture.md) | 3 workspaces; event: 6 areas / 31 pages (all 32 sections mapped); products as tags, not a mode |
+| 18 | [Proposed navigation](18-proposed-navigation.md) | Sidebar ≤2 levels, toolbar pattern, ⌘K palette from `routes.json`, one right panel (inspector or Copilot) |
+| 19 | [Proposed user journeys](19-proposed-user-journeys.md) | Guided build vs direct over the same data; "Everyone" people view; unified Travel; agenda conflicts |
+| 20 | [Design system proposal](20-design-system-proposal.md) | Radius, elevation, status, density, motion and focus tokens; copy standard; **inspector replaces FormModal (decision)** |
+| 21 | [Component architecture](21-component-architecture.md) | Compound DataTable/Inspector; **DECISION 1:** domain modules for Bendie writes; **DECISION 2:** Radix, TanStack, cmdk |
+| 22 | [Responsive and accessibility strategy](22-responsive-and-accessibility-strategy.md) | Breakpoint behaviour, 390px fixes, WCAG 2.2 AA baseline, axe + keyboard checks |
+| 23 | [Event readiness architecture](23-event-readiness-architecture.md) | One server-side rule registry replaces both readiness models; severities; no single % |
+
 ## Machine-readable registries (`data/`)
 
 | File | Contents |
@@ -46,7 +58,6 @@ The brief is [../Portal_2.0.md](../Portal_2.0.md). Branch: `redesign`.
 
 ## Still to write
 
-- **Pass 2, product and design (17–23):** proposed IA, navigation, journeys, design system, component architecture, responsive and accessibility strategy, event readiness architecture.
 - **Pass 3, AI (24–34):** Qwen model evaluation, Copilot architecture, context engine, action registry, smart ingestion, event builder, agenda and run-of-show, AI interface, security and privacy, evaluation, cost and performance.
 - **Pass 4, implementation (35–39, 41):** migration strategy, roadmap, testing strategy, success metrics, risks, final recommendations.
 
