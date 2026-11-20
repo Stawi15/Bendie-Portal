@@ -41,18 +41,23 @@ Verified: `RowActionsMenu.tsx:113` shows `focus-visible:bg-surface-container-low
   - 34 additions: the tokens, the `:where(…):focus-visible` rule, `.focus-ring`, and the reduced-motion block.
 - The `!important` spinner, pulse and `:active` rules exist **only inside** `@media (prefers-reduced-motion: reduce)` (0 occurrences outside).
 
-## T018 Keyboard focus (SC-001), test environment, Stawi admin
+## T018 Keyboard focus (SC-001), test environment, Stawi admin. **Corrected after /review**
 
-| Screen | Keyboard stops | No visible indicator | Doubled |
+The first run's detector was unreliable: it treated any `box-shadow`, including Tailwind's zero-size placeholder, as a ring, and it read `transition-all` buttons mid-animation. The corrected detector counts a ring only when it has non-zero blur or spread and a visible colour, waits 300ms after each Tab, and measures indicator contrast against white. Results:
+
+| Screen | Stops | Indicator from the **new shared rule** | Weak or missing (component-owned, existing) |
 |---|---|---|---|
-| Org overview | 30 | 0 | 1 → **false positive** (see note) |
-| Event dashboard | 30 | 0 | 0 |
-| Agenda | 30 | 0 | 0 |
-| Create event dialog | 14 | 0 | 0 |
+| Org overview | 30 | All links and buttons: primary outline, **6.49:1** | Product switcher "Bendie" / "Bendie Planner" ring 1.93:1; header search 1.48:1 |
+| Event dashboard | 30 | All, 6.49:1 | Same 2 header controls |
+| Agenda | 30 | All, 6.49:1 | Same 2 header controls |
+| Create event | 14 | All buttons, 6.49:1 | None that matter (see below) |
 
-- Mouse click on "Manage modules" → `:focus-visible` false, so the shared indicator doesn't appear on mouse focus.
-- **Note:** the flagged control is the selected "All" segment in `EventsOverviewPanel.tsx:85`. Its `panel-shadow` is the existing soft shadow marking the *selected* tab, not a focus ring. The detector counted any box-shadow as a ring. The only focus indicator is the new outline, so it isn't a double.
-- Evidence: `evidence/focus-*.png`, `evidence/focus-and-motion.json`.
+- **Form fields (`.input`):** the detector flagged their 20% ring (1.36:1), but on focus their **border turns full primary (6.49:1)**, which is a sufficient indicator. The detector doesn't measure border changes.
+- **Create event date fields ("no indicator" ×2):** at those Tab stops, focus is on the browser's native date-picker button inside the field, which draws its own 3px outline. Not an app issue.
+- **"All" segment, "doubled":** the decorative `panel-shadow` marking the selected tab plus our outline. Not two focus rings.
+- **Mouse click** on "Manage modules" → `:focus-visible` false.
+
+**SC-001 outcome:** met for every control the shared rule covers. **Known issue K1 (deferred, existing styles):** two TopHeader controls have weak focus (product switcher ring 1.93:1; header search ring doesn't render, leaving a 50%-opacity border change). They're component-owned styles outside this feature's scope, and the app-shell feature replaces the header (docs/bendie-revamp/40, K1). Evidence: `evidence/focus-and-motion.json` (with per-stop details), `evidence/focus-*.png`.
 
 ## T019 Reduced motion (SC-002)
 

@@ -8,9 +8,348 @@
           "tag": "button",
           "role": null,
           "label": "All",
-          "outline": true,
-          "ring": true,
-          "bgfocus": "rgb(255, 255, 255)",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        }
+      ],
+      "faint_below_3to1": [
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "ring",
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.48,
+          "fv": true
+        }
+      ],
+      "all": [
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Overview",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Events",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "People",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Assets",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Teams",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Activity Log",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Settings",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Help",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Logout",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "add\nNew Organisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "ring",
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.48,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Recent activity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Organisation settings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Account menu",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "New event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "All",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Draft",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Upcoming",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Live",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "business_center\n\nStudio Test Summit 2027",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "business_center\n\ntester\n\n26 Nov 2026",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "View all events",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "add\nAdd Person",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "warning\n\nEmergency contacts missing\n\ntes",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "mic_off\n\nSpeaker gaps\n\nStudio Test Summi",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "add_circle\nCreate Event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "person_add\nAdd Person",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "assignment_ind\nAssign People",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
           "fv": true
         }
       ]
@@ -18,25 +357,931 @@
     "event_dashboard": {
       "tabbed": 30,
       "no_visible_indicator": [],
-      "double_indicator": []
+      "double_indicator": [],
+      "faint_below_3to1": [
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "ring",
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.48,
+          "fv": true
+        }
+      ],
+      "all": [
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Overview",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Events",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "People",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Assets",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Teams",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Activity Log",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Settings",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Help",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Logout",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "add\nNew Organisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "ring",
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.48,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Recent activity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Organisation settings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Account menu",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "New event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "arrow_back\nAll Events",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "tune\nManage modules",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Overview",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Event Setup",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Programme",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Attendees",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Content",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Media",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Operations",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "check_circle\nEvent name and dates\n\u2014 done",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "check_circle\nAt least one attendee with ",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Hero & Branding\n\u00b7 Not started",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Agenda\n\u00b7 Has content",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        }
+      ]
     },
     "agenda": {
       "tabbed": 30,
       "no_visible_indicator": [],
-      "double_indicator": []
+      "double_indicator": [],
+      "faint_below_3to1": [
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        }
+      ],
+      "all": [
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Overview",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Events",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "People",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Assets",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Teams",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Activity Log",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Settings",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Help",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Logout",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "add\nNew Organisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.93,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Recent activity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Organisation settings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Account menu",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "New event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "arrow_back\nAll Events",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "tune\nManage modules",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Overview",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Event Setup",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Programme",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Attendees",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Content",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Media",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Operations",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Step 1 of 4: Speakers",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Step 2 of 4: Agenda (current page)",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Step 3 of 4: Activities",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Step 4 of 4: Excursions",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        }
+      ]
     },
     "create_event": {
       "tabbed": 14,
-      "no_visible_indicator": [],
-      "double_indicator": []
+      "no_visible_indicator": [
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [],
+          "contrast": 0,
+          "fv": false
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [],
+          "contrast": 0,
+          "fv": false
+        }
+      ],
+      "double_indicator": [],
+      "faint_below_3to1": [
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search a city, e.g. Nairobi",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "e.g. Nairobi",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        }
+      ],
+      "all": [
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [],
+          "contrast": 0,
+          "fv": false
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "",
+          "indicators": [],
+          "contrast": 0,
+          "fv": false
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "Search a city, e.g. Nairobi",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "input",
+          "role": null,
+          "label": "e.g. Nairobi",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Cancel",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "button",
+          "role": null,
+          "label": "Continue",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Overview",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "tag": "a",
+          "role": null,
+          "label": "Events",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        }
+      ]
     },
     "mouse_click_manage_modules": {
       "tag": "button",
       "role": null,
       "label": "tune\nManage modules",
-      "outline": false,
-      "ring": false,
-      "bgfocus": "rgba(0, 0, 0, 0)",
+      "indicators": [],
+      "contrast": 0,
       "fv": false
     }
   },

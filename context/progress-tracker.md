@@ -2,7 +2,7 @@
 
 Update this file after every completed feature. Any AI agent reading this should immediately know what is done, what is in progress, and what is next.
 
-**Last synced against the actual codebase:** 2026-09-17, for the "Product-Level Navigation & Product-Aware Event Discovery" (Feature 006) entry below; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
+**Last synced against the actual codebase:** 2026-11-20, for the Feature 029 entry below; the Feature 006 entry was last synced 2026-09-17; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
 
 ---
 
@@ -16,7 +16,7 @@ Spec/plan/tasks: `specs/029-design-tokens-foundation/`. Branch `029-design-token
 - **Docs:** `context/ui-tokens.md` (new section), `ui-rules.md` (Inspector/Sheet, focus, motion, colour-not-alone), `code-standards.md` (Next 15/React 19, domain modules, headless primitives). `architecture.md` is deferred to the app-shell feature (doc 40 G1).
 - **Verified:**
   - tsc clean; lint 0 errors / 28 warnings (unchanged); 79/79 tests; build OK
-  - focus: 104 keyboard stops on 4 screens, all with a visible indicator, none doubled (one false positive explained)
+  - focus: 104 keyboard stops on 4 screens, every control covered by the shared rule at 6.49:1. Known issue K1: 2 existing TopHeader controls (product switcher, header search) have weak focus, deferred to the app-shell feature (doc 40)
   - reduced motion confirmed in the browser
   - walk-through regression: see `verification.md` T020
 - No pages migrated yet (by design).

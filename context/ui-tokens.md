@@ -224,7 +224,7 @@ Every fg/bg pair is at least 4.5:1 contrast (specs/029 research R5).
 
 ```tsx
 <span className="inline-flex items-center gap-1 rounded-ui-sm border px-2 h-6 text-label-sm font-label-sm text-status-warning-fg bg-status-warning-bg border-status-warning-border">
-  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">warning</span>
+  <span className="material-symbols-outlined text-label-sm" aria-hidden="true">warning</span>
   2 overlaps
 </span>
 ```

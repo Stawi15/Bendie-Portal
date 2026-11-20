@@ -145,7 +145,7 @@ Never skip step 3 because "the UI already checks this" — the route must re-ver
 
 ## Dependencies
 
-Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `clsx`, `tailwind-merge`.
+Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `exceljs` (lazy-loaded for `.xlsx` import, Feature 023), `clsx`, `tailwind-merge`.
 
 Installed **but not yet wired up anywhere** — available for future features, don't assume they're the current convention until something actually uses them:
 - `react-hook-form` + `@hookform/resolvers` + `zod` — forms today are plain `useState`.
