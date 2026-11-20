@@ -1,6 +1,6 @@
 # 36 — Phased Implementation Roadmap
 
-**Status:** PROPOSAL. Each phase becomes **its own Spec Kit feature** (`specs/030-…` onward), going through `/architect` → `/speckit.specify` → `clarify` → `plan` → `tasks` → `analyze` → `implement` → `/imprint` → `/review` → `/speckit.converge` (AGENTS.md). Nothing is built without that.
+**Status:** PROPOSAL. Each phase becomes **its own Spec Kit feature**. Numbers are assigned sequentially by Spec Kit; the constitution amendment needed no spec, so the tokens feature became **029**. The numbers below are indicative, and the actual `specs/NNN-…` number is whatever Spec Kit assigns., going through `/architect` → `/speckit.specify` → `clarify` → `plan` → `tasks` → `analyze` → `implement` → `/imprint` → `/review` → `/speckit.converge` (AGENTS.md). Nothing is built without that.
 
 Complexity: S = days, M = 1–2 weeks, L = 3–5 weeks (one developer + Claude). These are estimates, not commitments.
 
@@ -13,7 +13,7 @@ Docs 00–41, the test environment, the browser walk-through, and bugs B1–B5 f
 | | |
 |---|---|
 | **030 Constitution v2.0.0** | Run `/speckit.constitution` to amend Principle II (allow domain modules in `src/lib/<domain>.ts`; allow the new event navigation), Principle V (inspector/sheet patterns; headless primitives Radix + TanStack + cmdk allowed; "no second **visual** design system" kept) and the stack (Next 15 / React 19). MAJOR bump; Sync Impact Report updates `code-standards.md`, `ui-rules.md`, `architecture.md`. |
-| **031 Design tokens + focus + reduced motion** | Radius, elevation, status, product, density and motion tokens; `focus-ring`; `prefers-reduced-motion`. **No visual redesign yet.** |
+| **031 → actual `specs/029-design-tokens-foundation`: Design tokens + focus + reduced motion** | Radius, elevation, status, product, density and motion tokens; `focus-ring`; `prefers-reduced-motion`. **No visual redesign yet.** |
 | Dependencies | Approved decisions (docs 20, 21) |
 | Risks | Token changes ripple visually → only add tokens; migrate usages page by page later |
 | Complexity | S + S |
