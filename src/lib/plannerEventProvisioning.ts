@@ -241,7 +241,8 @@ export async function provisionPlannerEvent(params: {
   // by-construction guarantee).
   await portalAdmin
     .from('events')
-    .update({ planner_provisioning_status: 'succeeded', planner_provisioning_succeeded_at: new Date().toISOString() })
+    // Clear the error left by an earlier failed attempt so it doesn't describe a succeeded event.
+    .update({ planner_provisioning_status: 'succeeded', planner_provisioning_succeeded_at: new Date().toISOString(), planner_provisioning_error: null })
     .eq('id', eventId);
 
   // Reuse the existing staff-sync capability for the event's original

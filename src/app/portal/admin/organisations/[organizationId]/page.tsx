@@ -47,7 +47,8 @@ export default function OrganisationAdminDetailPage() {
         .maybeSingle(),
       supabase.from('events').select('id,name,starts_at').eq('organization_id', organizationId).order('starts_at', { ascending: false, nullsFirst: false }),
       supabase.from('event_products').select('event_id,product_key').eq('organization_id', organizationId),
-      supabase.from('organization_members').select('id', { count: 'exact', head: true }).eq('organization_id', organizationId),
+      // organization_members has no `id` column (PK is organization_id + user_id); selecting it returns 400.
+      supabase.from('organization_members').select('user_id', { count: 'exact', head: true }).eq('organization_id', organizationId),
       supabase
         .from('organization_audit_log')
         .select('id,table_name,action,row_id,diff,actor_user_id,created_at')

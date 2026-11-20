@@ -43,7 +43,18 @@ type Session = {
   accent_color: string | null;
   display_order: number;
   breakout_mode: BreakoutMode;
+  agenda_session_speakers?: { facilitator_id: string; display_order: number }[];
 };
+
+/**
+ * The session's lead speaker. The Portal keeps `facilitator_id` in step with the first linked
+ * speaker, but sessions written elsewhere can have speaker links and no `facilitator_id`;
+ * fall back to the first link so they don't show "No speaker".
+ */
+const leadSpeakerId = (s: Session): string | null =>
+  s.facilitator_id ??
+  [...(s.agenda_session_speakers ?? [])].sort((a, b) => a.display_order - b.display_order)[0]?.facilitator_id ??
+  null;
 
 type AssignmentRow = { session_id: string; room_id: string; user_id: string };
 
@@ -256,7 +267,7 @@ export default function AgendaPage() {
 
   const fetchData = async () => {
     const [sessRes, facRes, roomRes, itemRes, assignRes, attendeeRes] = await Promise.all([
-      supabase.from('agenda_sessions').select('id,title,description,starts_at,ends_at,location,block_type,audience,facilitator_id,accent_color,display_order,breakout_mode').eq('event_id', eventId).order('starts_at'),
+      supabase.from('agenda_sessions').select('id,title,description,starts_at,ends_at,location,block_type,audience,facilitator_id,accent_color,display_order,breakout_mode,agenda_session_speakers(facilitator_id,display_order)').eq('event_id', eventId).order('starts_at'),
       supabase.from('facilitators').select('id,full_name,email').eq('event_id', eventId).order('display_order'),
       supabase.from('agenda_breakout_rooms').select('id,session_id,name,description,location,facilitator_id,facilitator_name,capacity,display_order').eq('event_id', eventId).order('display_order'),
       supabase.from('agenda_breakout_room_items').select('id,room_id,title,description,starts_at,ends_at,location,display_order').eq('event_id', eventId).order('display_order'),
@@ -789,7 +800,7 @@ export default function AgendaPage() {
   const searched = sessions.filter(s => {
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    const fac = facilitators.find(f => f.id === s.facilitator_id);
+    const fac = facilitators.find(f => f.id === leadSpeakerId(s));
     return (
       s.title.toLowerCase().includes(q) ||
       (s.description ?? '').toLowerCase().includes(q) ||
@@ -1067,7 +1078,7 @@ export default function AgendaPage() {
               </div>
               <ul className="divide-y divide-outline-variant/40">
                 {filtered.map(s => {
-                  const fac = facilitators.find(f => f.id === s.facilitator_id);
+                  const fac = facilitators.find(f => f.id === leadSpeakerId(s));
                   const accent = s.accent_color || (s.block_type ? BLOCK_ACCENT[s.block_type] : undefined) || '#3B82F6';
                   const sessionRooms = roomsBySession.get(s.id) ?? [];
                   const roomCount = sessionRooms.length;

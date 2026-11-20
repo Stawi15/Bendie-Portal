@@ -159,7 +159,9 @@ export default function DashboardPage() {
     Promise.all([
       Promise.all(
         COUNTED_TABLES.map((table) => {
-          const query = supabase.from(table).select('*', { count: 'exact', head: true });
+          // Count on `event_id` (present and readable in every counted table), not `*`:
+          // a table with column-restricted grants (event_members) refuses `select('*')`.
+          const query = supabase.from(table).select('event_id', { count: 'exact', head: true });
           return (GLOBAL_CAPABLE_TABLES.has(table)
             ? query.or(`event_id.eq.${eventId},event_id.is.null`)
             : query.eq('event_id', eventId)
@@ -167,15 +169,19 @@ export default function DashboardPage() {
         })
       ),
       // Head-only count, in parallel with the existing counts (no extra round-trip latency).
-      supabase.from('event_members').select('*', { count: 'exact', head: true }).eq('event_id', eventId).eq('role', 'attendee').abortSignal(controller.signal),
+      // Select a single readable column: event_members' planner_* columns are not granted to
+      // `authenticated`, so `select('*')` is refused (403) for every user and the count came back 0.
+      supabase.from('event_members').select('user_id', { count: 'exact', head: true }).eq('event_id', eventId).eq('role', 'attendee').abortSignal(controller.signal),
     ])
       .then(([results, attendees]) => {
         if (controller.signal.aborted) return; // superseded — never an error, never a state write
         const next: Record<string, number> = {};
         COUNTED_TABLES.forEach((table, i) => {
+          if (results[i].error) console.error(`Dashboard: ${table} count failed`, results[i].error);
           next[table] = results[i].count ?? 0;
         });
         setCounts(next);
+        if (attendees.error) console.error('Dashboard: attendee count failed', attendees.error);
         setAttendeeCount(attendees.count ?? 0);
         setCountsLoading(false);
       })
