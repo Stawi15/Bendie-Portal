@@ -142,7 +142,7 @@ Every control has a visible keyboard focus indicator, including the product swit
 
 **Organisation workspace (new layout)**
 - **FR-013**: The organisation sidebar MUST offer Home, Events, People (with Teams reachable within it), Library (assets), Activity, and Settings in the footer.
-- **FR-014**: The product switcher MUST move into the sidebar header and behave exactly as today's header switcher. The activity bell and settings shortcut MUST be available from the sidebar.
+- **FR-014**: The product switcher MUST move into the sidebar header and behave exactly as today's header switcher. The activity bell and settings shortcut MUST be available from the new layout's global top bar, on organisation and event pages alike (changed from "the sidebar" by the 2026-11-20 analysis, C1, so they're reachable inside events too).
 - **FR-015**: Stawi-only destinations (Organisations, Moderation) MUST be offered only to Stawi admins, as today.
 
 **Shared shell elements**

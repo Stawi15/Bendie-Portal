@@ -72,3 +72,13 @@ Screenshots: `evidence/v2_w{1440,1024,768,390}_*.png`, `evidence/focus_v2_*.png`
 | 10 | Organisation switcher menu (256px) could be clipped by the 264px sidebar | the sidebar panel clips only in rail mode (`globals.css`); full sidebar and drawer let header menus extend past the edge | browser probe at 1440/1100/390: menu edge visible; collapsed rail still clips (72px) |
 
 tsc clean; lint 0 errors / 28 warnings; vitest 105 passed.
+
+## Phase 9 Convergence (T031–T033), 2026-11-23
+
+| Task | Result |
+|---|---|
+| T031 (FR-012) | v2, org admin, tester event, starting on the Dashboard: Manage modules (sidebar footer) → FAQs off → Save: FAQs left the sidebar immediately with no reload (page marker kept); FAQs back on → Save: returned immediately. Test DB `portal_setup_modules` checked afterwards: same 13 entries as before. (Saving while *on* the FAQs page keeps it listed until you leave, by existing design shared with v1.) |
+| T032 (plan: Performance Goals) | `getUserOrgRole` / `getUserEventRole` take an optional `knownUserId`; `useWorkspaceRole` passes the id from `useAuth`, so the context strip makes no Auth requests, only the two cached role reads. Existing behaviour unchanged when no id is passed |
+| T033 (FR-014) | spec wording updated: bell and settings live in the global top bar (analysis C1) |
+
+tsc clean; lint 0 errors / 28 warnings; vitest 105 passed.

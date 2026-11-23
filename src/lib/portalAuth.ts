@@ -199,19 +199,22 @@ export async function getAccessibleOrganizations(
 /**
  * Feature 030 — the user's own role in an organisation (own membership row,
  * RLS), or null if they aren't a member. Display only (the context strip).
+ * Pass `knownUserId` when the caller already has the signed-in user's id.
  */
-export async function getUserOrgRole(organizationId: string): Promise<string | null> {
+export async function getUserOrgRole(
+  organizationId: string,
+  knownUserId?: string
+): Promise<string | null> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
+    // Feature 030: callers that already know the signed-in user's id skip the Auth round-trip.
+    const userId = knownUserId ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from('organization_members')
       .select('role')
       .eq('organization_id', organizationId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (error || !data) return null;
@@ -251,18 +254,20 @@ export async function isOrgAdmin(organizationId: string): Promise<boolean> {
 /**
  * Get user's role for a specific event
  */
-export async function getUserEventRole(eventId: string): Promise<string | null> {
+export async function getUserEventRole(
+  eventId: string,
+  knownUserId?: string
+): Promise<string | null> {
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
+    // Feature 030: callers that already know the signed-in user's id skip the Auth round-trip.
+    const userId = knownUserId ?? (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from('event_members')
       .select('role')
       .eq('event_id', eventId)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (error || !data) return null;

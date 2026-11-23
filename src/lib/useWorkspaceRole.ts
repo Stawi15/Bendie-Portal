@@ -9,7 +9,8 @@ import { roleLabel } from '@/lib/workspaceContext';
  * Feature 030 — the user's role label for the context strip (research R4).
  * Stawi admins need no read. Otherwise: the user's own organisation role (one
  * read per organisation, cached in memory for the session) and their event
- * role (one read per event, cached). Display only: never used for access.
+ * role (one read per event, cached). The user id comes from `useAuth`, so no
+ * extra Auth request is made. Display only: never used for access.
  */
 
 const orgRoleCache = new Map<string, Promise<string | null>>();
@@ -45,9 +46,11 @@ export function useWorkspaceRole(
     if (isGlobalAdmin || !userId || !organizationId) return;
     let cancelled = false;
     Promise.all([
-      cached(orgRoleCache, `${userId}:${organizationId}`, () => getUserOrgRole(organizationId)),
+      cached(orgRoleCache, `${userId}:${organizationId}`, () =>
+        getUserOrgRole(organizationId, userId)
+      ),
       eventId
-        ? cached(eventRoleCache, `${userId}:${eventId}`, () => getUserEventRole(eventId))
+        ? cached(eventRoleCache, `${userId}:${eventId}`, () => getUserEventRole(eventId, userId))
         : Promise.resolve(null),
     ]).then(([orgRole, eventRole]) => {
       if (!cancelled) setRoles({ key, orgRole, eventRole });

@@ -6,7 +6,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
-## Feature 030 — Studio 2.0 App Shell ✅ Built (2026-11-23) — verified; /review and converge pending
+## Feature 030 — Studio 2.0 App Shell ✅ Built (2026-11-23) — verified, /review ✅ (fixes 4, 9, 10 applied), converged ✅ (3 follow-ups done)
 
 Spec/plan/tasks: `specs/030-studio-app-shell/`. Branch `030-studio-app-shell` (from `redesign`). Roadmap `docs/bendie-revamp/36` Phase 2; constitution v2.0.0.
 
