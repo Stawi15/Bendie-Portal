@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
+import { HELP_HREF, isOrgNavActive } from '@/lib/orgNav';
 
 const NAV_ITEMS = [
   { label: 'Overview', href: '/portal', icon: 'dashboard' },
@@ -26,37 +27,7 @@ export function OrgSideNav({ open, onClose }: OrgSideNavProps) {
   const { logout } = useAuth();
   const { organization, loading: orgLoading } = useOrganization();
 
-  // Feature 006: /portal and /portal/events now redirect to the resolved
-  // product's home/events route, so "Overview"/"Events" must still highlight
-  // when a /portal/bendie* or /portal/planner* route is active.
-  //
-  // Navigation pass (016 continuation 3) — confirmed bug fix: "Events" never
-  // highlighted while actually inside an event workspace
-  // (/portal/events/{id}/...), because the old check only matched the three
-  // exact discovery-list routes and never fell through to a prefix check.
-  // Fixed by explicitly matching the event-workspace prefix here. Every
-  // other item now uses an EXACT match rather than `startsWith` — none of
-  // People/Assets/Teams/Activity Log/Settings has any nested child route
-  // today, so a broad prefix match could only ever produce a false positive,
-  // never a legitimate parent/child relationship worth preserving.
-  const isActive = (href: string) => {
-    if (href === '/portal') {
-      return (
-        pathname === '/portal' ||
-        pathname === '/portal/bendie' ||
-        pathname === '/portal/planner'
-      );
-    }
-    if (href === '/portal/events') {
-      return (
-        pathname === '/portal/events' ||
-        pathname === '/portal/bendie/events' ||
-        pathname === '/portal/planner/events' ||
-        pathname.startsWith('/portal/events/')
-      );
-    }
-    return pathname === href;
-  };
+  const isActive = (href: string) => isOrgNavActive(pathname, href);
 
   const handleLogout = async () => {
     await logout();
@@ -131,7 +102,7 @@ export function OrgSideNav({ open, onClose }: OrgSideNavProps) {
 
           <div className="mt-auto px-3 space-y-1">
             <a
-              href="mailto:devteam@stawiexperiences.com"
+              href={HELP_HREF}
               aria-label="Help"
               className={`${itemClass} ${itemIdle}`}
             >

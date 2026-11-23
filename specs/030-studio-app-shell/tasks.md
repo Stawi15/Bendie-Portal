@@ -39,9 +39,9 @@
 
 **Independent Test**: quickstart §7.
 
-- [ ] T008 [US3] Create `src/lib/shellLayout.ts`: `SHELL_COOKIE='studio_shell'`, `type Shell='v1'|'v2'`, `resolveShell(cookieValue, queryValue): Shell` (query wins; anything else gives `v1`), `shellCookieString(shell)` (path `/portal`, 1 year, SameSite=Lax). Add `src/lib/shellLayout.test.ts`
-- [ ] T009 [US3] In `src/app/portal/layout.tsx`, read the cookie with `cookies()` and pass `initialShell`. In `PortalShell`, apply a `?shell=` override: write the cookie and `router.refresh()` **only when the value differs from the current cookie** (no refresh loop) and render v1 (today) or v2 (`AppShell`)
-- [ ] T010 [US3] Create `src/components/shell/ShellToggle.tsx` ("Try the new layout" / "Back to the current layout"): writes the cookie and calls `router.refresh()`. Add it to `AccountMenu` (both layouts). If cookies are blocked it does nothing harmful (edge case)
+- [X] T008 [US3] Create `src/lib/shellLayout.ts`: `SHELL_COOKIE='studio_shell'`, `type Shell='v1'|'v2'`, `resolveShell(cookieValue, queryValue): Shell` (query wins; anything else gives `v1`), `shellCookieString(shell)` (path `/portal`, 1 year, SameSite=Lax). Add `src/lib/shellLayout.test.ts`
+- [X] T009 [US3] In `src/app/portal/layout.tsx`, read the cookie with `cookies()` and pass `initialShell`. In `PortalShell`, apply a `?shell=` override: write the cookie and `router.refresh()` **only when the value differs from the current cookie** (no refresh loop) and render v1 (today) or v2 (`AppShell`)
+- [X] T010 [US3] Create `src/components/shell/ShellToggle.tsx` ("Try the new layout" / "Back to the current layout"): writes the cookie and calls `router.refresh()`. Add it to `AccountMenu` (both layouts). If cookies are blocked it does nothing harmful (edge case)
 
 ---
 
@@ -51,11 +51,11 @@
 
 **Independent Test**: quickstart §3–4.
 
-- [ ] T011 [P] [US1] Add `area` to every entry in `src/lib/eventSectionMeta.ts` per data-model.md (display only; comment that availability never reads it). Create `src/lib/eventAreas.ts` (area order and labels: Overview, Setup, Programme, People, Logistics, Content; `utility` footer) and `src/lib/eventAreas.test.ts` asserting all 32 keys map to exactly one area and the counts 2/4/6/3/5/10/2
-- [ ] T012 [US1] Create `src/components/shell/AppShell.tsx` (v2 frame: sidebar column, a slim **global top bar** on every v2 route (org **and** event) holding `EventSearch`, `ActivityBell`, `NewEventButton`, `AccountMenu` (incl. the layout toggle and Logout), canvas with optional toolbar slot + breadcrumbs + page, right-panel slot) using 029 tokens (`rounded-ui-*`, `shadow-elev-*`, `h-control`), with landmarks `nav`/`main`/`aside`
-- [ ] T013 [US1] Create `src/components/shell/EventSidebar.tsx`: a header with "← Organisation" (to the user's events list, as today's "All Events") and the `ContextStrip`; areas built from `useEventWorkspace().visibleSections` grouped by `area` (areas with no visible sections are hidden); 2 levels; current area and page marked (`aria-current`); footer utilities: Activity log, Bendie Planner (only if visible), Manage modules (opens the existing `ManageModulesModal`); loading state while `navSettled` is false (no flash of disappearing pages, per edge case)
-- [ ] T014 [US1] Create `src/components/shell/EventWorkspaceV2.tsx`: `AppShell` + `EventSidebar` + `ContextStrip` (T016) + the shared `EventContentGate` (from T004; never a second copy) + page `children` + the existing Previous/Next nav; wire `src/app/portal/events/[eventId]/layout.tsx` to render V1 or V2 by shell
-- [ ] T015 [US1] Create `src/components/shell/Breadcrumbs.tsx` (org › event › area › page) using `getPortalPageLabel` and `eventAreas`
+- [X] T011 [P] [US1] Add `area` to every entry in `src/lib/eventSectionMeta.ts` per data-model.md (display only; comment that availability never reads it). Create `src/lib/eventAreas.ts` (area order and labels: Overview, Setup, Programme, People, Logistics, Content; `utility` footer) and `src/lib/eventAreas.test.ts` asserting all 32 keys map to exactly one area and the counts 2/4/6/3/5/10/2
+- [X] T012 [US1] Create `src/components/shell/AppShell.tsx` (v2 frame: sidebar column, a slim **global top bar** on every v2 route (org **and** event) holding `EventSearch`, `ActivityBell`, `NewEventButton`, `AccountMenu` (incl. the layout toggle and Logout), canvas with optional toolbar slot + breadcrumbs + page, right-panel slot) using 029 tokens (`rounded-ui-*`, `shadow-elev-*`, `h-control`), with landmarks `nav`/`main`/`aside`
+- [X] T013 [US1] Create `src/components/shell/EventSidebar.tsx`: a header with "← Organisation" (to the user's events list, as today's "All Events") and the `ContextStrip`; areas built from `useEventWorkspace().visibleSections` grouped by `area` (areas with no visible sections are hidden); 2 levels; current area and page marked (`aria-current`); footer utilities: Activity log, Bendie Planner (only if visible), Manage modules (opens the existing `ManageModulesModal`); loading state while `navSettled` is false (no flash of disappearing pages, per edge case)
+- [X] T014 [US1] Create `src/components/shell/EventWorkspaceV2.tsx`: `AppShell` + `EventSidebar` + `ContextStrip` (T016) + the shared `EventContentGate` (from T004; never a second copy) + page `children` + the existing Previous/Next nav; wire `src/app/portal/events/[eventId]/layout.tsx` to render V1 or V2 by shell
+- [X] T015 [US1] Create `src/components/shell/Breadcrumbs.tsx` (org › event › area › page) using `getPortalPageLabel` and `eventAreas`
 
 ---
 
@@ -65,9 +65,9 @@
 
 **Independent Test**: quickstart §5.
 
-- [ ] T016 [P] [US2] Create `src/lib/workspaceContext.ts` with `visibilitySentence(status, hasPlanner)` (research R5 wording) and `roleLabel({ isGlobalAdmin, orgRole, eventRole })` (research R4 wording and precedence). Add `src/lib/workspaceContext.test.ts` covering all 5 statuses and the role precedence
-- [ ] T017 [US2] Create `src/lib/useWorkspaceRole.ts`: `isGlobalAdmin` from `useAuth`; the org role from the user's own `organization_members` row (browser client, cached per org in memory); the event role via the existing `getUserEventRole`
-- [ ] T018 [US2] Create `src/components/shell/ContextStrip.tsx`: org › event (truncated, full name in `title` and accessible name), product chips ("Attendee app", "Planner": text + `product-*` tokens), visibility sentence, role line. Used in the `EventSidebar` header
+- [X] T016 [P] [US2] Create `src/lib/workspaceContext.ts` with `visibilitySentence(status, hasPlanner)` (research R5 wording) and `roleLabel({ isGlobalAdmin, orgRole, eventRole })` (research R4 wording and precedence). Add `src/lib/workspaceContext.test.ts` covering all 5 statuses and the role precedence
+- [X] T017 [US2] Create `src/lib/useWorkspaceRole.ts`: `isGlobalAdmin` from `useAuth`; the org role from the user's own `organization_members` row (browser client, cached per org in memory); the event role via the existing `getUserEventRole`
+- [X] T018 [US2] Create `src/components/shell/ContextStrip.tsx`: org › event (truncated, full name in `title` and accessible name), product chips ("Attendee app", "Planner": text + `product-*` tokens), visibility sentence, role line. Used in the `EventSidebar` header
 
 ---
 
@@ -75,8 +75,8 @@
 
 **Independent Test**: quickstart §3 (org routes) + spec US4 scenarios.
 
-- [ ] T019 [US4] Create `src/components/shell/OrgSidebar.tsx`: Home, Events, People (+ Teams second level), Library (`/portal/assets`), Activity; footer Settings, Help; header `OrgSwitcher` (incl. Stawi-only Organisations/Moderation, as today) and `ProductSwitcher`. Search, bell, New event and account menu (with Logout and the toggle) live in the `AppShell` global top bar (T012), so they're available on event pages too. Active-state rules as `OrgSideNav.isActive`
-- [ ] T020 [US4] In `PortalShell` v2: render `AppShell` with `OrgSidebar` for org routes and with `EventSidebar` (via the event layout) for `/portal/events/[eventId]/*`. Pass the canvas the existing `<main>` scroll behaviour
+- [X] T019 [US4] Create `src/components/shell/OrgSidebar.tsx`: Home, Events, People (+ Teams second level), Library (`/portal/assets`), Activity; footer Settings, Help; header `OrgSwitcher` (incl. Stawi-only Organisations/Moderation, as today) and `ProductSwitcher`. Search, bell, New event and account menu (with Logout and the toggle) live in the `AppShell` global top bar (T012), so they're available on event pages too. Active-state rules as `OrgSideNav.isActive`
+- [X] T020 [US4] In `PortalShell` v2: render `AppShell` with `OrgSidebar` for org routes and with `EventSidebar` (via the event layout) for `/portal/events/[eventId]/*`. Pass the canvas the existing `<main>` scroll behaviour
 
 ---
 
@@ -84,15 +84,15 @@
 
 **Independent Test**: quickstart §6.
 
-- [ ] T021 [US5] Responsive behaviour in `AppShell`/sidebars (doc 22): ≥1280 full sidebar; 1024–1279 collapsible rail (hover or focus expand, as v1's `desk` rule); <1024 drawer (`role="dialog"`, `aria-modal`, Escape closes, focus to first link, returns to the menu button, scrim closes); reduced motion = no slide
-- [ ] T022 [US5] Fix K1 in v2: sidebar variants `ProductSwitcher.Sidebar` and `EventSearch.Sidebar` use `.focus-ring` (≥3:1); v1 variants unchanged
-- [ ] T023 [US5] Create `src/components/shell/RightPanel.tsx` with `RightPanelProvider` (pure reducer in `src/lib/rightPanel.ts` + `src/lib/rightPanel.test.ts`), `useRightPanel()`, `registerRightPanelContent()`; ⌘./Ctrl+. bound only when content is registered (none in 030, so nothing is visible); focus return; reduced motion
+- [X] T021 [US5] Responsive behaviour in `AppShell`/sidebars (doc 22): ≥1280 full sidebar; 1024–1279 collapsible rail (hover or focus expand, as v1's `desk` rule); <1024 drawer (`role="dialog"`, `aria-modal`, Escape closes, focus to first link, returns to the menu button, scrim closes); reduced motion = no slide
+- [X] T022 [US5] Fix K1 in v2: a focus rule scoped to the v2 chrome (`[data-shell-chrome]` on the top bar and sidebars, `src/globals.css`) gives every control there the shared 2px primary outline (≥3:1); v1 and page content unchanged. *Changed from per-component `.Sidebar` variants: the reused header parts stay verbatim, and one scoped rule covers every chrome control.*
+- [X] T023 [US5] Create `src/components/shell/RightPanel.tsx` with `RightPanelProvider` (pure reducer in `src/lib/rightPanel.ts` + `src/lib/rightPanel.test.ts`), `useRightPanel()`, `registerRightPanelContent()`; ⌘./Ctrl+. bound only when content is registered (none in 030, so nothing is visible); focus return; reduced motion
 
 ---
 
 ## Phase 8: Polish & verification
 
-- [ ] T024 Reconcile `context/architecture.md` with constitution v2.0.0 (stack Next 15/React 19; domain modules; admission = Stawi admin or org member; new shell structure and the `studio_shell` flag) and close G1 in `docs/bendie-revamp/40-unknowns-and-open-questions.md`
+- [X] T024 Reconcile `context/architecture.md` with constitution v2.0.0 (stack Next 15/React 19; domain modules; admission = Stawi admin or org member; new shell structure and the `studio_shell` flag) and close G1 in `docs/bendie-revamp/40-unknowns-and-open-questions.md`
 - [ ] T025 Static checks (tsc, lint, vitest incl. new tests, worktree build; confirm the expected build-output change: `/portal/*` routes now dynamic because the layout reads a cookie, with no behaviour change); FR-012 style check: no `package.json`/lockfile/migration changes. Record in verification.md
 - [ ] T026 Walk-through in **v1** (SC-004 screenshots vs baseline) and **v2** (SC-003: access results identical to v1 for all 252 visits). Record in verification.md
 - [ ] T027 v2 reachability (SC-001/002) and context strip (SC-005) checks per quickstart §4–5, including a temporary Published status on the test DB (restored afterwards)

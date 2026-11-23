@@ -47,7 +47,7 @@ These are app-side or cross-product issues. Studio can warn about them, but most
 
 | # | Item | Deferred to |
 |---|---|---|
-| G1 | `context/architecture.md` still says Next.js 14, "no service layer" and admin-only access, which conflicts with constitution v2.0.0. Flagged by the 029 analysis. | The app-shell feature, which changes structure (constitution VII) |
+| G1 | ~~`context/architecture.md` still says Next.js 14, "no service layer" and admin-only access.~~ **Closed 2026-11-23 (Feature 030 T024):** stack, admission rule, domain modules, folder structure, invariants and the new shell section reconciled with constitution v2.0.0. | — |
 
 ## Product
 

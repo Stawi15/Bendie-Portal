@@ -38,7 +38,7 @@ EVENTS = {
     "summit": "5e5e0000-0000-4000-8000-0000000000e1",   # Bendie-only, seeded content
     "tester": "a8f27084-53ad-4779-9379-72d5e820664c",   # Bendie + Planner, created in the UI
 }
-routes = json.loads((OUT / "data/routes.json").read_text())["pages"]
+routes = json.loads((ROOT / "docs/bendie-revamp/data/routes.json").read_text())["pages"]
 ORG_ROUTES = [p["route"] for p in routes if p["scope"] in ("organization", "platform-admin")
               and "[" not in p["route"]] + ["/portal/admin/organisations/5e5e0000-0000-4000-8000-000000000001"]
 EVENT_SECTIONS = [p["section_key"] for p in routes if p["scope"] == "event"]

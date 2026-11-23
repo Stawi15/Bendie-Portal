@@ -7,6 +7,7 @@ import { formatRelativeTime } from '@/lib/formatRelativeTime';
 import { Avatar } from '@/components/portal/Avatar';
 import { CreateOrganizationFlow } from '@/components/portal/admin/CreateOrganizationFlow';
 import { PRODUCT_LABEL, type HeaderModel } from '@/components/header/useHeaderModel';
+import { ShellToggle } from '@/components/shell/ShellToggle';
 
 /*
  * Feature 030 — TopHeader's controls as composable pieces. Markup moved VERBATIM
@@ -14,236 +15,318 @@ import { PRODUCT_LABEL, type HeaderModel } from '@/components/header/useHeaderMo
  */
 
 /** Menu button (touch), organisation switcher and product switcher. */
-export function HeaderContextControls({ m, onOpenNav }: { m: HeaderModel; onOpenNav?: () => void }) {
+export function HeaderContextControls({
+  m,
+  onOpenNav,
+}: {
+  m: HeaderModel;
+  onOpenNav?: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <button
+        type="button"
+        onClick={onOpenNav}
+        className="desk:hidden -ml-1 flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
+        aria-label="Open navigation menu"
+      >
+        <span className="material-symbols-outlined">menu</span>
+      </button>
+
+      <HeaderOrgSwitcher m={m} />
+
+      <HeaderProductSwitcher m={m} />
+    </div>
+  );
+}
+
+/** Organisation switcher (incl. New Organisation, Organisations and Moderation for Stawi admins). */
+export function HeaderOrgSwitcher({ m }: { m: HeaderModel }) {
   const {
-    breadcrumbProduct,
-    handleProductSwitch,
     isGlobalAdmin,
-    isProductPaused,
     orgMenuOpen,
     organization,
     organizations,
-    productEnv,
-    productMenuOpen,
     router,
     setCreateOrgOpen,
     setCurrentOrganization,
     setOrgMenuOpen,
+  } = m;
+  return (
+    <>
+      {/*
+        Navigation pass (016 continuation 4) — approved header redesign.
+        Replaces the "Organisations > Org > Product > Page" breadcrumb
+        entirely: no arrows, no repeated product name, no event name (that
+        stays owned by EventLayout, §5 of the earlier pass). Two context
+        controls instead — an organisation selector and a product
+        segmented control — each collapsing to a plain, non-interactive
+        label when there is genuinely nothing to switch to, rather than
+        presenting a dropdown/segmented control with only one real choice.
+      */}
+      {/*
+        Corrective fix (Feature 016 continuation, org-selector width): the
+        prior `max-w-[360px]`-only fix was insufficient — a `max-width`
+        alone still lets the flex algorithm shrink the button (and, via it,
+        the `truncate` text span) below that ceiling whenever it's forced
+        to reconcile with its siblings' combined width, since nothing here
+        previously guaranteed a FLOOR. An explicit `min-width` (a
+        comfortable ~240px, room for most real organisation names) plus a
+        higher `max-width` (~400px) gives the control a genuine
+        shrink-resistant band instead of just a cap, and the text span is
+        now an explicit `flex-1 min-w-0` flex child so it grows to fill
+        that band and only truncates once content genuinely exceeds it —
+        the textbook-correct pairing `truncate` needs inside a flex row
+        (a `truncate` span with no `min-w-0` can silently fail to shrink
+        predictably in exactly this kind of nested-flex layout).
+      */}
+      <div className="relative flex-shrink-0 min-w-0">
+        {organizations.length > 1 ? (
+          <button
+            onClick={() => setOrgMenuOpen((v) => !v)}
+            className={`flex items-center gap-2 pl-3 pr-2 h-10 rounded-xl hover:bg-white transition-colors w-full min-w-[240px] max-w-[400px] ${NEUTRAL_PRESENTATION.controlSurface}`}
+            aria-label="Switch organisation"
+          >
+            <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">
+              corporate_fare
+            </span>
+            <span className="font-label-md text-label-md text-on-surface truncate flex-1 min-w-0 text-left">
+              {organization?.name ?? '—'}
+            </span>
+            <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">
+              expand_more
+            </span>
+          </button>
+        ) : (
+          <div
+            className={`flex items-center gap-2 pl-3 pr-3 h-10 rounded-xl ${NEUTRAL_PRESENTATION.controlSurface} min-w-[240px] max-w-[400px]`}
+            title="Your organisation"
+          >
+            <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">
+              corporate_fare
+            </span>
+            <span className="font-label-md text-label-md text-on-surface truncate flex-1 min-w-0">
+              {organization?.name ?? '—'}
+            </span>
+          </div>
+        )}
+        {orgMenuOpen && organizations.length > 1 && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setOrgMenuOpen(false)} />
+            <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20 max-h-80 overflow-y-auto">
+              <p className="px-4 py-1 text-xs text-on-surface-variant uppercase tracking-wider">
+                Switch organisation
+              </p>
+              {organizations.map((org) => (
+                <button
+                  key={org.id}
+                  onClick={() => {
+                    setCurrentOrganization(org.id);
+                    setOrgMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 ${
+                    org.id === organization?.id ? 'text-primary font-bold' : 'text-on-surface'
+                  }`}
+                >
+                  <span className="truncate">{org.name}</span>
+                  {org.id === organization?.id && (
+                    <span className="material-symbols-outlined text-base flex-shrink-0">check</span>
+                  )}
+                </button>
+              ))}
+              {isGlobalAdmin && (
+                <div className="border-t border-outline-variant mt-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setOrgMenuOpen(false);
+                      setCreateOrgOpen(true);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base">add</span> New
+                    Organisation
+                  </button>
+                  {/* Feature 022 — platform-admin Organisations area (products and Planner connections). */}
+                  <button
+                    onClick={() => {
+                      setOrgMenuOpen(false);
+                      router.push('/portal/admin/organisations');
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base">domain</span> Manage
+                    organisations
+                  </button>
+                  {/* Feature 028 — content moderation (reports and blocks from the Bendie app). */}
+                  <button
+                    onClick={() => {
+                      setOrgMenuOpen(false);
+                      router.push('/portal/admin/moderation');
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base">flag</span> Moderation
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Only a global admin can see this control at all (isGlobalAdmin),
+          matching what's already server-side-enforced by the
+          organizations_insert_creator RLS policy (platform-admin-only) —
+          live-verified this pass, see plan.md's org-security-audit section. */}
+      {isGlobalAdmin && organizations.length <= 1 && (
+        <button
+          onClick={() => setCreateOrgOpen(true)}
+          className="hidden sm:flex items-center gap-1 flex-shrink-0 text-sm text-primary font-medium hover:opacity-80 transition-opacity"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span> New Organisation
+        </button>
+      )}
+    </>
+  );
+}
+
+/** Product switcher (Bendie / Bendie Planner); a plain label when there is nothing to switch to. */
+export function HeaderProductSwitcher({ m }: { m: HeaderModel }) {
+  const {
+    breadcrumbProduct,
+    handleProductSwitch,
+    isProductPaused,
+    productEnv,
+    productMenuOpen,
     setProductMenuOpen,
     switcherProducts,
   } = m;
   return (
-  <div className="flex items-center gap-3 min-w-0">
-    <button
-      type="button"
-      onClick={onOpenNav}
-      className="desk:hidden -ml-1 flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
-      aria-label="Open navigation menu"
-    >
-      <span className="material-symbols-outlined">menu</span>
-    </button>
-
-    {/*
-      Navigation pass (016 continuation 4) — approved header redesign.
-      Replaces the "Organisations > Org > Product > Page" breadcrumb
-      entirely: no arrows, no repeated product name, no event name (that
-      stays owned by EventLayout, §5 of the earlier pass). Two context
-      controls instead — an organisation selector and a product
-      segmented control — each collapsing to a plain, non-interactive
-      label when there is genuinely nothing to switch to, rather than
-      presenting a dropdown/segmented control with only one real choice.
-    */}
-    {/*
-      Corrective fix (Feature 016 continuation, org-selector width): the
-      prior `max-w-[360px]`-only fix was insufficient — a `max-width`
-      alone still lets the flex algorithm shrink the button (and, via it,
-      the `truncate` text span) below that ceiling whenever it's forced
-      to reconcile with its siblings' combined width, since nothing here
-      previously guaranteed a FLOOR. An explicit `min-width` (a
-      comfortable ~240px, room for most real organisation names) plus a
-      higher `max-width` (~400px) gives the control a genuine
-      shrink-resistant band instead of just a cap, and the text span is
-      now an explicit `flex-1 min-w-0` flex child so it grows to fill
-      that band and only truncates once content genuinely exceeds it —
-      the textbook-correct pairing `truncate` needs inside a flex row
-      (a `truncate` span with no `min-w-0` can silently fail to shrink
-      predictably in exactly this kind of nested-flex layout).
-    */}
-    <div className="relative flex-shrink-0 min-w-0">
-      {organizations.length > 1 ? (
-        <button
-          onClick={() => setOrgMenuOpen((v) => !v)}
-          className={`flex items-center gap-2 pl-3 pr-2 h-10 rounded-xl hover:bg-white transition-colors w-full min-w-[240px] max-w-[400px] ${NEUTRAL_PRESENTATION.controlSurface}`}
-          aria-label="Switch organisation"
-        >
-          <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">corporate_fare</span>
-          <span className="font-label-md text-label-md text-on-surface truncate flex-1 min-w-0 text-left">{organization?.name ?? '—'}</span>
-          <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">expand_more</span>
-        </button>
-      ) : (
-        <div className={`flex items-center gap-2 pl-3 pr-3 h-10 rounded-xl ${NEUTRAL_PRESENTATION.controlSurface} min-w-[240px] max-w-[400px]`} title="Your organisation">
-          <span className="material-symbols-outlined text-[18px] text-on-surface-variant flex-shrink-0">corporate_fare</span>
-          <span className="font-label-md text-label-md text-on-surface truncate flex-1 min-w-0">{organization?.name ?? '—'}</span>
-        </div>
-      )}
-      {orgMenuOpen && organizations.length > 1 && (
+    <>
+      {(switcherProducts.bendie || switcherProducts.planner) && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOrgMenuOpen(false)} />
-          <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20 max-h-80 overflow-y-auto">
-            <p className="px-4 py-1 text-xs text-on-surface-variant uppercase tracking-wider">Switch organisation</p>
-            {organizations.map((org) => (
+          <span
+            className="h-6 w-px bg-outline-variant flex-shrink-0 hidden sm:block"
+            aria-hidden="true"
+          />
+          {switcherProducts.bendie && switcherProducts.planner ? (
+            <div
+              className={`hidden sm:flex items-center gap-0.5 h-10 rounded-xl p-1 flex-shrink-0 backdrop-blur-sm ${NEUTRAL_PRESENTATION.controlSurface}`}
+              role="group"
+              aria-label="Product"
+            >
+              {(['bendie', 'planner'] as const).map((key) => {
+                const selected = key === breadcrumbProduct;
+                const paused = isProductPaused(key);
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleProductSwitch(key)}
+                    aria-pressed={selected}
+                    disabled={paused}
+                    title={paused ? pausedProductMessage(key) : undefined}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm font-label-sm font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-70 ${
+                      selected
+                        ? PRODUCT_PRESENTATION[key].switcherSelected
+                        : NEUTRAL_PRESENTATION.switcherUnselected
+                    }`}
+                  >
+                    {/* Fixed dot slot on BOTH segments (visible only when selected): a shape cue that
+                        never relies on colour alone, and the control's size never changes between products. */}
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full transition-opacity ${PRODUCT_PRESENTATION[key].dot} ${selected ? 'opacity-100' : 'opacity-0'}`}
+                      aria-hidden="true"
+                    />
+                    {PRODUCT_LABEL[key]}
+                    {paused && (
+                      <span className="ml-1 px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold">
+                        Paused
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              className="hidden sm:flex items-center gap-1.5 flex-shrink-0 text-label-sm font-label-sm text-on-surface-variant"
+              title={
+                isProductPaused(switcherProducts.bendie ? 'bendie' : 'planner')
+                  ? pausedProductMessage(switcherProducts.bendie ? 'bendie' : 'planner')
+                  : undefined
+              }
+            >
+              <span className="material-symbols-outlined text-[16px]">
+                {switcherProducts.bendie ? 'celebration' : 'event_note'}
+              </span>
+              {switcherProducts.bendie ? PRODUCT_LABEL.bendie : PRODUCT_LABEL.planner}
+              {isProductPaused(switcherProducts.bendie ? 'bendie' : 'planner') && (
+                <span className="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold">
+                  Paused
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Narrow-screen fallback (§22) — a compact icon-triggered dropdown, never breadcrumb arrows, and only rendered at all when there's a real choice to make. */}
+          {switcherProducts.bendie && switcherProducts.planner && (
+            <div className="relative sm:hidden">
               <button
-                key={org.id}
-                onClick={() => {
-                  setCurrentOrganization(org.id);
-                  setOrgMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 ${
-                  org.id === organization?.id ? 'text-primary font-bold' : 'text-on-surface'
-                }`}
+                onClick={() => setProductMenuOpen((v) => !v)}
+                className="flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
+                aria-label={
+                  breadcrumbProduct
+                    ? `Switch product (current: ${PRODUCT_LABEL[breadcrumbProduct]})`
+                    : 'Switch product'
+                }
               >
-                <span className="truncate">{org.name}</span>
-                {org.id === organization?.id && (
-                  <span className="material-symbols-outlined text-base flex-shrink-0">check</span>
-                )}
+                <span
+                  className={`material-symbols-outlined ${productEnv ? productEnv.accentText : ''}`}
+                >
+                  apps
+                </span>
               </button>
-            ))}
-            {isGlobalAdmin && (
-              <div className="border-t border-outline-variant mt-2 pt-2">
-                <button
-                  onClick={() => {
-                    setOrgMenuOpen(false);
-                    setCreateOrgOpen(true);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-base">add</span> New Organisation
-                </button>
-                {/* Feature 022 — platform-admin Organisations area (products and Planner connections). */}
-                <button
-                  onClick={() => {
-                    setOrgMenuOpen(false);
-                    router.push('/portal/admin/organisations');
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-base">domain</span> Manage organisations
-                </button>
-                {/* Feature 028 — content moderation (reports and blocks from the Bendie app). */}
-                <button
-                  onClick={() => {
-                    setOrgMenuOpen(false);
-                    router.push('/portal/admin/moderation');
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-outlined text-base">flag</span> Moderation
-                </button>
-              </div>
-            )}
-          </div>
+              {productMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setProductMenuOpen(false)} />
+                  <div className="absolute left-0 mt-2 w-56 max-w-[85vw] bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20">
+                    <p className="px-4 py-1 text-xs text-on-surface-variant uppercase tracking-wider">
+                      Switch product
+                    </p>
+                    {(['bendie', 'planner'] as const).map((key) => (
+                      <button
+                        key={key}
+                        onClick={() => handleProductSwitch(key)}
+                        aria-current={key === breadcrumbProduct ? 'true' : undefined}
+                        disabled={isProductPaused(key)}
+                        title={isProductPaused(key) ? pausedProductMessage(key) : undefined}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 disabled:cursor-not-allowed disabled:opacity-70 ${
+                          key === breadcrumbProduct
+                            ? `${PRODUCT_PRESENTATION[key].accentText} font-bold`
+                            : 'text-on-surface'
+                        }`}
+                      >
+                        <span className="truncate">{PRODUCT_LABEL[key]}</span>
+                        {isProductPaused(key) && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold flex-shrink-0">
+                            Paused
+                          </span>
+                        )}
+                        {key === breadcrumbProduct && (
+                          <span className="material-symbols-outlined text-base flex-shrink-0">
+                            check
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
-    </div>
-
-    {/* Only a global admin can see this control at all (isGlobalAdmin),
-        matching what's already server-side-enforced by the
-        organizations_insert_creator RLS policy (platform-admin-only) —
-        live-verified this pass, see plan.md's org-security-audit section. */}
-    {isGlobalAdmin && organizations.length <= 1 && (
-      <button
-        onClick={() => setCreateOrgOpen(true)}
-        className="hidden sm:flex items-center gap-1 flex-shrink-0 text-sm text-primary font-medium hover:opacity-80 transition-opacity"
-      >
-        <span className="material-symbols-outlined text-[18px]">add</span> New Organisation
-      </button>
-    )}
-
-    {(switcherProducts.bendie || switcherProducts.planner) && (
-      <>
-        <span className="h-6 w-px bg-outline-variant flex-shrink-0 hidden sm:block" aria-hidden="true" />
-        {switcherProducts.bendie && switcherProducts.planner ? (
-          <div className={`hidden sm:flex items-center gap-0.5 h-10 rounded-xl p-1 flex-shrink-0 backdrop-blur-sm ${NEUTRAL_PRESENTATION.controlSurface}`} role="group" aria-label="Product">
-            {(['bendie', 'planner'] as const).map((key) => {
-              const selected = key === breadcrumbProduct;
-              const paused = isProductPaused(key);
-              return (
-                <button
-                  key={key}
-                  onClick={() => handleProductSwitch(key)}
-                  aria-pressed={selected}
-                  disabled={paused}
-                  title={paused ? pausedProductMessage(key) : undefined}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm font-label-sm font-semibold transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-70 ${
-                    selected ? PRODUCT_PRESENTATION[key].switcherSelected : NEUTRAL_PRESENTATION.switcherUnselected
-                  }`}
-                >
-                  {/* Fixed dot slot on BOTH segments (visible only when selected): a shape cue that
-                      never relies on colour alone, and the control's size never changes between products. */}
-                  <span className={`w-1.5 h-1.5 rounded-full transition-opacity ${PRODUCT_PRESENTATION[key].dot} ${selected ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true" />
-                  {PRODUCT_LABEL[key]}
-                  {paused && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold">Paused</span>}
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div
-            className="hidden sm:flex items-center gap-1.5 flex-shrink-0 text-label-sm font-label-sm text-on-surface-variant"
-            title={isProductPaused(switcherProducts.bendie ? 'bendie' : 'planner') ? pausedProductMessage(switcherProducts.bendie ? 'bendie' : 'planner') : undefined}
-          >
-            <span className="material-symbols-outlined text-[16px]">
-              {switcherProducts.bendie ? 'celebration' : 'event_note'}
-            </span>
-            {switcherProducts.bendie ? PRODUCT_LABEL.bendie : PRODUCT_LABEL.planner}
-            {isProductPaused(switcherProducts.bendie ? 'bendie' : 'planner') && (
-              <span className="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold">Paused</span>
-            )}
-          </div>
-        )}
-
-        {/* Narrow-screen fallback (§22) — a compact icon-triggered dropdown, never breadcrumb arrows, and only rendered at all when there's a real choice to make. */}
-        {switcherProducts.bendie && switcherProducts.planner && (
-          <div className="relative sm:hidden">
-            <button
-              onClick={() => setProductMenuOpen((v) => !v)}
-              className="flex-shrink-0 p-2 rounded-full text-on-surface-variant hover:bg-surface-container-low"
-              aria-label={breadcrumbProduct ? `Switch product (current: ${PRODUCT_LABEL[breadcrumbProduct]})` : 'Switch product'}
-            >
-              <span className={`material-symbols-outlined ${productEnv ? productEnv.accentText : ''}`}>apps</span>
-            </button>
-            {productMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setProductMenuOpen(false)} />
-                <div className="absolute left-0 mt-2 w-56 max-w-[85vw] bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20">
-                  <p className="px-4 py-1 text-xs text-on-surface-variant uppercase tracking-wider">Switch product</p>
-                  {(['bendie', 'planner'] as const).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => handleProductSwitch(key)}
-                      aria-current={key === breadcrumbProduct ? 'true' : undefined}
-                      disabled={isProductPaused(key)}
-                      title={isProductPaused(key) ? pausedProductMessage(key) : undefined}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-surface-container-low transition-colors flex items-center justify-between gap-2 disabled:cursor-not-allowed disabled:opacity-70 ${
-                        key === breadcrumbProduct ? `${PRODUCT_PRESENTATION[key].accentText} font-bold` : 'text-on-surface'
-                      }`}
-                    >
-                      <span className="truncate">{PRODUCT_LABEL[key]}</span>
-                      {isProductPaused(key) && <span className="px-1.5 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant text-[10px] font-semibold flex-shrink-0">Paused</span>}
-                      {key === breadcrumbProduct && (
-                        <span className="material-symbols-outlined text-base flex-shrink-0">check</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </>
-    )}
-
-  </div>
+    </>
   );
 }
 
@@ -274,213 +357,250 @@ export function HeaderActions({ m }: { m: HeaderModel }) {
     unreadCount,
   } = m;
   return (
-  <div className="flex items-center gap-3 sm:gap-6">
-    <div className="relative w-40 sm:w-64 hidden md:block">
-      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
-        search
-      </span>
-      <input
-        className={`w-full h-10 pl-10 pr-4 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
-        placeholder="Search experiences..."
-        type="text"
-        value={eventSearch}
-        onChange={(e) => {
-          setEventSearch(e.target.value);
-          setEventSearchOpen(true);
-        }}
-        onFocus={() => setEventSearchOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && eventMatches.length > 0) goToEvent(eventMatches[0].id);
-          if (e.key === 'Escape') setEventSearchOpen(false);
-        }}
-      />
-      {eventSearchOpen && eventSearch.trim() && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setEventSearchOpen(false)} />
-          <div className="absolute left-0 mt-2 w-full min-w-[280px] bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20 max-h-80 overflow-y-auto">
-            {eventMatches.length === 0 ? (
-              <p className="px-4 py-2 text-sm text-on-surface-variant">No events match &quot;{eventSearch.trim()}&quot;.</p>
-            ) : (
-              eventMatches.map((event) => (
-                <button
-                  key={event.id}
-                  onClick={() => goToEvent(event.id)}
-                  className="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors"
-                >
-                  <p className="text-sm font-medium text-on-surface truncate">{event.name}</p>
-                  {event.location && <p className="text-xs text-on-surface-variant truncate">{event.location}</p>}
-                </button>
-              ))
-            )}
-          </div>
-        </>
-      )}
-    </div>
-    <div className="flex items-center gap-1 sm:gap-3">
-      <div className="relative md:hidden">
-        <button
-          onClick={() => setMobileSearchOpen((v) => !v)}
-          className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
-          aria-label="Search experiences"
-        >
-          <span className="material-symbols-outlined">search</span>
-        </button>
-        {mobileSearchOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setMobileSearchOpen(false)} />
-            <div className="absolute right-0 mt-2 w-72 max-w-[90vw] bg-white rounded-xl panel-shadow border border-outline-variant p-3 z-20">
-              <input
-                autoFocus
-                className={`w-full h-10 px-3 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
-                placeholder="Search experiences..."
-                type="text"
-                value={eventSearch}
-                onChange={(e) => setEventSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && eventMatches.length > 0) goToEvent(eventMatches[0].id);
-                  if (e.key === 'Escape') setMobileSearchOpen(false);
-                }}
-              />
-              {eventSearch.trim() && (
-                <div className="mt-2 max-h-64 overflow-y-auto">
-                  {eventMatches.length === 0 ? (
-                    <p className="px-2 py-2 text-sm text-on-surface-variant">No events match &quot;{eventSearch.trim()}&quot;.</p>
-                  ) : (
-                    eventMatches.map((event) => (
-                      <button
-                        key={event.id}
-                        onClick={() => { goToEvent(event.id); setMobileSearchOpen(false); }}
-                        className="w-full text-left px-2 py-2 rounded-lg hover:bg-surface-container-low transition-colors"
-                      >
-                        <p className="text-sm font-medium text-on-surface truncate">{event.name}</p>
-                        {event.location && <p className="text-xs text-on-surface-variant truncate">{event.location}</p>}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-      <div className="relative">
-        <button
-          onClick={() => {
-            const next = !notifOpen;
-            setNotifOpen(next);
-            if (next) markAllRead();
+    <div className="flex items-center gap-3 sm:gap-6">
+      <div className="relative w-40 sm:w-64 hidden md:block">
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
+          search
+        </span>
+        <input
+          className={`w-full h-10 pl-10 pr-4 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
+          placeholder="Search experiences..."
+          type="text"
+          value={eventSearch}
+          onChange={(e) => {
+            setEventSearch(e.target.value);
+            setEventSearchOpen(true);
           }}
-          className="relative w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
-          aria-label="Recent activity"
-        >
-          <span className="material-symbols-outlined">notifications</span>
-          {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-white" />
-          )}
-        </button>
-        {notifOpen && (
+          onFocus={() => setEventSearchOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && eventMatches.length > 0) goToEvent(eventMatches[0].id);
+            if (e.key === 'Escape') setEventSearchOpen(false);
+          }}
+        />
+        {eventSearchOpen && eventSearch.trim() && (
           <>
-            <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
-            <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20 max-h-96 overflow-y-auto">
-              <p className="px-4 py-1 text-xs text-on-surface-variant uppercase tracking-wider">Recent Activity</p>
-              {activityLoading ? (
-                <div className="px-4 py-6 space-y-2">
-                  {[1, 2, 3].map((i) => <div key={i} className="h-8 bg-surface-container-low rounded-lg animate-pulse" />)}
-                </div>
-              ) : activityEntries.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-on-surface-variant text-center">No recent activity in this organisation yet.</p>
+            <div className="fixed inset-0 z-10" onClick={() => setEventSearchOpen(false)} />
+            <div className="absolute left-0 mt-2 w-full min-w-[280px] bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20 max-h-80 overflow-y-auto">
+              {eventMatches.length === 0 ? (
+                <p className="px-4 py-2 text-sm text-on-surface-variant">
+                  No events match &quot;{eventSearch.trim()}&quot;.
+                </p>
               ) : (
-                activityEntries.map((entry) => (
-                  <div key={entry.id} className="px-4 py-2 hover:bg-surface-container-low transition-colors">
-                    <p className="text-sm text-on-surface">
-                      <span className="font-medium">{entry.actorName ?? 'Someone'}</span> {entry.message}
-                    </p>
-                    <p className="text-xs text-on-surface-variant/70 mt-0.5">{formatRelativeTime(entry.createdAt)}</p>
-                  </div>
+                eventMatches.map((event) => (
+                  <button
+                    key={event.id}
+                    onClick={() => goToEvent(event.id)}
+                    className="w-full text-left px-4 py-2 hover:bg-surface-container-low transition-colors"
+                  >
+                    <p className="text-sm font-medium text-on-surface truncate">{event.name}</p>
+                    {event.location && (
+                      <p className="text-xs text-on-surface-variant truncate">{event.location}</p>
+                    )}
+                  </button>
                 ))
               )}
-              <div className="border-t border-outline-variant mt-2 pt-2">
-                <Link
-                  href="/portal/activity-log"
-                  onClick={() => setNotifOpen(false)}
-                  className="block px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors"
-                >
-                  View all activity
-                </Link>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-1 sm:gap-3">
+        <div className="relative md:hidden">
+          <button
+            onClick={() => setMobileSearchOpen((v) => !v)}
+            className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
+            aria-label="Search experiences"
+          >
+            <span className="material-symbols-outlined">search</span>
+          </button>
+          {mobileSearchOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMobileSearchOpen(false)} />
+              <div className="absolute right-0 mt-2 w-72 max-w-[90vw] bg-white rounded-xl panel-shadow border border-outline-variant p-3 z-20">
+                <input
+                  autoFocus
+                  className={`w-full h-10 px-3 rounded-xl text-label-md font-label-md placeholder:text-on-surface-variant/70 outline-none transition-shadow ${NEUTRAL_PRESENTATION.controlSurface} ${controlFocus}`}
+                  placeholder="Search experiences..."
+                  type="text"
+                  value={eventSearch}
+                  onChange={(e) => setEventSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && eventMatches.length > 0) goToEvent(eventMatches[0].id);
+                    if (e.key === 'Escape') setMobileSearchOpen(false);
+                  }}
+                />
+                {eventSearch.trim() && (
+                  <div className="mt-2 max-h-64 overflow-y-auto">
+                    {eventMatches.length === 0 ? (
+                      <p className="px-2 py-2 text-sm text-on-surface-variant">
+                        No events match &quot;{eventSearch.trim()}&quot;.
+                      </p>
+                    ) : (
+                      eventMatches.map((event) => (
+                        <button
+                          key={event.id}
+                          onClick={() => {
+                            goToEvent(event.id);
+                            setMobileSearchOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-2 rounded-lg hover:bg-surface-container-low transition-colors"
+                        >
+                          <p className="text-sm font-medium text-on-surface truncate">
+                            {event.name}
+                          </p>
+                          {event.location && (
+                            <p className="text-xs text-on-surface-variant truncate">
+                              {event.location}
+                            </p>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          </>
-        )}
-      </div>
-      <Link
-        href="/portal/settings"
-        aria-label="Organisation settings"
-        title="Organisation settings"
-        className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
-      >
-        <span className="material-symbols-outlined">settings</span>
-      </Link>
-      <div className="h-10 w-[1.5px] bg-outline-variant mx-1 hidden sm:block" />
-      <div className="relative">
-        <button
-          onClick={() => setMenuOpen((v) => !v)}
-          className="flex items-center gap-2 pl-2 pr-1 py-1 hover:bg-surface-container-low rounded-full transition-colors"
-          aria-label="Account menu"
+            </>
+          )}
+        </div>
+        <div className="relative">
+          <button
+            onClick={() => {
+              const next = !notifOpen;
+              setNotifOpen(next);
+              if (next) markAllRead();
+            }}
+            className="relative w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
+            aria-label="Recent activity"
+          >
+            <span className="material-symbols-outlined">notifications</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-white" />
+            )}
+          </button>
+          {notifOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
+              <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20 max-h-96 overflow-y-auto">
+                <p className="px-4 py-1 text-xs text-on-surface-variant uppercase tracking-wider">
+                  Recent Activity
+                </p>
+                {activityLoading ? (
+                  <div className="px-4 py-6 space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-8 bg-surface-container-low rounded-lg animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : activityEntries.length === 0 ? (
+                  <p className="px-4 py-6 text-sm text-on-surface-variant text-center">
+                    No recent activity in this organisation yet.
+                  </p>
+                ) : (
+                  activityEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="px-4 py-2 hover:bg-surface-container-low transition-colors"
+                    >
+                      <p className="text-sm text-on-surface">
+                        <span className="font-medium">{entry.actorName ?? 'Someone'}</span>{' '}
+                        {entry.message}
+                      </p>
+                      <p className="text-xs text-on-surface-variant/70 mt-0.5">
+                        {formatRelativeTime(entry.createdAt)}
+                      </p>
+                    </div>
+                  ))
+                )}
+                <div className="border-t border-outline-variant mt-2 pt-2">
+                  <Link
+                    href="/portal/activity-log"
+                    onClick={() => setNotifOpen(false)}
+                    className="block px-4 py-2 text-sm text-primary font-medium hover:bg-primary/5 transition-colors"
+                  >
+                    View all activity
+                  </Link>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+        <Link
+          href="/portal/settings"
+          aria-label="Organisation settings"
+          title="Organisation settings"
+          className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
         >
-          <Avatar name={profile?.full_name} email={profile?.email} avatarUrl={profile?.avatar_url} size={32} />
-          <span className="material-symbols-outlined text-on-surface-variant">expand_more</span>
-        </button>
-        {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20">
-              <p className="px-4 py-1 text-xs text-on-surface-variant truncate">{profile?.email}</p>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low"
-              >
-                Logout
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-      {/* Feature 016 (create-path pass): was "Create" → /portal/events → "+ New Event".
+          <span className="material-symbols-outlined">settings</span>
+        </Link>
+        <div className="h-10 w-[1.5px] bg-outline-variant mx-1 hidden sm:block" />
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex items-center gap-2 pl-2 pr-1 py-1 hover:bg-surface-container-low rounded-full transition-colors"
+            aria-label="Account menu"
+          >
+            <Avatar
+              name={profile?.full_name}
+              email={profile?.email}
+              avatarUrl={profile?.avatar_url}
+              size={32}
+            />
+            <span className="material-symbols-outlined text-on-surface-variant">expand_more</span>
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl panel-shadow border border-outline-variant py-2 z-20">
+                <p className="px-4 py-1 text-xs text-on-surface-variant truncate">
+                  {profile?.email}
+                </p>
+                {/* Feature 030: switch between the current layout and the Studio 2.0 shell (both layouts). */}
+                <ShellToggle onDone={() => setMenuOpen(false)} />
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low"
+                >
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        {/* Feature 016 (create-path pass): was "Create" → /portal/events → "+ New Event".
           Event is the only global create action (teams live on Teams, organisations in
           the org switcher), so this starts the one guided flow directly — for the
           current organisation, pre-selecting the current product as a changeable hint.
           Shown only to people who can create events (it used to show for everyone). */}
-      {canCreateEvent && (
-        <button
-          type="button"
-          onClick={() => openCreateEvent(breadcrumbProduct)}
-          aria-label="New event"
-          className="bg-primary text-white font-label-md text-label-md px-3 sm:px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all whitespace-nowrap inline-flex items-center gap-1.5"
-        >
-          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">add</span>
-          <span className="hidden sm:inline">New Event</span>
-        </button>
-      )}
+        {canCreateEvent && (
+          <button
+            type="button"
+            onClick={() => openCreateEvent(breadcrumbProduct)}
+            aria-label="New event"
+            className="bg-primary text-white font-label-md text-label-md px-3 sm:px-5 py-2.5 rounded-xl hover:opacity-90 active:scale-95 transition-all whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+              add
+            </span>
+            <span className="hidden sm:inline">New Event</span>
+          </button>
+        )}
+      </div>
     </div>
-  </div>
   );
 }
 
 /** The New Organisation flow opened from the organisation switcher. */
 export function HeaderCreateOrganization({ m }: { m: HeaderModel }) {
-  const {
-    addOrganization,
-    createOrgOpen,
-    setCreateOrgOpen,
-  } = m;
+  const { addOrganization, createOrgOpen, setCreateOrgOpen } = m;
   return (
-  <CreateOrganizationFlow
-    open={createOrgOpen}
-    onClose={() => setCreateOrgOpen(false)}
-    onCreated={(org) => {
-      addOrganization(org);
-      setCreateOrgOpen(false);
-    }}
-  />
+    <CreateOrganizationFlow
+      open={createOrgOpen}
+      onClose={() => setCreateOrgOpen(false)}
+      onCreated={(org) => {
+        addOrganization(org);
+        setCreateOrgOpen(false);
+      }}
+    />
   );
 }

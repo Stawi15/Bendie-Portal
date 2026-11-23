@@ -197,6 +197,32 @@ export async function getAccessibleOrganizations(
 }
 
 /**
+ * Feature 030 — the user's own role in an organisation (own membership row,
+ * RLS), or null if they aren't a member. Display only (the context strip).
+ */
+export async function getUserOrgRole(organizationId: string): Promise<string | null> {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', organizationId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data.role;
+  } catch (err) {
+    console.error('Error fetching organisation role:', err);
+    return null;
+  }
+}
+
+/**
  * Check if user has organization-level admin access
  */
 export async function isOrgAdmin(organizationId: string): Promise<boolean> {

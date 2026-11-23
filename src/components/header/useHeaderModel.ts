@@ -12,9 +12,17 @@ import { useProductEntitlement } from '@/contexts/AvailableProductsContext';
 import { useOrgEvents } from '@/lib/useOrgEvents';
 import { useRecentActivity } from '@/lib/useRecentActivity';
 import { isProductAvailableForEvent } from '@/lib/eventAuth';
-import { resolveProductSwitchDestination, parseEventOriginSignal, resolveEventTabProduct, type ProductKey } from '@/lib/productNavigation';
+import {
+  resolveProductSwitchDestination,
+  parseEventOriginSignal,
+  resolveEventTabProduct,
+  type ProductKey,
+} from '@/lib/productNavigation';
 
-export const PRODUCT_LABEL: Record<ProductKey, string> = { bendie: 'Bendie', planner: 'Bendie Planner' };
+export const PRODUCT_LABEL: Record<ProductKey, string> = {
+  bendie: 'Bendie',
+  planner: 'Bendie Planner',
+};
 
 /**
  * Feature 030 — TopHeader's state and derived data, moved VERBATIM so the same
@@ -26,18 +34,32 @@ export function useHeaderModel() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { profile, isGlobalAdmin, logout } = useAuth();
-  const { organization, organizations, setCurrentOrganization, addOrganization, organizationId, loading: orgLoading } = useOrganization();
+  const {
+    organization,
+    organizations,
+    setCurrentOrganization,
+    addOrganization,
+    organizationId,
+    loading: orgLoading,
+  } = useOrganization();
   const { events } = useOrgEvents(organizationId, orgLoading);
-  const { entries: activityEntries, loading: activityLoading, unreadCount, markAllRead } = useRecentActivity(organizationId, orgLoading);
+  const {
+    entries: activityEntries,
+    loading: activityLoading,
+    unreadCount,
+    markAllRead,
+  } = useRecentActivity(organizationId, orgLoading);
   const { product: currentProduct } = useProduct();
   // /code-review findings F3/F4: reads the ONE shared entitlement load
   // (AvailableProductsProvider) instead of independently re-fetching
   // organization_products — no second read, and the switcher correctly
   // offers nothing while that shared state is still 'loading'/'error'.
   const entitlement = useProductEntitlement();
-  const availableProducts = entitlement.status === 'ready' ? entitlement.available : { bendie: false, planner: false };
+  const availableProducts =
+    entitlement.status === 'ready' ? entitlement.available : { bendie: false, planner: false };
   // Feature 022: a paused product stays in the switcher (disabled, "Paused" pill) instead of vanishing.
-  const isProductPaused = (key: ProductKey) => entitlement.status === 'ready' && entitlement.states[key] === 'paused';
+  const isProductPaused = (key: ProductKey) =>
+    entitlement.status === 'ready' && entitlement.states[key] === 'paused';
   const switcherProducts = {
     bendie: availableProducts.bendie || isProductPaused('bendie'),
     planner: availableProducts.planner || isProductPaused('planner'),
@@ -74,7 +96,11 @@ export function useHeaderModel() {
       // calls per-product in its own effect (no EventContext expansion, no
       // second product-membership data source — see research.md Q9's
       // corrected decision, post-/speckit.analyze finding H1).
-      const eventSupportsTargetProduct = await isProductAvailableForEvent(currentEventId, organizationId, targetProduct);
+      const eventSupportsTargetProduct = await isProductAvailableForEvent(
+        currentEventId,
+        organizationId,
+        targetProduct
+      );
       router.push(
         resolveProductSwitchDestination({
           location: 'event-workspace',
@@ -107,7 +133,8 @@ export function useHeaderModel() {
   // resolvable at all (e.g. a shared ORGANIZATION page with no product
   // context).
   const eventOriginSignal = useMemo(() => parseEventOriginSignal(searchParams), [searchParams]);
-  const activeEventTabKey = switchLocation === 'event-workspace' ? pathname.split('/')[4] : undefined;
+  const activeEventTabKey =
+    switchLocation === 'event-workspace' ? pathname.split('/')[4] : undefined;
   const breadcrumbProduct: ProductKey | null =
     currentProduct ?? resolveEventTabProduct(activeEventTabKey, eventOriginSignal) ?? null;
   // Feature 016 (product environment identity): derived from the SAME route-based
