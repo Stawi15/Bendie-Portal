@@ -10,6 +10,7 @@ Writes docs/bendie-revamp/data/walkthrough.json and screenshots/<role>/*.jpg.
 """
 import json, os, re, sys, time
 from pathlib import Path
+from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -61,7 +62,7 @@ def _guard(request):
         os._exit(2)
 
 def new_page(ctx):
-    ctx.add_cookies([{"name": "studio_shell", "value": SHELL, "url": BASE + "/portal"}])
+    ctx.add_cookies([{"name": "studio_shell", "value": SHELL, "domain": urlparse(BASE).hostname, "path": "/portal"}])  # same path as the app's cookie
     page = ctx.new_page()
     page.on("console", lambda m: CONSOLE.append(m.text[:200]) if m.type == "error" else None)
     page.on("request", _guard)

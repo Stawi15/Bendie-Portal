@@ -93,11 +93,11 @@
 ## Phase 8: Polish & verification
 
 - [X] T024 Reconcile `context/architecture.md` with constitution v2.0.0 (stack Next 15/React 19; domain modules; admission = Stawi admin or org member; new shell structure and the `studio_shell` flag) and close G1 in `docs/bendie-revamp/40-unknowns-and-open-questions.md`
-- [ ] T025 Static checks (tsc, lint, vitest incl. new tests, worktree build; confirm the expected build-output change: `/portal/*` routes now dynamic because the layout reads a cookie, with no behaviour change); FR-012 style check: no `package.json`/lockfile/migration changes. Record in verification.md
-- [ ] T026 Walk-through in **v1** (SC-004 screenshots vs baseline) and **v2** (SC-003: access results identical to v1 for all 252 visits). Record in verification.md
-- [ ] T027 v2 reachability (SC-001/002) and context strip (SC-005) checks per quickstart §4–5, including a temporary Published status on the test DB (restored afterwards)
-- [ ] T028 v2 focus/contrast (corrected detector), 390 px drawer, reduced motion, and toggle persistence (SC-006, SC-007). Screenshots at 1440/1024/768/390 in `specs/030-studio-app-shell/evidence/`
-- [ ] T029 `/imprint` the shell patterns (AppShell, sidebars, ContextStrip, product chips, drawer, right panel) into `context/ui-registry.md`; update `context/progress-tracker.md`
+- [X] T025 Static checks (tsc, lint, vitest incl. new tests, worktree build; confirm the expected build-output change: `/portal/*` routes now dynamic because the layout reads a cookie, with no behaviour change); FR-012 style check: no `package.json`/lockfile/migration changes. Record in verification.md
+- [X] T026 Walk-through in **v1** (SC-004 screenshots vs baseline) and **v2** (SC-003: access results identical to v1 for all 252 visits). Record in verification.md
+- [X] T027 v2 reachability (SC-001/002) and context strip (SC-005) checks per quickstart §4–5, including a temporary Published status on the test DB (restored afterwards)
+- [X] T028 v2 focus/contrast (corrected detector), 390 px drawer, reduced motion, and toggle persistence (SC-006, SC-007). Screenshots at 1440/1024/768/390 in `specs/030-studio-app-shell/evidence/`
+- [X] T029 `/imprint` the shell patterns (AppShell, sidebars, ContextStrip, product chips, drawer, right panel) into `context/ui-registry.md`; update `context/progress-tracker.md`
 - [ ] T030 `/review`, then `/speckit-converge`
 
 ---

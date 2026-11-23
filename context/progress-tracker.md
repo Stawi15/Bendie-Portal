@@ -2,9 +2,20 @@
 
 Update this file after every completed feature. Any AI agent reading this should immediately know what is done, what is in progress, and what is next.
 
-**Last synced against the actual codebase:** 2026-11-20, for the Feature 029 entry below; the Feature 006 entry was last synced 2026-09-17; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
+**Last synced against the actual codebase:** 2026-11-23, for the Feature 030 entry below; 2026-11-20 for Feature 029; the Feature 006 entry was last synced 2026-09-17; Feature 005's entry was last synced 2026-09-16; Feature 003's entry was last synced 2026-09-15; the mobile-parity content further down was last synced 2026-08-19.
 
 ---
+
+## Feature 030 — Studio 2.0 App Shell ✅ Built (2026-11-23) — verified; /review and converge pending
+
+Spec/plan/tasks: `specs/030-studio-app-shell/`. Branch `030-studio-app-shell` (from `redesign`). Roadmap `docs/bendie-revamp/36` Phase 2; constitution v2.0.0.
+
+- **Two layouts, one set of pages:** the current layout (v1) stays the default; the Studio 2.0 shell (v2) is opt-in per browser: account menu → "Try the new layout", or `?shell=v2` (cookie `studio_shell`, read on the server so there's no flash).
+- **v2:** a global top bar (search, activity, settings, account, New event); an organisation sidebar (Home, Events, People › Teams, Library, Activity; Settings, Help; organisation and product switchers); an event sidebar with 6 areas (Overview, Setup, Programme, People, Logistics, Content) + utilities, a context strip (products, attendee-app visibility, your role), breadcrumbs, Previous/Next, and an empty right-panel slot. Full sidebar ≥1280, rail 1024–1279, drawer below.
+- **Behaviour-preserving extraction:** `useEventWorkspace()` (the single place availability, redirects and the journey are decided), `EventWorkspaceV1` (today's render, verbatim), shared `EventContentGate`; `useHeaderModel()` + header parts shared by v1 and v2; `PortalShell` + a server `portal/layout.tsx`.
+- **Fixed:** K1 (weak focus on the product switcher and header search) in v2 via a focus rule scoped to the shell chrome. G1: `context/architecture.md` reconciled with constitution v2.0.0.
+- **Verified** (`specs/030-studio-app-shell/verification.md`): tsc clean; lint 0/28; 102 tests; build OK (15 `/portal/*` pages now per-request, as planned); v1 unchanged vs a same-day pre-030 run (0 access differences in 252 visits); v2 ends on the same page as v1 for all 252 visits; reachability, context strip, focus (6.49:1), 768/390 px, reduced motion and the toggle all pass.
+- **Flagged, not fixed (pre-existing):** org admin opening a Planner-only page on a Bendie-only event is sometimes redirected to the Dashboard and sometimes not (race in the wrong-product redirect; the pre-030 code does both). Fix on a branch from `main`.
 
 ## Feature 029 — Design Tokens, Focus Ring and Reduced-Motion Foundation ✅ Built (2026-11-20) — /review ✅ (fixes applied), converged ✅
 

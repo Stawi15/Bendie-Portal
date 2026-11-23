@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-label="Open navigation menu"
               aria-expanded={navOpen}
               aria-controls="shell-sidebar"
-              className="hidden shelldrawer:inline-flex w-control-touch h-control-touch -ml-1 flex-shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"
+              className="hidden shelldrawer:inline-flex h-control-touch aspect-square -ml-1 flex-shrink-0 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"
             >
               <span className="material-symbols-outlined" aria-hidden="true">
                 menu
@@ -61,7 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/portal" className="flex items-center gap-2 flex-shrink-0 rounded-ui-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/bendie.png" alt="" className="w-8 h-8 object-contain" />
-              <span className="hidden sm:inline text-on-surface font-bold">Bendie Studio</span>
+              <span className="hidden lg:inline text-on-surface font-bold">Bendie Studio</span>
             </Link>
             <div className="flex-1 min-w-0" />
             <HeaderActions m={m} />

@@ -1,0 +1,1021 @@
+{
+  "focus": {
+    "org_people": {
+      "tabbed": 45,
+      "chrome_controls": 17,
+      "chrome_no_indicator": [],
+      "chrome_faint_below_3to1": [],
+      "page_no_indicator": [],
+      "all": [
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "Skip to content",
+          "indicators": [
+            "outline",
+            "ring",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Bendie Studio",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Recent activity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Organisation settings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Account menu",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "New event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "add\nNew Organisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Bendie",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Bendie Planner",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "home\nHome",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "event\nEvents",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "group\nPeople",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Teams",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "inventory_2\nLibrary",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "history\nActivity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "settings\nSettings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "help\nHelp",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "Studio Test Org",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "upload_file\nImport spreadsheet",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "person_add\nAdd Person",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "input",
+          "role": null,
+          "label": "Search by name or email...",
+          "indicators": [
+            "ring"
+          ],
+          "contrast": 1.36,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Edit Test Org Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "2 events\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Make Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Remove Test Org Admin from organisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Edit Test Event Staff",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "1 event\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Make Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Remove Test Event Staff from organisatio",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Edit Brian Haddad (Test 1)",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "1 event\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Make Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Remove Brian Haddad (Test 1) from organi",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Edit Chloe Njeri (Test 2)",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "1 event\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Make Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Remove Chloe Njeri (Test 2) from organis",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Edit Daniel Mwangi (Test 3)",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "1 event\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Make Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Remove Daniel Mwangi (Test 3) from organ",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Edit Esther Wanjiru (Test 4)",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "1 event\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Make Admin",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        }
+      ]
+    },
+    "event_logistics": {
+      "tabbed": 44,
+      "chrome_controls": 30,
+      "chrome_no_indicator": [],
+      "chrome_faint_below_3to1": [],
+      "page_no_indicator": [
+        {
+          "chrome": false,
+          "tag": "nextjs-portal",
+          "role": null,
+          "label": "",
+          "indicators": [],
+          "contrast": 0,
+          "fv": false
+        }
+      ],
+      "all": [
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "Skip to content",
+          "indicators": [
+            "outline",
+            "ring",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Bendie Studio",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Recent activity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Organisation settings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Account menu",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "New event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "arrow_back\nOrganisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "dashboard\nOverview\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "tune\nSetup\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "calendar_month\nProgramme\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "groups\nPeople\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "luggage\nLogistics\n(current area)\nexpand_",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Vendors\nPlanner",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Checklist\nPlanner",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Logistics\nPlanner",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "article\nContent\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "history\nActivity Log",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "sync_alt\nBendie Planner",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "tune\nManage modules",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "Studio Test Org",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "tester",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "upload_file\nImport spreadsheet",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "add\nAdd Flight",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Flights",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Hotels",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Ground Transport",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Import spreadsheet",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "button",
+          "role": null,
+          "label": "Add Flight",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "arrow_back\nPrevious: Planning \u2014 Checklis",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "Next: Production \u2014 Agenda\narrow_forward",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": false,
+          "tag": "nextjs-portal",
+          "role": null,
+          "label": "",
+          "indicators": [],
+          "contrast": 0,
+          "fv": false
+        },
+        {
+          "chrome": false,
+          "tag": "a",
+          "role": null,
+          "label": "Skip to content",
+          "indicators": [
+            "outline",
+            "ring",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Bendie Studio",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "input",
+          "role": null,
+          "label": "Search experiences...",
+          "indicators": [
+            "outline",
+            "ring"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Recent activity",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "Organisation settings",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "Account menu",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "New event",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "a",
+          "role": null,
+          "label": "arrow_back\nOrganisation",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "dashboard\nOverview\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "tune\nSetup\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "calendar_month\nProgramme\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        },
+        {
+          "chrome": true,
+          "tag": "button",
+          "role": null,
+          "label": "groups\nPeople\nexpand_more",
+          "indicators": [
+            "outline"
+          ],
+          "contrast": 6.49,
+          "fv": true
+        }
+      ]
+    },
+    "mouse_click_shows_focus_visible": false
+  }
+}

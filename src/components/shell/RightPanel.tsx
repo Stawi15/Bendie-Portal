@@ -122,7 +122,7 @@ export function RightPanelSlot() {
           type="button"
           onClick={ctx.close}
           aria-label="Close panel"
-          className="w-control h-control flex items-center justify-center rounded-ui-sm text-on-surface-variant hover:bg-surface-container-low"
+          className="h-control aspect-square flex items-center justify-center rounded-ui-sm text-on-surface-variant hover:bg-surface-container-low"
         >
           <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
             close

@@ -1,0 +1,32 @@
+{
+  "small": {
+    "w768/org_home": {
+      "page_wider_than_viewport": false,
+      "clipped_topbar_controls": []
+    },
+    "w768/event_agenda": {
+      "page_wider_than_viewport": false,
+      "clipped_topbar_controls": []
+    },
+    "w768/drawer": {
+      "role": "dialog",
+      "focus_in_drawer": true,
+      "after_escape_focus": "Open navigation menu",
+      "closed_sidebar_hidden": "hidden"
+    },
+    "w390/org_home": {
+      "page_wider_than_viewport": false,
+      "clipped_topbar_controls": []
+    },
+    "w390/event_agenda": {
+      "page_wider_than_viewport": false,
+      "clipped_topbar_controls": []
+    },
+    "w390/drawer": {
+      "role": "dialog",
+      "focus_in_drawer": true,
+      "after_escape_focus": "Open navigation menu",
+      "closed_sidebar_hidden": "hidden"
+    }
+  }
+}
