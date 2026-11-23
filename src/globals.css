@@ -242,6 +242,10 @@ button {
     bottom: 0;
     left: 0;
     width: 72px;
+    /* Clip only in rail mode (labels while collapsed). In the full sidebar and
+       the drawer the panel doesn't clip, so header dropdowns (the organisation
+       switcher's menu is 256px) can extend past the sidebar edge. */
+    overflow: hidden;
     transition:
       width 200ms ease 250ms,
       box-shadow 200ms ease 250ms;

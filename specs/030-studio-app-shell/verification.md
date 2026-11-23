@@ -62,3 +62,13 @@ Why a same-day reference: compared with the 2026-11-19 baseline, the test data h
 Test-harness note: Playwright sets a cookie given by URL on path `/`, which left two `studio_shell` cookies and made the toggle look broken in tests only. The walk-through now sets it on `/portal`, exactly as the app does.
 
 Screenshots: `evidence/v2_w{1440,1024,768,390}_*.png`, `evidence/focus_v2_*.png`.
+
+## T030 /review fixes (developer chose 4, 9, 10), 2026-11-23
+
+| # | Issue | Fix | Check |
+|---|---|---|---|
+| 4 | v2 organisation breadcrumbs used v1 page names ("Assets", "Activity Log") unlike the sidebar | `orgBreadcrumbTrail()` in `src/lib/orgNav.ts` (+ 3 tests) worded like the sidebar; Teams shows under People | browser: Library, Activity, People › Teams |
+| 9 | Organisation detail breadcrumb showed the raw organisation id | same function: "Organisations › Organisation details"; any id segment is never shown | browser + unit test |
+| 10 | Organisation switcher menu (256px) could be clipped by the 264px sidebar | the sidebar panel clips only in rail mode (`globals.css`); full sidebar and drawer let header menus extend past the edge | browser probe at 1440/1100/390: menu edge visible; collapsed rail still clips (72px) |
+
+tsc clean; lint 0 errors / 28 warnings; vitest 105 passed.

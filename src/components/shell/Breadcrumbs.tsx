@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOrganization } from '@/contexts/OrganizationContext';
-import { getPortalPageLabel } from '@/lib/portalBreadcrumb';
+import { orgBreadcrumbTrail } from '@/lib/orgNav';
 import { EVENT_AREA_LABELS } from '@/lib/eventAreas';
 import type { EventWorkspace } from '@/lib/useEventWorkspace';
 
@@ -49,8 +49,10 @@ function Trail({ crumbs }: { crumbs: Crumb[] }) {
 export function OrgBreadcrumbs() {
   const pathname = usePathname();
   const { organization } = useOrganization();
-  const crumbs: Crumb[] = [{ label: organization?.name ?? 'Organisation', href: '/portal' }];
-  if (pathname !== '/portal') crumbs.push({ label: getPortalPageLabel(pathname) });
+  const crumbs: Crumb[] = [
+    { label: organization?.name ?? 'Organisation', href: '/portal' },
+    ...orgBreadcrumbTrail(pathname),
+  ];
   return <Trail crumbs={crumbs} />;
 }
 
@@ -72,7 +74,11 @@ export function EventBreadcrumbs({
   if (activeSection) {
     const areaLabel = EVENT_AREA_LABELS[activeSection.area];
     // Utilities and Overview aren't areas you browse; skip an area that shares the page's name.
-    if (activeSection.area !== 'utility' && activeSection.area !== 'overview' && areaLabel !== activeSection.label)
+    if (
+      activeSection.area !== 'utility' &&
+      activeSection.area !== 'overview' &&
+      areaLabel !== activeSection.label
+    )
       crumbs.push({ label: areaLabel });
     crumbs.push({ label: activeSection.label, href: sectionHref(activeSection) });
   }

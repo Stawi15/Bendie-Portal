@@ -157,7 +157,7 @@ export function ShellSidebar({ label, children }: { label: string; children: Rea
           shellrail:relative shellrail:z-20 shellrail:w-[72px]
           shellwide:relative shellwide:w-[264px]`}
       >
-        <div className="shell-sidebar-panel h-full w-full overflow-hidden bg-surface-container-lowest border-r border-outline-variant flex flex-col">
+        <div className="shell-sidebar-panel h-full w-full bg-surface-container-lowest border-r border-outline-variant flex flex-col">
           {children}
         </div>
       </aside>
