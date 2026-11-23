@@ -1,66 +1,64 @@
-# Memory: Backend catch-up roadmap (Features 023–028), complete
+# Memory: Bendie Studio 2.0 redesign (Features 029–030 done)
 
-Last updated: 2026-11-19
+Last updated: 2026-11-23
 
 ## What was built
 
-Everything is on one stacked local branch, `028-content-moderation` (023 → 024 → 025 → 026 → 027 → 028). It is **not pushed and not merged**; `main` is unchanged. All six features are browser-verified by the developer, reviewed (findings fixed) and converged. Spec Kit artifacts are in `specs/023…` to `specs/028…`.
+All redesign work lives on branch `redesign` (pushed). Each roadmap phase is its own Spec Kit feature branched from `redesign` and merged back. `main` only receives bug fixes the developer asks for.
 
-- **023 Smart spreadsheet import:** `.xlsx` and column matching in `CsvImportModal` (`src/lib/spreadsheetImport.ts`).
-- **024 Event time zone:**
-  - `events.timezone` is required on Create event and editable on Basics. Dates are venue time.
-  - Planner gets a copy of the zone once, at creation.
-  - All 32 events were back-filled to Africa/Nairobi.
-- **025 Contact Organizer and matchmaking:** a one-per-event "Show on access screen" toggle, and flags for select questions with no options. The fallback support email is now `support@bendie.app`.
-- **026 Planner access alignment:** one copy of Planner's `has_event_module` (`plannerAccessRulesCore.ts` / `plannerAccessRules.ts`), plus explicit Production and Logistics manage switches.
-- **027 Profiles lock-down readiness (Bendie C1):** no signed-in-user read of hidden `profiles` columns.
-  - `src/lib/callerProfile.ts`: the caller's own row, read with the service role.
-  - `src/lib/profileContacts.ts`: contacts through the Bendie RPCs.
-  - Org routes `people/contacts` and `people/search`.
-- **028 Content moderation:**
-  - `/portal/admin/moderation` (Stawi admins only; linked in the admin menu) handles `content_reports`, which holds every Report and Block from the app.
-    - Pending reports show oldest first with an over-24h flag; a Handled tab shows the rest.
-    - Actions: hide/unhide a post or comment, delete a message, remove from chosen events (Planner access switched off too), dismiss, mark reviewed.
-  - Code: `src/lib/moderation.ts` (service role), `src/lib/moderationRules.ts` (pure, tested), `src/lib/plannerRemoval.ts` (shared with `deactivate-on-removal`).
-  - Gallery loads and writes through `/api/events/[id]/gallery` (`src/lib/galleryServer.ts`), so blocks never hide photos in the Portal.
+- **Discovery and proposals:** `docs/bendie-revamp/` docs 00–41, plus `data/`, `tools/` and `screenshots/`. The brief is `docs/Portal_2.0.md` (local only). These docs are research input, not specs.
+- **Constitution v2.0.0** (`.specify/memory/constitution.md`, amended 2026-11-20). It allows domain modules, inspector/sheet panels and a navigation redesign.
+- **Feature 029 (design tokens, focus ring, reduced motion):** merged in 304fa5c. Tokens: `rounded-ui-*`, `shadow-elev-*`, `status-*`, `product-*`, `h-row`/`h-control`, `motion-*`. Also a global `:focus-visible` outline, `.focus-ring`, and a reduced-motion rule.
+- **Feature 030 (Studio 2.0 app shell):** merged in 9f5971d. Everything is in `specs/030-studio-app-shell/`, including `verification.md` and `evidence/`.
+  - **Layout choice:** two layouts. v1 (current) is the default; v2 (new shell) is opt-in per browser via the `studio_shell` cookie (path `/portal`), from the account menu ("Try the new layout") or `?shell=v2|v1`. `src/app/portal/layout.tsx` is now a server component that reads the cookie and renders `src/components/shell/PortalShell.tsx`.
+  - **Extracted logic:** `src/lib/useEventWorkspace.ts` is the single place that decides event-section availability, redirects and the journey. Both `EventWorkspaceV1` (the old render, verbatim) and `EventWorkspaceV2` render from it, and share `EventWorkspaceParts` (the content gate, the access screens and Previous/Next).
+  - **Header:** `src/components/header/useHeaderModel.ts` and `HeaderParts.tsx` hold the old TopHeader, split into a model and parts reused by both layouts.
+  - **v2 UI** in `src/components/shell/`:
+    - `AppShell`: top bar, `ShellSidebar` (full width ≥1280, rail 1024–1279, drawer below) and `ShellCanvas`.
+    - `OrgSidebar` and `EventSidebar` (6 areas from the new `EVENT_SECTIONS[].area` field, `src/lib/eventAreas.ts`).
+    - `ContextStrip` (products, attendee-app visibility, role), `Breadcrumbs`, `RightPanel` (an empty slot) and `ShellToggle`.
+  - **Pure logic with tests** in `src/lib/`: `shellLayout`, `eventAreas`, `workspaceContext`, `rightPanel` and `orgNav` (active rules and the v2 breadcrumb trail). There are 105 vitest tests.
+  - **K1 (weak focus in the header):** fixed in v2 by a rule scoped to `[data-shell-chrome]` in `globals.css`. v1 is unchanged by design.
+  - **Docs:** `context/architecture.md` is reconciled (doc 40 G1 closed). `ui-registry.md` and `progress-tracker.md` are updated.
 
 ## Decisions made
 
-- Portal writes to Planner send no Planner notifications. Contractor, member-type and "all events" administration stays in the Planner app.
-- Contacts follow Bendie's `can_view_profile_contact` rule. "Search existing" in Add person: Stawi admins get a partial match, client org admins exact email only.
-- Moderation:
-  - **Profile reports:** the admin picks which events to remove someone from (none pre-ticked). Post and message reports pre-tick the content's event.
-  - **Message context:** up to 3 messages before and after.
-  - **Reviewer columns:** requested from the backend, not built ourselves.
-- Gallery permissions are unchanged: only Stawi admins or the author can hide or delete; only Stawi admins see hidden posts. Writes run as the caller first, so the audit trigger keeps the actor, with the service role as fallback.
+- The developer takes my recommended approach on redesign decisions. Bugs found along the way are flagged, not fixed, unless the developer approves; fixes go on a branch from `main`.
+- v2 stays opt-in until a later rollout feature. Page content is not rewritten in 030; later phases migrate pages.
+- Never decide section availability in a layout or sidebar. Always use `useEventWorkspace()`.
+- New shell UI uses only the 029 tokens. The `control` sizes are height-only, so use `aspect-square` for square buttons.
+- Spec Kit is authoritative, and the JSM skills support it. The workflow is architect → specify → clarify → plan → tasks → analyze → implement → imprint → review → converge → remember.
 
 ## Problems solved
 
-- **Testing against live data safely:** run checks in one `DO` block ending in `RAISE EXCEPTION`, so everything rolls back. Impersonate with `set_config('request.jwt.claims', …)` + `set local role authenticated`. Used for the 026 equivalence check (1,850/1,850) and the 027 C1 simulation.
-- **Bendie's block policies** (restrictive SELECT on `posts`, `post_comments`, `messages`) also apply to UPDATE/DELETE with a WHERE clause. Any "see everything" screen needs the service role.
-- **Vitest doesn't resolve `@/`** in re-exports that tests import. Use relative paths there.
-- **A `NextResponse` can't be shared across requests** (its body is consumed once). Build it per call.
-- **Builds** need placeholder Supabase env values just to compile. There are no PowerShell Spec Kit scripts on this Mac, so set `.specify/feature.json` by hand.
+- **No PowerShell on this Mac:** set `.specify/feature.json` by hand and copy the Spec Kit templates.
+- **Builds:** run `next build` in a separate git worktree (symlinked `node_modules`, `.env.test.local` copied as `.env.local`). The developer's `next dev` on :3000 must keep running. A `next/font` "reading '1'" error is a Google Fonts network blip: just retry.
+- **Walk-through** (`docs/bendie-revamp/tools/walkthrough.py`, with Playwright venv `pw-venv` in the session scratchpad):
+  - `STUDIO_SHELL=v1|v2` picks the layout; `WALKTHROUGH_OUT` redirects output.
+  - Set the cookie with path `/portal`. A Playwright cookie given by `url` lands on `/` and shadows the app's own cookie.
+  - Don't run builds at the same time, or pages time out. Re-visit any timeouts.
+  - Compare v1 against a same-day run of the old commit on another port, because the test data drifts.
+- **Focus detector:** wait 300 ms after each Tab; count only rings with blur or spread greater than 0; ignore the Next.js dev overlay.
 
 ## Current state
 
-- Final check on `028-content-moderation` (2026-11-19): `tsc` clean, lint 0 errors, 79/79 tests, the build passes, no user-key hidden-column reads, and no secrets in tracked files. The working tree is clean.
-- 028 browser pass: when the review started, the working copy was on the 027 branch. The developer was asked to repeat 28.1–28.12 on 028 if the Moderation menu item wasn't visible during the pass, plus 28.4–28.7 and 28.13–28.14 after the review fixes.
-- Live: 4 pending `content_reports`, which look like test data. `app_release_config` is still `1.0.2` on both rows.
+- `redesign` is at 9f5971d (pushed). Everything works. Test results:
+  - Access walk-through: v1 has 0 differences vs the pre-030 code over 252 visits; v2 ends on the same final pages as v1.
+  - Focus in the v2 shell: 6.49:1.
+  - 768 and 390 px: OK.
+  - Toggle survives a reload.
+- The developer has tried v2 in their browser and approved it.
+- **Known, flagged, not fixed (pre-existing):** an org admin opening a Planner-only page on a Bendie-only event is sometimes redirected to the Dashboard and sometimes not (a race in the wrong-product redirect).
+- Test environment only: Bendie test `baqivpboykobrqlxxoph`, Planner test `xwqhisiwvnhluihcpliz`. Never write to the production projects. Test passwords are in the gitignored `.env.test.local`; never print them.
 
 ## Next session starts with
 
-1. Push `028-content-moderation` and open a PR to `main`. Then decide on promoting to `production`, which was already 10 commits behind `main`.
-2. Send `specs/028-content-moderation/backend-request.md` to the Bendie team (`reviewed_by`, `reviewed_at`, `action_note`; optional `event_id`).
-3. Tell the Bendie team the portal is ready for C1, and agree the date.
+1. `/remember restore`, then read `docs/bendie-revamp/36` (roadmap) to pick the next phase after the app shell. That is Phase 3: data table, inspector, first page migrations into the v2 shell.
+2. Create the next Spec Kit feature (031) from `redesign`: run `/architect` first, then specify → … → converge, and merge back into `redesign`.
 
 ## Open questions
 
-- Which version goes into `app_release_config`: the first brief said 1.0.4, the latest says iOS 3.2.5. Confirm with the app team.
-- Unbuilt:
-  - Events #4: push `data` (app team).
-  - Events #5: app-version admin screen.
-  - Events #11: automated-reminder labels.
-  - Events #12: walk-ins (needs a product decision; removal isn't a ban until then).
-  - Planner: task notes, slides and blueprints.
-- Should the `docs/` briefs move into `context/` so they're versioned? `docs/` is gitignored.
+- Should the org-admin redirect race be fixed now, on a branch from `main`?
+- When should v2 become the default, and who decides the rollout? That belongs to a later feature.
+- AI/Copilot: the concept must be approved as a working prototype on synthetic data before the legal/DPA and region questions (doc 40).
+- Still pending: the Part 19 skills (`bendie-product`, `bendie-data`, `bendie-ai-copilot`).
