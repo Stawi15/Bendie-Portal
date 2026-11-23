@@ -10,10 +10,15 @@ Writes docs/bendie-revamp/data/walkthrough.json and screenshots/<role>/*.jpg.
 """
 import json, os, re, sys, time
 from pathlib import Path
+from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / "docs/bendie-revamp"
+OUT = Path(os.environ["WALKTHROUGH_OUT"]) if os.environ.get("WALKTHROUGH_OUT") else ROOT / "docs/bendie-revamp"
+# Feature 030: run in the current layout (v1, default) or the Studio 2.0 shell (v2).
+SHELL = os.environ.get("STUDIO_SHELL", "v1")
+if SHELL not in ("v1", "v2"):
+    sys.exit("STUDIO_SHELL must be v1 or v2")
 BASE = os.environ.get("STUDIO_BASE_URL", "http://localhost:3000")
 TEST_REFS = {"baqivpboykobrqlxxoph"}
 
@@ -34,7 +39,7 @@ EVENTS = {
     "summit": "5e5e0000-0000-4000-8000-0000000000e1",   # Bendie-only, seeded content
     "tester": "a8f27084-53ad-4779-9379-72d5e820664c",   # Bendie + Planner, created in the UI
 }
-routes = json.loads((OUT / "data/routes.json").read_text())["pages"]
+routes = json.loads((ROOT / "docs/bendie-revamp/data/routes.json").read_text())["pages"]
 ORG_ROUTES = [p["route"] for p in routes if p["scope"] in ("organization", "platform-admin")
               and "[" not in p["route"]] + ["/portal/admin/organisations/5e5e0000-0000-4000-8000-000000000001"]
 EVENT_SECTIONS = [p["section_key"] for p in routes if p["scope"] == "event"]
@@ -57,6 +62,7 @@ def _guard(request):
         os._exit(2)
 
 def new_page(ctx):
+    ctx.add_cookies([{"name": "studio_shell", "value": SHELL, "domain": urlparse(BASE).hostname, "path": "/portal"}])  # same path as the app's cookie
     page = ctx.new_page()
     page.on("console", lambda m: CONSOLE.append(m.text[:200]) if m.type == "error" else None)
     page.on("request", _guard)
@@ -80,7 +86,7 @@ def visit(page, role, path, shot_name, results, screenshots=True):
         "error_text": r"Something went wrong|Couldn.t load|Failed to|error",
         "empty_state": r"No .{0,40} yet|Nothing here|Get started",
     }.items() if re.search(pat, body, re.I)]
-    rec = {"role": role, "path": path, "final_url": final, "redirected": final.split("?")[0] != path,
+    rec = {"shell": SHELL, "role": role, "path": path, "final_url": final, "redirected": final.split("?")[0] != path,
            "status": status, "load_ms": ms, "h1": h1, "flags": flags, "console_errors": list(errors[:5])}
     if screenshots:
         d = OUT / "screenshots" / role
@@ -124,8 +130,9 @@ def main():
                     visit(page, f"responsive_{tag}", path, path.strip("/").replace("/", "_")[-60:], results)
                 ctx.close()
         browser.close()
+    (OUT / "data").mkdir(parents=True, exist_ok=True)
     (OUT / "data/walkthrough.json").write_text(json.dumps(
-        {"generated": time.strftime("%Y-%m-%d"), "base": BASE, "environment": "TEST (synthetic data)",
+        {"generated": time.strftime("%Y-%m-%d"), "base": BASE, "environment": "TEST (synthetic data)", "shell": SHELL,
          "results": results}, indent=2))
     print(f"\n{len(results)} page visits recorded -> docs/bendie-revamp/data/walkthrough.json")
 

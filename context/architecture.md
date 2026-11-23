@@ -4,7 +4,7 @@
 
 | Layer          | Tool                                  | Purpose                                                              |
 | -------------- | -------------------------------------- | ---------------------------------------------------------------------- |
-| Framework      | Next.js 14 (App Router)                | Full stack framework — this is a standard Next 14.2.x install, not a modified/breaking-changes fork |
+| Framework      | Next.js 15.5 (App Router), React 19     | Full stack framework (standard install). Reconciled 2026-11-23 (Feature 030, doc 40 G1); earlier text said Next 14 |
 | Language       | TypeScript                             | Throughout                                                            |
 | Backend        | Supabase (Postgres + Auth + Storage)   | Shared with the Evently-App mobile backend — the portal is a second client against the same database |
 | Styling        | Tailwind CSS 3, custom Material-style tokens | See `ui-tokens.md`                                              |
@@ -30,7 +30,8 @@ src/
 │   └── portal/
 │       ├── layout.tsx, page.tsx, loading.tsx
 │       ├── events/page.tsx                                  → org-wide events list
-│       ├── events/[eventId]/layout.tsx                       → tab bar + "Next" wizard nav (EVENT_SECTIONS)
+│       ├── layout.tsx (server)                               → reads the `studio_shell` cookie → `components/shell/PortalShell`
+│       ├── events/[eventId]/layout.tsx                       → `useEventWorkspace()` → EventWorkspaceV1 (current) | EventWorkspaceV2 (Studio 2.0)
 │       ├── events/[eventId]/{dashboard,basics,hero,theme,terminology,
 │       │   facilitators,agenda,attendee-travel,activities,excursions,
 │       │   expo,news,networking,faqs,info-center,emergency,
@@ -38,14 +39,16 @@ src/
 │       │                                                       → the 21 content sections (single source of truth: `eventSectionMeta.ts`)
 │       ├── people/page.tsx, teams/page.tsx, assets/page.tsx
 │       ├── settings/page.tsx, activity-log/page.tsx
-├── components/portal/          → all reusable portal UI (flat, no further nesting yet)
+├── components/portal/          → reusable portal UI (pages' building blocks)
+├── components/shell/           → Feature 030: PortalShell, AppShell (v2 frame), sidebars, ContextStrip, Breadcrumbs, RightPanel, EventWorkspaceV1/V2
+├── components/header/          → Feature 030: the header's model (`useHeaderModel`) and parts, shared by v1 TopHeader and the v2 top bar/sidebar
 ├── contexts/                   → AuthContext, EventContext, OrganizationContext, ConfirmContext
 ├── lib/                        → supabaseClient.ts, portalAuth.ts, csvImport.ts, assetUpload.ts,
 │                                   eventSectionMeta.ts, eventStats.ts, portalLabels.ts,
 │                                   portalBreadcrumb.ts, formatRelativeTime.ts, reorder.ts,
 │                                   useOrgEvents.ts, useOrgPeople.ts, useTeams.ts, useRecentActivity.ts
 ├── types/database.ts           → hand-maintained Supabase Database type (not auto-generated)
-├── middleware.ts                → auth + global_role gate for /portal and /auth
+├── middleware.ts                → auth + portal admission (Stawi admin, or member of ≥1 organisation) for /portal and /auth
 └── globals.css                  → Tailwind base + @layer components (.input, .btn-primary, etc.)
 ```
 
@@ -57,13 +60,24 @@ There is no `agent/`, `actions/`, or `services/` layer — this is a much flatte
 
 | Folder             | Owns                                                                                  |
 | ------------------- | -------------------------------------------------------------------------------------- |
-| `app/portal/**`     | Pages. Each page owns its own data fetching, form state, and Supabase calls — there is no separate "service layer" to route through. |
-| `app/api/admin/**`  | Platform-wide privileged operations (service-role). Every route re-verifies the caller is `global_role = 'admin'` via the cookie-based server client before touching the service-role client — never trust the client body alone. Stays platform-admin-only (constitution v1.1.0, Principle II). |
-| `app/api/events/**`, `app/api/organizations/**` | Organization-scoped privileged operations (constitution v1.1.0). Each route re-verifies, per request, that the caller is a platform admin **or** an owner/admin of the organization that owns the target record — resolved server-side (e.g. `events.organization_id`, or the route's organization verified against `organization_members`), never from a client-supplied or "currently selected" org id. Precedent: Feature 008 `planner-permissions/*` via `canAdministerPlannerPermissions`. Must never escalate (no platform admin, no org owner/admin grants unless a spec allows it, no cross-organization access). |
+| `app/portal/**`     | Pages. Each page owns its form state and calls Supabase directly or through a shared per-domain module. Constitution v2.0.0 (Principle II) allows domain modules in `src/lib/<domain>.ts` that take a passed-in Supabase client and run under RLS (precedent: `src/lib/planner*.ts`), and requires one once logic has a second caller. There is still no generic service/repository layer. |
+| `app/api/admin/**`  | Platform-wide privileged operations (service-role). Every route re-verifies the caller is `global_role = 'admin'` via the cookie-based server client before touching the service-role client — never trust the client body alone. Stays platform-admin-only (constitution v2.0.0, Principle II). |
+| `app/api/events/**`, `app/api/organizations/**` | Organization-scoped privileged operations (constitution v2.0.0, Principle II). Each route re-verifies, per request, that the caller is a platform admin **or** an owner/admin of the organization that owns the target record — resolved server-side (e.g. `events.organization_id`, or the route's organization verified against `organization_members`), never from a client-supplied or "currently selected" org id. Precedent: Feature 008 `planner-permissions/*` via `canAdministerPlannerPermissions`. Must never escalate (no platform admin, no org owner/admin grants unless a spec allows it, no cross-organization access). |
 | `components/portal` | Presentational + lightly-stateful UI (modals, cards, badges). Can call Supabase directly (e.g. `AssetPickerModal`) — this project does not enforce "components never touch the DB." |
 | `contexts/`         | Cross-page state: current user/profile, current event, current organization, a shared confirm-dialog. |
-| `lib/`              | Supabase client singleton, auth/role helpers, CSV parsing, asset upload, and small per-domain hooks (`useOrgEvents`, `useTeams`, etc.). |
+| `lib/`              | Supabase client singleton, auth/role helpers, domain modules, CSV parsing, asset upload, small per-domain hooks (`useOrgEvents`, `useTeams`, etc.), and pure logic with vitest tests. `useEventWorkspace.ts` is the single place event-section availability, redirects and the journey are decided (Feature 030). |
 | `middleware.ts`     | The only route-level auth gate. |
+
+---
+
+## Studio 2.0 shell (Feature 030)
+
+Two layouts wrap the same pages, chosen per browser by the `studio_shell` cookie (`v1` default, `v2` = Studio 2.0; `?shell=v1|v2` overrides and sticks). `app/portal/layout.tsx` is a server component that reads the cookie (so `/portal/*` renders per request) and passes it to the client `PortalShell`. The account menu's "Try the new layout" / "Back to the current layout" switches it.
+
+- **v1** (current): `OrgSideNav` + `TopHeader`; event pages via `EventWorkspaceV1` (area tabs + steps).
+- **v2**: `AppShell` (global top bar: search, activity, settings, account, New event) + a sidebar + canvas (breadcrumbs, page, Previous/Next) + one right-panel slot (no content yet). Organisation routes use `OrgSidebar`; event routes use `EventSidebar` (six areas from `EVENT_SECTIONS[].area`, display only) with the `ContextStrip` (products, visibility in the attendee app, your role).
+- Both event layouts render from one `useEventWorkspace()` and share `EventContentGate`, so availability, redirects and paused-product rules can't drift. Never decide availability in a layout or sidebar.
+- The header's state lives in `useHeaderModel()`; the v1 header and the v2 shell render the same parts (`components/header/HeaderParts.tsx`).
 
 ---
 
@@ -78,7 +92,7 @@ There is no `agent/`, `actions/`, or `services/` layer — this is a much flatte
 
 Two tiers, both real and in use:
 
-- **Global gate** (`profiles.global_role = 'admin'`) — required for `/portal/*` at all. Checked in `src/middleware.ts`.
+- **Portal admission** (`src/middleware.ts`, Feature 003): a Stawi admin (`profiles.global_role = 'admin'`) **or** a signed-in user with at least one `organization_members` row. Anyone else lands on `/portal/no-access` (not `/unauthorized`). `/portal/admin/**` stays Stawi-admin only (Feature 022). Earlier text here said admin-only; reconciled 2026-11-23 (doc 40 G1).
 - **Org/event-scoped roles** (`organization_members.role`, `event_members.role`) — `host`/`organizer`/`admin` at the event level, `owner`/`admin` at the org level; checked via helpers in `src/lib/portalAuth.ts` (`canManageEvent`, `isOrgAdmin`, `getUserEventRole`) for finer-grained UI/action gating beyond the blanket global-admin check.
 
 - **Feature 017 (2026-10-09)**: every organization `owner`/`admin` is automatically an event `admin` on every event of their organization (triggers on `events` and `organization_members` + backfill), so event access still comes from `event_members` as Feature 003 requires. Only platform admins (or the service role) can create or change organization `owner`/`admin` memberships — enforced by `organization_members` RLS, not only the UI.
@@ -91,14 +105,12 @@ Two tiers, both real and in use:
 // Redirect unauthenticated users away from /portal
 if (!user && pathname.startsWith('/portal')) return redirectTo('/auth/login');
 
-// Global-admin gate for /portal, with a short-lived httpOnly cache cookie
-// (60s TTL) to avoid a profiles round-trip on every navigation. This cache
-// is a UX optimization only — real data access is still fully governed by
-// RLS via portal_is_global_admin(), so a stale cache can never grant actual
-// data access, only delay a demotion showing up in the UI.
-if (user && pathname.startsWith('/portal')) {
-  const role = await getRole(user.id); // checks ROLE_CACHE_COOKIE first
-  if (role !== 'admin') return redirectTo('/unauthorized');
+// Admission for /portal (both checks use short-lived httpOnly cache cookies;
+// UX only — RLS still governs every read and write):
+if (user && pathname.startsWith('/portal') && pathname !== '/portal/no-access') {
+  const role = await getRole(user.id);
+  if (role !== 'admin' && pathname.startsWith('/portal/admin')) return redirectTo('/unauthorized');
+  if (role !== 'admin' && !(await getHasOrgMembership(user.id))) return redirectTo('/portal/no-access');
 }
 ```
 
@@ -210,8 +222,8 @@ see `specs/001-bendie-planner-integration/` for the full spec/plan/tasks.
 
 ## Invariants
 
-- `/portal/*` is unreachable without `profiles.global_role = 'admin'` — enforced in `middleware.ts`, backstopped by RLS (never rely on middleware alone).
+- `/portal/*` is reachable only by a Stawi admin or a member of at least one organisation (`/portal/admin/**`: Stawi admins only) — enforced in `middleware.ts`, backstopped by RLS (never rely on middleware alone).
 - Every Supabase write from the client stamps `event_id` (or `organization_id`) to the current context — never a user-editable field.
-- Privileged (service-role) operations only ever happen server-side in route handlers, gated by a fresh per-request authorization check, never by trusting a client-supplied "I'm an admin" flag: platform-wide operations in `app/api/admin/*` (platform admin only), organization-scoped ones elsewhere (platform admin or owner/admin of the target's own organization) — constitution v1.1.0, Principle II.
+- Privileged (service-role) operations only ever happen server-side in route handlers, gated by a fresh per-request authorization check, never by trusting a client-supplied "I'm an admin" flag: platform-wide operations in `app/api/admin/*` (platform admin only), organization-scoped ones elsewhere (platform admin or owner/admin of the target's own organization) — constitution v2.0.0, Principle II.
 - No hardcoded hex values or raw Tailwind color classes in components — use the tokens in `ui-tokens.md`.
 - Facilitators are populated via CSV import as the primary path — if you add fields to the facilitators form/table, verify the CSV template/parser (`src/lib/csvImport.ts` + `CsvImportModal.tsx`) covers them, per schema-reference.md's 2026-08-18 note that new fields have gone live without CSV support before.

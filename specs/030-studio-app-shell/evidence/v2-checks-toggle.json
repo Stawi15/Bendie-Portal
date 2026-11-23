@@ -1,0 +1,35 @@
+{
+  "toggle": {
+    "steps": [
+      [
+        "start",
+        "v1"
+      ],
+      [
+        "after toggle",
+        "v2"
+      ],
+      [
+        "after reload",
+        "v2"
+      ],
+      [
+        "after back",
+        "v1"
+      ],
+      [
+        "?shell=v2",
+        "v2"
+      ],
+      [
+        "plain URL after ?shell=v2",
+        "v2"
+      ],
+      [
+        "?shell=v1",
+        "v1"
+      ]
+    ],
+    "page_errors": []
+  }
+}

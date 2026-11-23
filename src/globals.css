@@ -228,3 +228,49 @@ button {
     animation-iteration-count: infinite !important;
   }
 }
+
+/* ── Feature 030 — Studio 2.0 shell (v2 only; v1 never renders these hooks) ── */
+
+/* Rail mode (1024–1279 on hover-capable desktops; same query as the
+   `shellrail` screen): a 72px rail that widens over the canvas on hover or
+   keyboard focus, with the same hover-intent delays as v1's `.sidebar-panel`.
+   Labels fade; second-level lists only show when expanded. */
+@media (min-width: 1024px) and (max-width: 1279px) and (hover: hover) and (pointer: fine) {
+  .shell-sidebar-panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 72px;
+    /* Clip only in rail mode (labels while collapsed). In the full sidebar and
+       the drawer the panel doesn't clip, so header dropdowns (the organisation
+       switcher's menu is 256px) can extend past the sidebar edge. */
+    overflow: hidden;
+    transition:
+      width 200ms ease 250ms,
+      box-shadow 200ms ease 250ms;
+  }
+  .shell-sidebar-panel:hover,
+  .shell-sidebar-panel:has(:focus-visible) {
+    width: 280px;
+    box-shadow: theme('boxShadow.elev-2');
+    transition-delay: 120ms;
+  }
+  .shell-sidebar-panel:not(:hover):not(:has(:focus-visible)) .shell-label {
+    opacity: 0;
+  }
+  .shell-sidebar-panel:not(:hover):not(:has(:focus-visible)) .shell-expanded-only {
+    display: none;
+  }
+}
+
+/* K1 fix, scoped to the v2 shell's chrome (top bar + sidebars). The reused
+   header controls style focus with a 20–25% tint ring (below 3:1); inside the
+   v2 chrome every control also gets the shared 2px primary outline. Higher
+   specificity than `outline-none` / `focus-visible:outline-none`, so no
+   !important; v1 and page content are untouched. */
+[data-shell-chrome]
+  :is(a[href], button, input, select, textarea, summary, [role='button'], [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid theme('colors.primary');
+  outline-offset: 2px;
+}

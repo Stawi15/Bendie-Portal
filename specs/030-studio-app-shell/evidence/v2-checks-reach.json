@@ -1,0 +1,65 @@
+{
+  "reachability": {
+    "stawi_admin/summit": {
+      "areas": 6,
+      "sidebar_sections": 24,
+      "reachable_in_v1_but_not_in_sidebar": [],
+      "in_sidebar_not_landing_in_v1": []
+    },
+    "stawi_admin/tester": {
+      "areas": 6,
+      "sidebar_sections": 24,
+      "reachable_in_v1_but_not_in_sidebar": [
+        "attendee-travel",
+        "excursions",
+        "games",
+        "info-center",
+        "news",
+        "notifications",
+        "planner-production",
+        "planner-tasks"
+      ],
+      "in_sidebar_not_landing_in_v1": []
+    },
+    "org_admin/summit": {
+      "areas": 6,
+      "sidebar_sections": 23,
+      "reachable_in_v1_but_not_in_sidebar": [],
+      "in_sidebar_not_landing_in_v1": []
+    },
+    "org_admin/tester": {
+      "areas": 6,
+      "sidebar_sections": 23,
+      "reachable_in_v1_but_not_in_sidebar": [
+        "attendee-travel",
+        "excursions",
+        "games",
+        "info-center",
+        "news",
+        "notifications",
+        "planner-production",
+        "planner-tasks"
+      ],
+      "in_sidebar_not_landing_in_v1": []
+    },
+    "event_staff/summit": {
+      "areas": 6,
+      "sidebar_sections": 23,
+      "reachable_in_v1_but_not_in_sidebar": [],
+      "in_sidebar_not_landing_in_v1": [
+        "members"
+      ]
+    },
+    "event_staff/tester": {
+      "sidebar": "none (no workspace access)",
+      "url": "/portal/events/a8f27084-53ad-4779-9379-72d5e820664c/dashboard"
+    }
+  },
+  "context_strip": {
+    "stawi_admin/summit": "Organisation:\nStudio Test Org \u203a\n\nEvent:\nStudio Test Summit 2027\n\nAttendee app\n\nDraft \u00b7 not public. Event members see changes in the attendee app immediately.\n\nYour role: Stawi admin",
+    "stawi_admin/tester": "Organisation:\nStudio Test Org \u203a\n\nEvent:\ntester\n\nAttendee app\nPlanner\n\nDraft \u00b7 not public. Event members see changes in the attendee app immediately.\n\nApplies to the attendee app (Bendie Planner ignores status)\n\nYour role: Stawi admin",
+    "org_admin/summit": "Organisation:\nStudio Test Org \u203a\n\nEvent:\nStudio Test Summit 2027\n\nAttendee app\n\nDraft \u00b7 not public. Event members see changes in the attendee app immediately.\n\nYour role: Organisation owner",
+    "org_admin/tester": "Organisation:\nStudio Test Org \u203a\n\nEvent:\ntester\n\nAttendee app\nPlanner\n\nDraft \u00b7 not public. Event members see changes in the attendee app immediately.\n\nApplies to the attendee app (Bendie Planner ignores status)\n\nYour role: Organisation owner",
+    "event_staff/summit": "Organisation:\nStudio Test Org \u203a\n\nEvent:\nStudio Test Summit 2027\n\nAttendee app\n\nDraft \u00b7 not public. Event members see changes in the attendee app immediately.\n\nYour role: Event staff"
+  }
+}

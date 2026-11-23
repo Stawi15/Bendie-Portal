@@ -305,6 +305,36 @@ Last updated: 2026-11-20
 - **Motion:** use only the `motion-*` tokens. The global `prefers-reduced-motion` rule makes them instant; spinners and skeleton pulses keep running.
 - **Consistency flag (from 029 verification):** the selected segment in `EventsOverviewPanel.tsx:85` uses `panel-shadow` as its "selected" marker. It's fine today, but when migrated it should use a token-based selected state (`bg-white shadow-elev-1`) so a soft shadow isn't confused with focus.
 
+### Studio 2.0 App Shell (Feature 030, v2 layout)
+
+File: `src/components/shell/{AppShell,OrgSidebar,EventSidebar,ContextStrip,Breadcrumbs,RightPanel,ShellToggle}.tsx`, `src/globals.css` (`.shell-sidebar-panel`, `[data-shell-chrome]`), `tailwind.config.js` (`shellwide`/`shellrail`/`shelldrawer` screens)
+Last updated: 2026-11-23
+
+| Property | Class |
+| --- | --- |
+| Top bar | `h-16 bg-surface-container-lowest border-b border-outline-variant px-3 sm:px-4`, `data-shell-chrome`; holds the reused `HeaderActions` |
+| Sidebar surface | `bg-surface-container-lowest border-r border-outline-variant`; width `shellwide:w-[264px]` · rail `shellrail:w-[72px]` (expands to 280px over the canvas, `shadow-elev-2`) · drawer `shelldrawer:w-[280px]` |
+| Sidebar sections | header / nav / footer split by `border-outline-variant`, each `p-3` |
+| Nav item | `SHELL_ITEM` = `flex items-center gap-3 px-3 rounded-ui-md text-sm h-control-touch` (`h-row-compact` at rail/wide); icon `material-symbols-outlined text-[20px]` |
+| Nav item idle / hover | `text-on-surface-variant hover:bg-on-surface/[0.05] hover:text-on-surface` |
+| Nav item active | `bg-primary/10 text-primary font-semibold` + `aria-current="page"` |
+| Second level | same item, `pl-11`, no icon; area header is a `button` with `aria-expanded` + `expand_more` chevron (`rotate-180` when open); current area: `text-on-surface font-semibold`, icon `text-primary` |
+| Product chip (context strip) | `rounded-full px-2 py-0.5 font-medium bg-product-<p>-bg text-product-<p>-fg` + `w-1.5 h-1.5 rounded-full bg-product-<p>-dot`; text always present ("Attendee app", "Planner") |
+| Planner tag on a nav item | `rounded-full bg-product-planner-bg text-product-planner-fg px-1.5 text-[10px] font-semibold` "Planner" |
+| Context strip text | `text-xs`; org `text-on-surface-variant`; event `text-base font-semibold text-on-surface line-clamp-2`; visibility `text-on-surface-variant` |
+| Breadcrumbs | `text-xs text-on-surface-variant`, `chevron_right` 14px separators, last crumb `text-on-surface font-medium` + `aria-current="page"` |
+| Canvas | `main#shell-main`: one scroller `p-4 sm:p-gutter`; optional footer `px-4 sm:px-gutter pb-3` (Previous/Next) |
+| Drawer | scrim `bg-black/40`; `role="dialog" aria-modal` only while open; slide `duration-motion-base ease-motion-standard` |
+| Right panel (slot) | `w-[360px] border-l border-outline-variant bg-surface-container-lowest`; header `h-row`; close button `w-control h-control rounded-ui-sm`. Hidden until a page registers content |
+| Focus state | Global `:focus-visible` outline, plus the scoped `[data-shell-chrome]` rule (2px `primary`) on every chrome control (fixes K1 in v2) |
+
+**Pattern notes:**
+- **One source of truth:** sidebars render from `useEventWorkspace()` (event) and `isOrgNavActive` (org). Never filter sections in a shell component.
+- **Reuse the header parts:** the v2 top bar and org sidebar render `HeaderActions`, `HeaderOrgSwitcher` and `HeaderProductSwitcher` unchanged. Restyle through the container (e.g. `[&>.w-px]:!hidden`), not by forking them.
+- **Three modes, one breakpoint set:** use only `shellwide:` / `shellrail:` / `shelldrawer:` for v2 shell geometry (exactly one matches at any size). Rail hides `.shell-label` text and `.shell-expanded-only` blocks until hover or keyboard focus.
+- **New page-level shell content** (toolbar, inspector) goes in `ShellCanvas`'s `toolbar` slot or the right panel via `useRegisterRightPanelContent`. Don't add more chrome rows.
+- v1 (`OrgSideNav`, `TopHeader`, `EventWorkspaceV1`) is unchanged and stays the default until rollout.
+
 ---
 
 ## Not Yet Captured

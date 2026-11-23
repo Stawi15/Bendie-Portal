@@ -16,6 +16,13 @@ module.exports = {
         // including ≥1024px tablets — keep the off-canvas drawer + menu button.
         // Must match the media query on `.sidebar-panel` in globals.css.
         desk: { raw: '(min-width: 1024px) and (hover: hover) and (pointer: fine)' },
+        // Feature 030: Studio 2.0 shell (v2) sidebar modes (doc 22). Exactly one
+        // matches at any size: full sidebar ≥1280; hover-expand rail 1024–1279 on
+        // hover-capable desktops; drawer otherwise (phones, touch tablets <1280).
+        // Must match `.shell-sidebar-panel` in globals.css.
+        shellwide: { raw: '(min-width: 1280px)' },
+        shellrail: { raw: '(min-width: 1024px) and (max-width: 1279px) and (hover: hover) and (pointer: fine)' },
+        shelldrawer: { raw: '(max-width: 1023px), (max-width: 1279px) and (hover: none), (max-width: 1279px) and (pointer: coarse)' },
       },
       colors: {
         gray: {
