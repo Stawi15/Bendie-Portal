@@ -33,6 +33,7 @@ import { useLatestRequest } from '@/lib/useLatestRequest';
 import { eventMemberContacts } from '@/lib/profileContacts';
 import toast from 'react-hot-toast';
 import { friendlyError } from '@/lib/userFacingError';
+import { addSpeakerFromAttendee } from '@/lib/speakers';
 
 type Member = {
   event_id: string;
@@ -211,28 +212,9 @@ export default function MembersPage() {
   const makeFacilitator = async (m: Member) => {
     setMakingFacilitator(m.user_id);
 
-    const { data: existing, error: checkError } = await supabase
-      .from('facilitators')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('user_id', m.user_id)
-      .maybeSingle();
-
-    if (checkError) { toast.error(friendlyError(checkError)); setMakingFacilitator(null); return; }
-
-    if (!existing) {
-      const { error: insertError } = await supabase.from('facilitators').insert({
-        event_id: eventId,
-        user_id: m.user_id,
-        full_name: m.profiles?.full_name ?? null,
-        email: m.profiles?.email ?? null,
-        job_title: m.profiles?.job_title ?? null,
-        avatar_url: m.profiles?.avatar_url ?? null,
-        claim_status: 'claimed',
-        claimed_at: new Date().toISOString(),
-      });
-      if (insertError) { toast.error(friendlyError(insertError)); setMakingFacilitator(null); return; }
-    }
+    // Feature 031: the speaker part (existence check + claimed insert) lives in speakers.ts.
+    const { error: speakerError } = await addSpeakerFromAttendee(supabase, eventId, m);
+    if (speakerError) { toast.error(friendlyError(speakerError)); setMakingFacilitator(null); return; }
 
     const { error: roleError } = await supabase
       .from('event_members')
