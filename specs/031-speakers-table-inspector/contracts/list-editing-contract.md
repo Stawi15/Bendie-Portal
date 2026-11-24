@@ -36,4 +36,4 @@ All functions take `client: SupabaseClient<Database>` first and run under the ca
 
 1. The v1 Speakers page is pixel-identical; only its data calls moved.
 2. Attendees' "Add to speakers" writes exactly what it wrote before (verified by a payload unit test).
-3. No way of leaving with unsaved changes skips the prompt (6 in-app ways plus reload and tab close).
+3. No way of leaving with unsaved changes skips the prompt (8 in-app ways plus reload and tab close; see research R5).

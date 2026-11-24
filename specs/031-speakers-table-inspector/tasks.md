@@ -62,14 +62,16 @@
     - below 768 px, a `<ul>` list mode.
   - `Empty`, `Error` (with a retry action) and `Loading` (skeleton).
   - A polite live region announcing the shown count and sort changes.
+  - Sort cycle on a header: ascending → descending → off (back to `initialSort`); `Reset` also restores it (analysis A1).
+  - Column priority: columns can be marked `priority: 'secondary'`; when the table area is narrower than about 800 px (for example 1280 px with the docked inspector), secondary columns are hidden through TanStack column visibility (ResizeObserver on the table area), so there's never sideways scroll (analysis U1).
   - Styling with 029 tokens (`h-row`, `rounded-ui-*`, `shadow-elev-*`).
 - [ ] T010 [US1] Create `src/components/speakers/SpeakersPageV2.tsx` (list part):
   - loads with `listSpeakers` (abortable, like today);
   - `SectionHeader` with the count;
   - toolbar: search, group / role / not-claimed filters and reset, "Import spreadsheet" and "Add speaker";
-  - columns: photo + name, title · organisation, group, role, claim (`StatusBadge`);
+  - columns: photo + name, title · organisation, group (secondary), role (secondary), claim (`StatusBadge`);
   - default sort `display_order`; sortable name, organisation, group and claim;
-  - today's empty state (copy-standard wording) and a "No speakers match" state with reset.
+  - today's empty state (copy-standard wording), a "No speakers match" state with reset, and a load-error state with a retry action (analysis C1).
 - [ ] T011 [US1] In `facilitators/page.tsx`, render `SpeakersPageV2` when `useShell().shell === 'v2'` and V1 otherwise.
 
 ---
@@ -151,7 +153,7 @@
 - [ ] T023 Update `context/ui-rules.md`: list records are created and edited in the Inspector, never an inline panel above a list (doc 20). Record the DataTable, Inspector and DirtyGuard usage rules and the `?<entity>=` URL convention.
 - [ ] T024 Static checks: tsc, lint, vitest, and a worktree build. Confirm the only dependency change is `@tanstack/react-table@9.3.1`. Record the results in verification.md.
 - [ ] T025 Walk-throughs: v1 against the reference (SC-002) and v2 against v1 (access parity). Record the results in verification.md.
-- [ ] T026 Quickstart §4 parity and behaviour script (SC-001, SC-003–SC-006, SC-008). Every way of leaving while dirty is covered; test data is restored afterwards. Record the results.
+- [ ] T026 Quickstart §4 parity and behaviour script (SC-001, SC-003–SC-006, SC-008). Every way of leaving while dirty is covered, including closing the page with the leave-page prompt enabled (expect the browser's dialog; analysis C2); test data is restored afterwards. Record the results.
 - [ ] T027 Quickstart §5: focus detector (≥3:1), 1440/1024/768/390 screenshots in `specs/031-speakers-table-inspector/evidence/`, and reduced motion (SC-007). Record the results.
 - [ ] T028 `/imprint` DataTable, StatusBadge, Inspector (RightPanel.Portal) and SpeakerInspector into `context/ui-registry.md`; update `context/progress-tracker.md`.
 - [ ] T029 `/review`, then `/speckit-converge`.

@@ -70,6 +70,7 @@ The App Router has no way to block navigation, so the guard covers every exit it
 - **Access:** event members can read both, under RLS (`agenda_session_speakers_select_event_member`; `agenda_sessions` is read by Agenda for the same roles).
 - **Decision:** `listSpeakerSessions(client, eventId, speakerId)` runs two selects in parallel and merges and de-duplicates by session id, sorted by `starts_at`. A third parallel read gets `events.timezone`. The inspector shows the title plus day and time in the event's time zone (Feature 024), formatted with `Intl.DateTimeFormat`. Any error shows "Sessions aren't available", and the rest of the inspector keeps working.
 - **Out of scope:** breakout room leads (`agenda_breakout_rooms.facilitator_id`).
+- **Boundary note (analysis N1):** this read lives in `speakers.ts` only until an `agenda.ts` domain module exists (the Agenda migration); it moves there then.
 
 ## R8: Responsive and accessibility
 

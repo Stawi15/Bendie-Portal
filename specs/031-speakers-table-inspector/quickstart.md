@@ -20,7 +20,7 @@ Test environment only (synthetic data). The dev server runs with `.env.test.loca
      - check the claim badges (claimed and not claimed);
      - check the sessions list for a speaker on sessions, one on none, and a lead-only speaker.
    - **URL:** a deep link reopens the speaker; Back closes it; an unknown id shows the not-found message.
-   - **Guard:** with unsaved changes, try each way of leaving: close, another row, sidebar link, breadcrumb, Back, Escape, event search, Logout, reload. Each one asks; "Keep editing" keeps the values; "Discard" proceeds. With no changes, nothing asks.
+   - **Guard:** with unsaved changes, try each way of leaving: close, another row, sidebar link, breadcrumb, Back, Escape, Add speaker, event search, Logout, reload, and closing the tab. Each one asks; "Keep editing" keeps the values; "Discard" proceeds. With no changes, nothing asks.
    - **Import:** import the template with 2 rows; they appear at the end. Delete them afterwards.
    - **Attendees "Add to speakers"** in v1 and v2: same records as before. Restore the test data afterwards.
 5. **Responsive and keyboard (SC-007):**

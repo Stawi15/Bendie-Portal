@@ -139,7 +139,7 @@ On a laptop the inspector docks beside the table; on smaller screens it slides o
 - **FR-009**: The inspector MUST offer the same ten fields as today (name, email, job title, organisation, group, role type, LinkedIn URL, expertise, bio, avatar URL with preview), the same required-name and email rules with the same messages, and save, add, cancel and delete (with confirmation).
 - **FR-010**: The inspector MUST show the claim status as a status badge with icon and text.
 - **FR-011**: The inspector MUST list, read-only, the agenda sessions the speaker is on (title, day and time), or say there are none or that they aren't available.
-- **FR-012**: New speakers MUST be added at the end of the display order; edits MUST NOT change the display order.
+- **FR-012**: Speakers added on the Speakers page or by import MUST be added at the end of the display order; edits MUST NOT change the display order. (Attendees' "Add to speakers" keeps today's behaviour, per FR-016.)
 
 **Unsaved changes and the address**
 
@@ -174,7 +174,7 @@ On a laptop the inspector docks beside the table; on smaller screens it slides o
 - **SC-002**: In the current layout, the Speakers and Attendees pages show no visual or behavioural change (walk-through access results identical, screenshots data-only differences).
 - **SC-003**: Finding a given speaker by search or filter takes at most 2 actions from opening the page.
 - **SC-004**: Editing a speaker takes the organiser from the list to a saved change without the list ever being hidden on screens 1280 px and wider.
-- **SC-005**: 0 unsaved changes are lost silently: every way of leaving with unsaved changes (6 in-app ways plus reload and tab close) asks first.
+- **SC-005**: 0 unsaved changes are lost silently: every way of leaving with unsaved changes (the 8 in-app ways: close, another row, in-app link, Back, Escape, Add speaker, event search, Logout; plus reload and tab close) asks first.
 - **SC-006**: 100% of speaker links (open speaker, new speaker) reopen the same view, and Back closes the inspector in 100% of tries.
 - **SC-007**: At 390 px, 0 controls are hidden or clipped and there is no sideways scrolling; 100% of controls show a focus indicator of at least 3:1.
 - **SC-008**: Speaker rules (required name, email format, display order on add, the attendee-to-speaker steps) exist in exactly one place in the codebase.
