@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useNavigationGuard } from '@/components/form/DirtyGuard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganization } from '@/contexts/OrganizationContext';
 import { useEvent } from '@/contexts/EventContext';
@@ -33,6 +34,7 @@ export function useHeaderModel() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const navigationGuard = useNavigationGuard();
   const { profile, isGlobalAdmin, logout } = useAuth();
   const {
     organization,
@@ -153,7 +155,9 @@ export function useHeaderModel() {
         .slice(0, 8)
     : [];
 
-  const goToEvent = (id: string) => {
+  const goToEvent = async (id: string) => {
+    // Feature 031: ask before discarding unsaved changes (no-op when nothing is dirty).
+    if (!(await navigationGuard.confirmLeave())) return;
     router.push(`/portal/events/${id}/dashboard`);
     setEventSearch('');
     setEventSearchOpen(false);
@@ -161,6 +165,7 @@ export function useHeaderModel() {
 
   const handleLogout = async () => {
     setMenuOpen(false);
+    if (!(await navigationGuard.confirmLeave())) return;
     await logout();
     router.push('/auth/login');
   };

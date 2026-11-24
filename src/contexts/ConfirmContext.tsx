@@ -43,7 +43,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       {children}
       {pending && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-[20px] panel-shadow p-6 w-full max-w-sm">
+          <div className="bg-white rounded-[20px] panel-shadow p-6 w-full max-w-sm" role="alertdialog" aria-modal="true" data-confirm-dialog>
             <h2 className="font-headline-sm text-headline-sm text-on-surface mb-2">
               {pending.options.title ?? 'Please confirm'}
             </h2>
