@@ -151,11 +151,11 @@
 ## Phase 8: Polish & verification
 
 - [X] T023 Update `context/ui-rules.md`: list records are created and edited in the Inspector, never an inline panel above a list (doc 20). Record the DataTable, Inspector and DirtyGuard usage rules and the `?<entity>=` URL convention.
-- [ ] T024 Static checks: tsc, lint, vitest, and a worktree build. Confirm the only dependency change is `@tanstack/react-table@9.3.1`. Record the results in verification.md.
+- [X] T024 Static checks: tsc, lint, vitest, and a worktree build. Confirm the only dependency change is `@tanstack/react-table@9.3.1`. Record the results in verification.md.
 - [X] T025 Walk-throughs: v1 against the reference (SC-002) and v2 against v1 (access parity). Record the results in verification.md.
 - [X] T026 Quickstart §4 parity and behaviour script (SC-001, SC-003–SC-006, SC-008). Every way of leaving while dirty is covered, including closing the page with the leave-page prompt enabled (expect the browser's dialog; analysis C2); test data is restored afterwards. Record the results.
 - [X] T027 Quickstart §5: focus detector (≥3:1), 1440/1024/768/390 screenshots in `specs/031-speakers-table-inspector/evidence/`, and reduced motion (SC-007). Record the results.
-- [ ] T028 `/imprint` DataTable, StatusBadge, Inspector (RightPanel.Portal) and SpeakerInspector into `context/ui-registry.md`; update `context/progress-tracker.md`.
+- [X] T028 `/imprint` DataTable, StatusBadge, Inspector (RightPanel.Portal) and SpeakerInspector into `context/ui-registry.md`; update `context/progress-tracker.md`.
 - [ ] T029 `/review`, then `/speckit-converge`.
 
 ---

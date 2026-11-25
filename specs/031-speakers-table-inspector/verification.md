@@ -59,3 +59,5 @@ Evidence: `evidence/a11y-responsive.json`, `focus_*.png`, `v2_w{1024,768,390}_{l
 ## T024 Static checks, 2026-11-25
 
 tsc clean; lint 0 errors / 28 warnings (= baseline); vitest **120 passed** (105 + 15 in `speakers.test.ts`). The only dependency change is `@tanstack/react-table@9.3.1` (exact) and its own sub-packages. Worktree build: see below.
+
+**Worktree `next build` (commit 01292e1):** passes. The build's lint output shows the same 28 pre-existing warnings, none new. There are no route rendering-mode changes in this feature.
