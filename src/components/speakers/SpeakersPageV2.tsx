@@ -253,7 +253,7 @@ export function SpeakersPageV2() {
           sectionKey="facilitators"
           desc={`${speakers.length} ${speakers.length === 1 ? 'speaker' : 'speakers'} for this event`}
         />
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:flex-shrink-0">
           {importButton}
           {addButton}
         </div>

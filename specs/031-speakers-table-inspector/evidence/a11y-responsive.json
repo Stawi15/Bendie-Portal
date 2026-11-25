@@ -1,0 +1,78 @@
+{
+  "focus_page": {
+    "stops": 40,
+    "missing_or_faint": [
+      {
+        "tag": "input",
+        "role": null,
+        "label": "Search name, email, title, organisation\u2026",
+        "indicators": [
+          "ring"
+        ],
+        "contrast": 1.36,
+        "fv": true
+      },
+      {
+        "tag": "select",
+        "role": null,
+        "label": "All groups",
+        "indicators": [
+          "ring"
+        ],
+        "contrast": 1.36,
+        "fv": true
+      },
+      {
+        "tag": "select",
+        "role": null,
+        "label": "All roles\nSpeaker\nPresenter",
+        "indicators": [
+          "ring"
+        ],
+        "contrast": 1.36,
+        "fv": true
+      }
+    ]
+  },
+  "focus_inspector": {
+    "stops": 39,
+    "missing_or_faint": []
+  },
+  "input_focus_border": {
+    "main input[type=search]": [
+      "rgb(191, 199, 210)",
+      "rgb(0, 98, 157) / ring: rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 98, 157, 0.2) 0px 0px 0px 2px, rgba(0, 0, 0, 0) 0px 0px 0px 0px"
+    ],
+    "main select": [
+      "rgb(191, 199, 210)",
+      "rgb(0, 98, 157) / ring: rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 98, 157, 0.2) 0px 0px 0px 2px, rgba(0, 0, 0, 0) 0px 0px 0px 0px"
+    ]
+  },
+  "escape_returns_focus_to_row": true,
+  "w1024": {
+    "overflow": false,
+    "listMode": false,
+    "clipped": [],
+    "sheet_role": "dialog",
+    "focus_in_sheet": true,
+    "trap_holds": true
+  },
+  "w768": {
+    "overflow": false,
+    "listMode": false,
+    "clipped": [],
+    "sheet_role": "dialog",
+    "focus_in_sheet": true,
+    "trap_holds": true
+  },
+  "w390": {
+    "overflow": false,
+    "listMode": true,
+    "clipped": [],
+    "sheet_role": "dialog",
+    "focus_in_sheet": true,
+    "trap_holds": true
+  },
+  "motion_no-preference": "shell-sheet-in 0.3s",
+  "motion_reduce": "none 1e-05s"
+}
