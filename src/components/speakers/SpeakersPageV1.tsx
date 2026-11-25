@@ -22,6 +22,7 @@ import {
   importSpeakerRow,
   listSpeakers,
   matchesSearch,
+  nextSpeakerDisplayOrder,
   parseSpeakerCsvRow,
   speakerToInput,
   updateSpeaker,
@@ -90,7 +91,7 @@ export function SpeakersPageV1() {
       if (error) toast.error(friendlyError(error, 'We couldn’t save this speaker. Check the fields and try again.'));
       else { toast.success('Speaker updated'); setShowForm(false); fetch(); }
     } else {
-      const { error } = await createSpeaker(supabase, eventId, form, facilitators.length);
+      const { error } = await createSpeaker(supabase, eventId, form, nextSpeakerDisplayOrder(facilitators));
       if (error) toast.error(friendlyError(error, 'We couldn’t add this speaker. Check the fields and try again.'));
       else { toast.success('Speaker added'); setShowForm(false); fetch(); }
     }
@@ -105,7 +106,7 @@ export function SpeakersPageV1() {
   };
 
   const importFacilitatorRow = (row: SpeakerCsvRow) =>
-    importSpeakerRow(supabase, eventId, row, facilitators.length + row.rowIndex);
+    importSpeakerRow(supabase, eventId, row, nextSpeakerDisplayOrder(facilitators) + row.rowIndex);
 
   const filtered = facilitators.filter(f => matchesSearch(f, search));
 

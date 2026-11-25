@@ -166,6 +166,16 @@ export function speakerSortValue(s: Speaker, key: SpeakerSortKey): string | unde
   return v === '' ? undefined : v;
 }
 
+/**
+ * The display order for a speaker added at the END of the list: highest existing
+ * order + 1 (0 for an empty list). Imports use this + the row index. (Feature 031:
+ * replaces "current count", which collided with existing orders that start at 1.)
+ */
+export function nextSpeakerDisplayOrder(speakers: Pick<Speaker, 'display_order'>[]): number {
+  if (speakers.length === 0) return 0;
+  return Math.max(...speakers.map((s) => s.display_order ?? 0)) + 1;
+}
+
 // ─── Spreadsheet import (moved verbatim from the Speakers page) ─────────────
 
 export type SpeakerCsvRow = {
@@ -274,7 +284,7 @@ export async function listSpeakers(
   return { data: (data ?? []) as Speaker[], error: null };
 }
 
-/** `displayOrder`: the current speaker count when adding from the Speakers page (end of the list). */
+/** `displayOrder`: `nextSpeakerDisplayOrder(speakers)` (end of the list). */
 export async function createSpeaker(
   client: SupabaseClient,
   eventId: string,
@@ -303,7 +313,7 @@ export async function deleteSpeaker(client: SupabaseClient, id: string) {
   return { error };
 }
 
-/** One imported row; `displayOrder` = speaker count before the import + the row's index. Shape fits `CsvImportModal.importRow`. */
+/** One imported row; `displayOrder` = `nextSpeakerDisplayOrder` before the import + the row's index. Shape fits `CsvImportModal.importRow`. */
 export async function importSpeakerRow(
   client: SupabaseClient,
   eventId: string,

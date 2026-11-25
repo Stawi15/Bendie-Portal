@@ -17,6 +17,7 @@ import {
   parseSpeakerCsvRow,
   speakerGroups,
   speakerSortValue,
+  nextSpeakerDisplayOrder,
   updateSpeaker,
   validateSpeaker,
   type Speaker,
@@ -264,5 +265,15 @@ describe('mergeSpeakerSessions', () => {
     const b = { id: 'b', title: 'B', starts_at: '2027-03-10T08:00:00Z', ends_at: null };
     const c = { id: 'c', title: 'C', starts_at: null, ends_at: null };
     expect(mergeSpeakerSessions([a, c], [a, b]).map((s) => s.id)).toEqual(['b', 'a', 'c']);
+  });
+});
+
+describe('nextSpeakerDisplayOrder', () => {
+  it('is after the highest existing order, even when orders start at 1 or have gaps', () => {
+    expect(nextSpeakerDisplayOrder([])).toBe(0);
+    expect(nextSpeakerDisplayOrder([{ display_order: 0 }, { display_order: 1 }])).toBe(2);
+    expect(nextSpeakerDisplayOrder([1, 2, 3, 8].map((display_order) => ({ display_order })))).toBe(
+      9
+    );
   });
 });

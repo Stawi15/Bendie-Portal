@@ -1,0 +1,35 @@
+{
+  "reference": "/private/tmp/claude-501/-Users-edwin-Documents-Bendie-Portal/93a5b69a-844c-4cea-acb0-2b87effe5b56/scratchpad/ref031/data/walkthrough.json",
+  "access_differences": [
+    [
+      [
+        "stawi_admin",
+        "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-overview"
+      ],
+      "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/planner-overview 200 [] -> /portal/events/5e5e0000-0000-4000-8000-0000000000e1/dashboard 200 []"
+    ]
+  ],
+  "screenshots_changed": [
+    [
+      "summit_planner-overview.jpg",
+      [
+        72,
+        1,
+        1440,
+        879
+      ],
+      3.384
+    ],
+    [
+      "tester_terminology.jpg",
+      [
+        96,
+        112,
+        1416,
+        876
+      ],
+      3.747
+    ]
+  ],
+  "screenshots_compared": 80
+}

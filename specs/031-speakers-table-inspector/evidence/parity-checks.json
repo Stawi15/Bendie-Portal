@@ -1,0 +1,267 @@
+[
+  {
+    "check": "A1 list in display order",
+    "ok": false,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Tom Test', 'Zed Pilot']"
+  },
+  {
+    "check": "A2 count header",
+    "ok": false,
+    "detail": ""
+  },
+  {
+    "check": "A3 claimed badge with text",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "B search 'okoro'",
+    "ok": true,
+    "detail": "['Prof. Okoro Test']"
+  },
+  {
+    "check": "B search 'speaker2@'",
+    "ok": true,
+    "detail": "['Samuel Test']"
+  },
+  {
+    "check": "B search 'ECONOMIST'",
+    "ok": true,
+    "detail": "['Dr. Wanjiku Test']"
+  },
+  {
+    "check": "B search 'ventures'",
+    "ok": true,
+    "detail": "['Maya Test']"
+  },
+  {
+    "check": "B search 'keynote'",
+    "ok": true,
+    "detail": "['Tom Test']"
+  },
+  {
+    "check": "B search 'hospitality ai'",
+    "ok": true,
+    "detail": "['Leila Test']"
+  },
+  {
+    "check": "C1 name asc",
+    "ok": false,
+    "detail": "['Aisha Test', 'Dr. Wanjiku Test', 'Ken Test', 'Leila Test', 'Maya Test', 'Prof. Okoro Test', 'Samuel Test', 'Tom Test', 'Zed Pilot', 'Zed Pilot']"
+  },
+  {
+    "check": "C1 aria-sort ascending",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "C2 name desc",
+    "ok": false,
+    "detail": "['Zed Pilot', 'Zed Pilot', 'Tom Test', 'Samuel Test', 'Prof. Okoro Test', 'Maya Test', 'Leila Test', 'Ken Test', 'Dr. Wanjiku Test', 'Aisha Test']"
+  },
+  {
+    "check": "C3 name off = display order",
+    "ok": false,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Tom Test', 'Zed Pilot']"
+  },
+  {
+    "check": "C4 group asc, empties last in display order",
+    "ok": false,
+    "detail": "['Leila Test', 'Tom Test', 'Dr. Wanjiku Test', 'Samuel Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Zed Pilot']"
+  },
+  {
+    "check": "C5 group desc, empties still last",
+    "ok": false,
+    "detail": "['Tom Test', 'Leila Test', 'Dr. Wanjiku Test', 'Samuel Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Zed Pilot']"
+  },
+  {
+    "check": "C6 profile asc: claimed first",
+    "ok": true,
+    "detail": "['Samuel Test', 'Dr. Wanjiku Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Tom Test', 'Zed Pilot']"
+  },
+  {
+    "check": "C7 organisation asc",
+    "ok": true,
+    "detail": "['Tom Test', 'Dr. Wanjiku Test', 'Aisha Test', 'Leila Test', 'Samuel Test', 'Ken Test', 'Prof. Okoro Test', 'Maya Test', 'Zed Pilot', 'Zed Pilot']"
+  },
+  {
+    "check": "D1 group filter",
+    "ok": true,
+    "detail": "['Tom Test']"
+  },
+  {
+    "check": "D2 role filter",
+    "ok": true,
+    "detail": "['Tom Test']"
+  },
+  {
+    "check": "D3 not claimed",
+    "ok": false,
+    "detail": "['Dr. Wanjiku Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Tom Test', 'Zed Pilot']"
+  },
+  {
+    "check": "D4 combined",
+    "ok": true,
+    "detail": "['Leila Test']"
+  },
+  {
+    "check": "D5 no match state",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "D6 reset restores all + display order",
+    "ok": false,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Tom Test', 'Zed Pilot']"
+  },
+  {
+    "check": "E1 ?speaker=new",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=new"
+  },
+  {
+    "check": "E2 name required message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "E3 email message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "E4 saved, address now the new id",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "E5 added at the end",
+    "ok": true,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Zed Pilot', 'Tom Test', 'Zed Pilot', 'Zed Pilot']"
+  },
+  {
+    "check": "F1 edit saved and shown in table",
+    "ok": true,
+    "detail": "['Z\\nZed Pilot\\n\\t\\nPilot tester\\n\\t\\nradio_button_unchecked\\nNot claimed']"
+  },
+  {
+    "check": "G close button: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G another row: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G sidebar link: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G breadcrumb: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G Escape: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G Add speaker: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G event search: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G Logout: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G Back: asks, keeps value, restores address",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=1b6e2c28-e62e-4c4b-b08e-1b097e52a04d"
+  },
+  {
+    "check": "G reload: browser leave-page warning",
+    "ok": true,
+    "detail": "['beforeunload']"
+  },
+  {
+    "check": "G discard closes the inspector",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators"
+  },
+  {
+    "check": "G discarded value not saved",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "G no changes: nothing asks",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "H1 lead+linked same session de-duplicated (1)",
+    "ok": true,
+    "detail": "1"
+  },
+  {
+    "check": "H2 two sessions",
+    "ok": true,
+    "detail": "2"
+  },
+  {
+    "check": "H3 none",
+    "ok": true,
+    "detail": "SESSIONS\n\nNot on any sessions yet."
+  },
+  {
+    "check": "I1 deep link opens the speaker",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "I2 Back closes, stays on Speakers",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators"
+  },
+  {
+    "check": "I3 unknown id: message, address cleaned",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators"
+  },
+  {
+    "check": "J1 cancel keeps the speaker",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "J2 removed, inspector closed",
+    "ok": true,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Tom Test']"
+  },
+  {
+    "check": "K1 imported rows appear at the end",
+    "ok": false,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Import One', 'Tom Test', 'Import Two']"
+  },
+  {
+    "check": "K2 no page errors",
+    "ok": true,
+    "detail": "[]"
+  },
+  {
+    "check": "L v1 add-to-speakers toast",
+    "ok": true,
+    "detail": ""
+  }
+]

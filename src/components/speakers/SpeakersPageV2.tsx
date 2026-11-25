@@ -22,6 +22,7 @@ import {
   importSpeakerRow,
   isSpeakerFiltered,
   listSpeakers,
+  nextSpeakerDisplayOrder,
   parseSpeakerCsvRow,
   speakerGroups,
   speakerSortValue,
@@ -113,6 +114,8 @@ export function SpeakersPageV2() {
   const urlSpeaker = searchParams.get(PARAM);
   const [openId, setOpenId] = useState<string | null>(urlSpeaker);
   const openedFromList = useRef(false);
+  // True while the deep-link history swap below runs, so its intermediate address is ignored.
+  const swappingHistory = useRef(false);
 
   const hrefFor = useCallback(
     (id: string | null) => {
@@ -130,16 +133,19 @@ export function SpeakersPageV2() {
   useEffect(() => {
     if (!urlSpeaker) return;
     const current = window.location.pathname + window.location.search + window.location.hash;
+    swappingHistory.current = true;
     window.history.replaceState(window.history.state, '', hrefFor(null));
     window.history.pushState(window.history.state, '', current);
     openedFromList.current = true;
+    const t = window.setTimeout(() => (swappingHistory.current = false), 300);
+    return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
 
   // The address changed (Back/Forward, or our own push): move the open speaker,
   // but ask first if there are unsaved changes; "Keep editing" restores the address.
   useEffect(() => {
-    if (urlSpeaker === openId) return;
+    if (urlSpeaker === openId || swappingHistory.current) return;
     let cancelled = false;
     (async () => {
       if (isDirty()) {
@@ -221,7 +227,7 @@ export function SpeakersPageV2() {
   const inspectorOpen = openId === 'new' || !!openSpeakerRecord;
 
   const importRow = (row: SpeakerCsvRow) =>
-    importSpeakerRow(supabase, eventId, row, speakers.length + row.rowIndex);
+    importSpeakerRow(supabase, eventId, row, nextSpeakerDisplayOrder(speakers) + row.rowIndex);
 
   const addButton = (
     <button type="button" onClick={() => void openSpeaker('new')} className="btn-primary">
@@ -354,7 +360,7 @@ export function SpeakersPageV2() {
             key={openId ?? 'none'}
             eventId={eventId}
             speaker={openSpeakerRecord}
-            nextDisplayOrder={speakers.length}
+            nextDisplayOrder={nextSpeakerDisplayOrder(speakers)}
             onCancel={() => void closeInspector()}
             onSaved={(saved, wasNew) => {
               void load();
