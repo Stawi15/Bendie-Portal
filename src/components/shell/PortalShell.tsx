@@ -9,6 +9,7 @@ import { ProductProvider } from '@/contexts/ProductContext';
 import { AvailableProductsProvider } from '@/contexts/AvailableProductsContext';
 import { ConfirmProvider } from '@/contexts/ConfirmContext';
 import { CreateEventProvider } from '@/contexts/CreateEventContext';
+import { DirtyGuardProvider } from '@/components/form/DirtyGuard';
 import { OrgSideNav } from '@/components/portal/OrgSideNav';
 import { TopHeader } from '@/components/portal/TopHeader';
 import { AppShell, ShellCanvas, ShellSidebar } from '@/components/shell/AppShell';
@@ -71,6 +72,8 @@ export function PortalShell({
           <EventProvider>
             <ConfirmProvider>
               {/* Feature 016: one canonical event-creation flow for every "New Event" entry point. */}
+              {/* Feature 031: unsaved-changes guard (inert unless a form is dirty). */}
+              <DirtyGuardProvider>
               <CreateEventProvider>
                 <ShellProvider shell={initialShell}>
                   <Suspense fallback={null}>
@@ -114,6 +117,7 @@ export function PortalShell({
                   )}
                 </ShellProvider>
               </CreateEventProvider>
+              </DirtyGuardProvider>
             </ConfirmProvider>
           </EventProvider>
         </AvailableProductsProvider>

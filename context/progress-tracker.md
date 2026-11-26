@@ -6,6 +6,17 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
+## Feature 031 — Speakers Table and Inspector Pilot 🔶 Built (2026-11-25) — verified; build, /review and converge pending
+
+Spec/plan/tasks: `specs/031-speakers-table-inspector/`. Branch `031-speakers-table-inspector` (from `redesign`). Roadmap doc 36, Phase 3 (first half).
+
+- **Studio 2.0 layout only:** Speakers is a table (search, group / role / not-claimed filters, sort) with a side inspector (docked ≥1280px, sheet below). The open speaker is in the address (`?speaker=<id>|new`); unsaved changes are guarded on every way out; a read-only sessions list is shown. The current layout keeps today's page.
+- **Reusable pieces:** `components/data/DataTable` (TanStack Table 9.3.1, pinned) and `StatusBadge`, `RightPanel.Portal`, `components/form/DirtyGuard` + `resolverFrom`, `focusTrap` helpers. Rules in `ui-rules.md` ("How a list page is migrated").
+- **First Bendie domain module:** `src/lib/speakers.ts` (+15 tests). Both Speakers layouts and Attendees' "Add to speakers" use it.
+- **Fixed along the way:** end-of-list display order (both layouts).
+- **Flagged, not fixed:** organisation owners/admins can't write speakers (no RLS write policy; v1 identical); the shared confirm dialog has no focus management.
+- **Verified:** v1 unchanged (0 access differences apart from the known redirect race); v2 = v1 access on 252 visits; quickstart parity all passing; focus ≥3:1; 390px; reduced motion.
+
 ## Feature 030 — Studio 2.0 App Shell ✅ Built (2026-11-23) — verified, /review ✅ (fixes 4, 9, 10 applied), converged ✅ (3 follow-ups done)
 
 Spec/plan/tasks: `specs/030-studio-app-shell/`. Branch `030-studio-app-shell` (from `redesign`). Roadmap `docs/bendie-revamp/36` Phase 2; constitution v2.0.0.

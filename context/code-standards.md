@@ -40,7 +40,14 @@ Stack: Next.js 15 App Router + React 19 (updated from Next.js 14 in constitution
 - Utility/lib files: camelCase (`portalAuth.ts`, `eventSectionMeta.ts`).
 - API route files: always `route.ts`.
 - One component per file, named exports for shared components (`export function ComponentName(...)`), default export for page components (Next.js requires this).
-- `components/portal/` is currently flat — no subfolders by feature yet. Follow that until there's a real need to split it.
+- `components/portal/` stays flat for existing one-off components. Studio 2.0 code uses the folders approved in doc 21 (recorded by Feature 031):
+  - `components/shell/`: the app shell (Feature 030).
+  - `components/header/`: the header model and parts (Feature 030).
+  - `components/data/`: list building blocks (`DataTable`, `StatusBadge`).
+  - `components/form/`: form building blocks (`DirtyGuard`, resolvers).
+  - `components/entities/`: per-entity inspectors (`SpeakerInspector`).
+  - `components/<page>/`: a migrated page's v1/v2 components (`components/speakers/`).
+- A migrated page's route file is a thin switch on the layout choice (`useShell().shell`): v1 renders the old page, v2 the new one.
 
 ---
 
@@ -145,15 +152,15 @@ Never skip step 3 because "the UI already checks this" — the route must re-ver
 
 ## Dependencies
 
-Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `exceljs` (lazy-loaded for `.xlsx` import, Feature 023), `clsx`, `tailwind-merge`.
+Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `exceljs` (lazy-loaded for `.xlsx` import, Feature 023), `clsx`, `tailwind-merge`, `@tanstack/react-table` **9.3.1, pinned exact** (Feature 031: headless sorting and row models for `components/data/DataTable`; filtering and search stay in pure domain functions), `react-hook-form` (Feature 031: new inspectors, with a resolver around the domain module's own validator).
 
 Installed **but not yet wired up anywhere** — available for future features, don't assume they're the current convention until something actually uses them:
-- `react-hook-form` + `@hookform/resolvers` + `zod` — forms today are plain `useState`.
+- `@hookform/resolvers` — unused; inspectors use `components/form/resolverFrom.ts`. Note: `zod` is **not** installed (earlier docs assumed it was). Add it, pinned, only when a form needs nested or async schemas.
 - `@dnd-kit/*` — intended for drag-to-reorder (e.g. the Networking Questionnaire Builder), not used yet.
 - `react-color` — Theme Colors uses a native `<input type="color">` instead.
 - `zustand` — state today is React Context (`AuthContext`, `EventContext`, `OrganizationContext`, `ConfirmContext`).
 
-Allowed when needed, **none installed yet** (constitution v2.0.0, Principle V): headless, unstyled primitives — Radix UI primitives, TanStack Table / TanStack Virtual, and `cmdk`. Each must be added at a pinned version and listed here when first used. A second *visual* design system or styled component library is still not allowed.
+Allowed when needed (constitution v2.0.0, Principle V): headless, unstyled primitives — Radix UI primitives, TanStack Virtual and `cmdk` (TanStack Table is installed, see above). Each must be added at a pinned version and listed here when first used. A second *visual* design system or styled component library is still not allowed.
 
 Before installing anything new: check if an existing dependency already covers it, and update this list if you do add something.
 

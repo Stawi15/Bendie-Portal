@@ -6,6 +6,7 @@ import { useHeaderModel, type HeaderModel } from '@/components/header/useHeaderM
 import { HeaderActions, HeaderCreateOrganization } from '@/components/header/HeaderParts';
 import { useShell } from '@/components/shell/ShellContext';
 import { RightPanelProvider, RightPanelSlot } from '@/components/shell/RightPanel';
+import { focusFirstIn, trapTab } from '@/components/shell/focusTrap';
 
 /*
  * Feature 030 — the Studio 2.0 shell frame ("v2"). Layout:
@@ -74,9 +75,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 /**
  * The sidebar column: full width ≥1280, hover-expand rail 1024–1279 on
  * hover-capable desktops, drawer otherwise (research R6): role="dialog" while
@@ -89,7 +87,7 @@ export function ShellSidebar({ label, children }: { label: string; children: Rea
 
   useEffect(() => {
     if (!navOpen) return;
-    ref.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    focusFirstIn(ref.current);
     const menuButton = menuButtonRef.current;
     // Leaving drawer mode (rotating / resizing to a wider layout) closes it.
     const mq = window.matchMedia(
@@ -114,18 +112,7 @@ export function ShellSidebar({ label, children }: { label: string; children: Rea
       closeNav();
       return;
     }
-    if (e.key !== 'Tab' || !ref.current) return;
-    const items = Array.from(ref.current.querySelectorAll<HTMLElement>(FOCUSABLE));
-    if (items.length === 0) return;
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
+    trapTab(e, ref.current);
   };
 
   return (

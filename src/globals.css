@@ -274,3 +274,14 @@ button {
   outline: 2px solid theme('colors.primary');
   outline-offset: 2px;
 }
+
+/* Feature 031 — the inspector sheet slides in from the right (below 1280px).
+   Used with `motion-safe:`; the global reduced-motion rule also stops it. */
+@keyframes shell-sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

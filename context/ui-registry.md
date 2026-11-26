@@ -335,6 +335,34 @@ Last updated: 2026-11-23
 - **New page-level shell content** (toolbar, inspector) goes in `ShellCanvas`'s `toolbar` slot or the right panel via `useRegisterRightPanelContent`. Don't add more chrome rows.
 - v1 (`OrgSideNav`, `TopHeader`, `EventWorkspaceV1`) is unchanged and stays the default until rollout.
 
+### Studio 2.0 list editing: DataTable, StatusBadge, Inspector (Feature 031)
+
+File: `src/components/data/{DataTable,StatusBadge}.tsx`, `src/components/shell/RightPanel.tsx` (`RightPanel.Portal`), `src/components/entities/SpeakerInspector.tsx`, `src/components/form/DirtyGuard.tsx`; reference page `src/components/speakers/SpeakersPageV2.tsx`
+Last updated: 2026-11-24
+
+| Property | Class |
+| --- | --- |
+| Table container | `bg-surface-container-lowest border border-outline-variant rounded-ui-lg shadow-elev-0 overflow-hidden` |
+| Header row | `bg-surface-container-low`; cells `text-xs font-semibold text-on-surface-variant px-3 h-row-compact` |
+| Sort button | header text + `unfold_more` / `arrow_upward` / `arrow_downward` (16px); `aria-sort` on the `th` |
+| Body row | `border-t border-outline-variant h-row px-3`; hover `hover:bg-surface-container-low`; selected `bg-primary/5` + `aria-current` on the row's open button |
+| List mode (<768px) | `ul` in the same container, `divide-y divide-outline-variant`; row button `px-3 py-2.5 min-h-row` |
+| Toolbar | `flex flex-wrap items-end gap-2 mb-3`; search `input pl-9` with a search icon, `sm:w-72`; filters labelled `<select class="input">`; reset `h-control px-3 rounded-ui-md text-primary hover:bg-primary/5` |
+| Empty / error | `bg-surface-container-lowest border border-outline-variant rounded-ui-lg py-10 text-center`, icon `text-5xl text-on-surface-variant/40`; error has a "Try again" `btn-secondary` |
+| Loading | `h-row bg-surface-container-low rounded-ui-md animate-pulse` rows |
+| StatusBadge | `inline-flex gap-1 rounded-full border px-2 py-0.5 text-xs font-medium` + `bg/text/border-status-<tone>-*` + 14px icon; variants `.Done` `.Neutral` `.Info` `.Warning` `.Blocking` |
+| Inspector, docked (≥1280px) | `w-[400px] border-l border-outline-variant bg-surface-container-lowest`; header `h-row px-4 border-b`, title `text-sm font-semibold`; close `h-control aspect-square rounded-ui-sm` |
+| Inspector, sheet (<1280px) | `fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] shadow-elev-3`, scrim `bg-black/40`, `role="dialog" aria-modal`, slide-in `shell-sheet-in` 300ms (motion-safe only) |
+| Inspector form | `grid grid-cols-1 sm:grid-cols-2 gap-4`, `.label` / `.input` / `.hint`, errors `text-xs text-error mt-1` with `aria-invalid` + `aria-describedby`; footer `sticky -bottom-4 border-t px-4 py-3` with primary, secondary and a right-aligned text `Remove` (`text-error hover:bg-error/5`) |
+| Focus | Global ring; the inspector is `data-shell-chrome`, so the scoped 030 ring applies |
+
+**Pattern notes:**
+- Follow `ui-rules.md` → "How a list page is migrated": layout switch, `?<entity>=` address, `useDirtyGuard` + `confirmLeave()`, rules in the domain module.
+- Columns that matter least get `priority: 'secondary'` so the docked inspector never causes sideways scroll.
+- The table never filters: pass it already-filtered rows from the domain module's pure functions.
+- Status is always a `StatusBadge` variant (icon + text). Product chips stay `product-*` tags (030).
+- Known gap (not fixed here): the shared confirm dialog (`ConfirmContext`) has no focus management or Escape handling. 031 only added `role="alertdialog"` and a marker so Escape doesn't close an inspector underneath it.
+
 ---
 
 ## Not Yet Captured
