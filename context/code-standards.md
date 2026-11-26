@@ -155,7 +155,7 @@ Never skip step 3 because "the UI already checks this" — the route must re-ver
 Installed **and actively used**: `@supabase/ssr`, `@supabase/supabase-js`, `react-hot-toast`, `papaparse`, `exceljs` (lazy-loaded for `.xlsx` import, Feature 023), `clsx`, `tailwind-merge`, `@tanstack/react-table` **9.3.1, pinned exact** (Feature 031: headless sorting and row models for `components/data/DataTable`; filtering and search stay in pure domain functions), `react-hook-form` (Feature 031: new inspectors, with a resolver around the domain module's own validator).
 
 Installed **but not yet wired up anywhere** — available for future features, don't assume they're the current convention until something actually uses them:
-- `@hookform/resolvers` — unused; inspectors use `components/form/zodlessResolver.ts`. Note: `zod` is **not** installed (earlier docs assumed it was). Add it, pinned, only when a form needs nested or async schemas.
+- `@hookform/resolvers` — unused; inspectors use `components/form/resolverFrom.ts`. Note: `zod` is **not** installed (earlier docs assumed it was). Add it, pinned, only when a form needs nested or async schemas.
 - `@dnd-kit/*` — intended for drag-to-reorder (e.g. the Networking Questionnaire Builder), not used yet.
 - `react-color` — Theme Colors uses a native `<input type="color">` instead.
 - `zustand` — state today is React Context (`AuthContext`, `EventContext`, `OrganizationContext`, `ConfirmContext`).

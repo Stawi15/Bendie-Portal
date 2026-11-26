@@ -88,7 +88,7 @@ src/lib/speakers.ts (+ speakers.test.ts)        # domain module: list/create/upd
 src/components/data/DataTable.tsx                # compound: Root, Toolbar, Search, Filter, Reset, Body, Empty, Error; list mode <768px
 src/components/data/StatusBadge.tsx              # explicit variants (StatusBadge.Done / .Neutral …) with icon + label (029 status tokens)
 src/components/form/DirtyGuard.tsx               # DirtyGuardProvider, useDirtyGuard(), useNavigationGuard(): link/popstate/beforeunload interception
-src/components/form/zodlessResolver.ts           # react-hook-form resolver around a pure validator (no zod)
+src/components/form/resolverFrom.ts              # react-hook-form resolver around a pure validator (no zod)
 src/components/shell/RightPanel.tsx              # + <RightPanel.Portal>: live children; docked ≥1280, focus-trapped sheet below
 src/components/entities/SpeakerInspector.tsx     # form (10 fields), avatar preview, claim badge, sessions list, save/delete
 src/components/speakers/SpeakersPageV1.tsx       # today's page, moved verbatim; data calls → speakers.ts

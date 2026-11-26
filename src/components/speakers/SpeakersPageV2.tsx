@@ -167,12 +167,17 @@ export function SpeakersPageV2() {
   const openSpeaker = async (id: string) => {
     if (id === openId) return;
     if (!(await confirmLeave())) return;
-    openedFromList.current = true;
-    router.push(hrefFor(id), { scroll: false });
+    if (openId) {
+      // Switching records: replace the entry, so close/Back return to the list, not the previous record.
+      router.replace(hrefFor(id), { scroll: false });
+    } else {
+      openedFromList.current = true;
+      router.push(hrefFor(id), { scroll: false });
+    }
   };
 
-  const closeInspector = async () => {
-    if (!(await confirmLeave())) return;
+  /** Closes the inspector and returns the address to the list (no prompt: callers ask first). */
+  const leaveInspector = () => {
     setOpenId(null);
     if (openedFromList.current) {
       openedFromList.current = false;
@@ -180,6 +185,11 @@ export function SpeakersPageV2() {
     } else {
       router.replace(hrefFor(null), { scroll: false });
     }
+  };
+
+  const closeInspector = async () => {
+    if (!(await confirmLeave())) return;
+    leaveInspector();
   };
 
   // ── Data ─────────────────────────────────────────────────────────────────
@@ -372,9 +382,12 @@ export function SpeakersPageV2() {
               }
             }}
             onDeleted={() => {
-              setSpeakers((prev) => prev.filter((s) => s.id !== openId));
+              // Close first, in the same update as removing the row, so the
+              // "couldn't be found" check never sees the deleted id.
+              const deletedId = openId;
+              leaveInspector();
+              setSpeakers((prev) => prev.filter((s) => s.id !== deletedId));
               void load();
-              void closeInspector();
             }}
           />
         )}

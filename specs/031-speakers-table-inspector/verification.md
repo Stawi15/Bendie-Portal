@@ -61,3 +61,24 @@ Evidence: `evidence/a11y-responsive.json`, `focus_*.png`, `v2_w{1024,768,390}_{l
 tsc clean; lint 0 errors / 28 warnings (= baseline); vitest **120 passed** (105 + 15 in `speakers.test.ts`). The only dependency change is `@tanstack/react-table@9.3.1` (exact) and its own sub-packages. Worktree build: see below.
 
 **Worktree `next build` (commit 01292e1):** passes. The build's lint output shows the same 28 pre-existing warnings, none new. There are no route rendering-mode changes in this feature.
+
+## T029 /review outcome, 2026-11-26
+
+The developer asked for everything that needs fixing to be fixed.
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | v1's add/import order changed (max+1 instead of count) | **Accepted** as a deliberate FR-012 fix (recorded in data-model) |
+| 2 | `ConfirmContext` got non-visual ARIA attributes | Kept as noted |
+| 3 | Contract, data model and tasks lagged the code | **Fixed** (`speakerSortValue`, `nextSpeakerDisplayOrder`, DataTable props) |
+| 4 | `aria-selected` on plain table rows | **Fixed** (removed; `aria-current` on the row button remains) |
+| 5 | Unused `resetKey` prop on `DataTable.Root` | **Fixed** (removed) |
+| 6 | `zodlessResolver.ts` name | **Fixed** (renamed `resolverFrom.ts`) |
+| 7 | Switching rows then closing or Back reopened the previous speaker | **Fixed**: switching rows replaces the history entry |
+| 8 | Delete relied on update timing to avoid a stray "couldn't be found" | **Fixed**: delete closes the inspector explicitly before removing the row |
+| 9 | Shared confirm dialog has no focus handling or Escape (pre-existing) | Left for a later feature |
+
+Checks after fixes:
+- tsc clean; lint 0 errors / 28 warnings; vitest 120 passed.
+- Browser: switch-then-close, switch-then-Back and delete-with-no-stray-message all pass. Parity groups E–J re-run: **27/27** (`evidence/parity-checks-after-review.json`).
+- Test data verified clean: 8 speakers, no leftovers.

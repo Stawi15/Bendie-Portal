@@ -89,7 +89,6 @@ function Root<T extends RowData>({
   label,
   rowLabel,
   renderListItem,
-  resetKey,
   children,
 }: {
   data: T[];
@@ -103,15 +102,11 @@ function Root<T extends RowData>({
   rowLabel: (row: T) => string;
   /** How a row looks in list mode (<768px). */
   renderListItem: (row: T) => React.ReactNode;
-  /** Change this value to reset sorting (e.g. when filters are reset). */
-  resetKey?: unknown;
   children: React.ReactNode;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => setSorting([]), [resetKey]);
 
   // Hide secondary columns when the table area is narrow.
   useEffect(() => {
@@ -346,7 +341,6 @@ function Body<T>() {
                     if ((e.target as HTMLElement).closest('button, a, input, select')) return;
                     onOpenRow(row);
                   }}
-                  aria-selected={selected || undefined}
                   className={`border-t border-outline-variant cursor-pointer transition-colors duration-motion-fast ${
                     selected ? 'bg-primary/5' : 'hover:bg-surface-container-low'
                   }`}

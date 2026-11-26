@@ -38,7 +38,7 @@
   - the CSV parser on the template rows;
   - the sessions merge (lead + linked, de-duplicated, by `starts_at`) using a stub client;
   - the `addSpeakerFromAttendee` and `createSpeaker` insert payloads equal to today's;
-  - the import `display_order` = count + row index.
+  - the import `display_order` = next display order + row index. *(As built: `nextSpeakerDisplayOrder` = highest + 1, replacing "count"; see verification T026.)*
 - [X] T005 Move today's `src/app/portal/events/[eventId]/facilitators/page.tsx` into `src/components/speakers/SpeakersPageV1.tsx` **verbatim except** for its data calls and validation, which now use `speakers.ts`. The markup and copy are unchanged. The route file becomes a thin switch that renders V1 for now.
 - [X] T006 In `src/app/portal/events/[eventId]/members/page.tsx`, replace `makeFacilitator`'s speaker existence check and insert with `addSpeakerFromAttendee`. Keep the `event_members` role update, the toasts and the refresh exactly as today.
 - [X] T007 **Checkpoint (no-change proof):** tsc, lint and tests pass. Confirm by line comparison that the V1 markup is identical to the original. Run the walk-through in v1 and compare with the T001 reference: 0 access differences and data-only screenshot differences. Record the result in verification.md.
@@ -91,7 +91,7 @@
   - `duration-motion-panel ease-motion-panel` slide, none with reduced motion.
   
   Update the 030 shell contract's RightPanel row.
-- [X] T014 [P] [US2] Create `src/components/form/zodlessResolver.ts`: `resolverFrom(validate)`, which adapts a pure `validate(values) → { field?: message }` to a react-hook-form resolver.
+- [X] T014 [P] [US2] Create `src/components/form/resolverFrom.ts` (first named `zodlessResolver.ts`, renamed after review): `resolverFrom(validate)`, which adapts a pure `validate(values) → { field?: message }` to a react-hook-form resolver.
 - [X] T015 [US2] Create `src/components/entities/SpeakerInspector.tsx`:
   - react-hook-form with `resolverFrom(validateSpeaker)`;
   - the 10 fields with labels, error text next to the field, `aria-invalid` and `aria-describedby`, and the avatar preview;
@@ -156,7 +156,7 @@
 - [X] T026 Quickstart §4 parity and behaviour script (SC-001, SC-003–SC-006, SC-008). Every way of leaving while dirty is covered, including closing the page with the leave-page prompt enabled (expect the browser's dialog; analysis C2); test data is restored afterwards. Record the results.
 - [X] T027 Quickstart §5: focus detector (≥3:1), 1440/1024/768/390 screenshots in `specs/031-speakers-table-inspector/evidence/`, and reduced motion (SC-007). Record the results.
 - [X] T028 `/imprint` DataTable, StatusBadge, Inspector (RightPanel.Portal) and SpeakerInspector into `context/ui-registry.md`; update `context/progress-tracker.md`.
-- [ ] T029 `/review`, then `/speckit-converge`.
+- [X] T029 `/review`, then `/speckit-converge`.
 
 ---
 

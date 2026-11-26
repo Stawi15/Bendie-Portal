@@ -1,0 +1,137 @@
+[
+  {
+    "check": "E1 ?speaker=new",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=new"
+  },
+  {
+    "check": "E2 name required message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "E3 email message",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "E4 saved, address now the new id",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "E5 added at the end",
+    "ok": true,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Tom Test', 'Zed Pilot']"
+  },
+  {
+    "check": "F1 edit saved and shown in table",
+    "ok": true,
+    "detail": "['Z\\nZed Pilot\\n\\t\\nPilot tester\\n\\t\\nradio_button_unchecked\\nNot claimed']"
+  },
+  {
+    "check": "G close button: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G another row: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G sidebar link: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G breadcrumb: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G Escape: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G Add speaker: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G event search: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G Logout: asks, keep editing keeps value",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G Back: asks, keeps value, restores address",
+    "ok": true,
+    "detail": "asked=True url=/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators?speaker=6e9d16a6-e4a6-404d-94b5-4df4c26f90d1"
+  },
+  {
+    "check": "G reload: browser leave-page warning",
+    "ok": true,
+    "detail": "['beforeunload']"
+  },
+  {
+    "check": "G discard closes the inspector",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators"
+  },
+  {
+    "check": "G discarded value not saved",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "G no changes: nothing asks",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "H1 lead+linked same session de-duplicated (1)",
+    "ok": true,
+    "detail": "1"
+  },
+  {
+    "check": "H2 two sessions",
+    "ok": true,
+    "detail": "2"
+  },
+  {
+    "check": "H3 none",
+    "ok": true,
+    "detail": "SESSIONS\n\nNot on any sessions yet."
+  },
+  {
+    "check": "I1 deep link opens the speaker",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "I2 Back closes, stays on Speakers",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators"
+  },
+  {
+    "check": "I3 unknown id: message, address cleaned",
+    "ok": true,
+    "detail": "/portal/events/5e5e0000-0000-4000-8000-0000000000e1/facilitators"
+  },
+  {
+    "check": "J1 cancel keeps the speaker",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "J2 removed, inspector closed",
+    "ok": true,
+    "detail": "['Dr. Wanjiku Test', 'Samuel Test', 'Leila Test', 'Prof. Okoro Test', 'Maya Test', 'Ken Test', 'Aisha Test', 'Tom Test']"
+  }
+]

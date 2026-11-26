@@ -9,7 +9,7 @@ import { useConfirm } from '@/contexts/ConfirmContext';
 import { Avatar } from '@/components/portal/Avatar';
 import { StatusBadge } from '@/components/data/StatusBadge';
 import { useDirtyGuard } from '@/components/form/DirtyGuard';
-import { resolverFrom } from '@/components/form/zodlessResolver';
+import { resolverFrom } from '@/components/form/resolverFrom';
 import {
   EMPTY_SPEAKER_INPUT,
   SPEAKER_ROLE_LABELS,

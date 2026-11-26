@@ -7,21 +7,21 @@ All functions take `client: SupabaseClient<Database>` first and run under the ca
 | Function | Returns | Notes |
 |---|---|---|
 | `listSpeakers(client, eventId, signal?)` | `{ data: Speaker[] } \| { error }` | Ordered by `display_order` |
-| `createSpeaker(client, eventId, input, displayOrder)` | `{ data: Speaker } \| { error }` | Normalises empties to null |
+| `createSpeaker(client, eventId, input, displayOrder)` | `{ data: Speaker } \| { error }` | Normalises empties to null; pass `nextSpeakerDisplayOrder(speakers)` |
 | `updateSpeaker(client, id, input)` | `{ error? }` | Never touches `display_order` |
 | `deleteSpeaker(client, id)` | `{ error? }` | |
 | `importSpeakerRow(client, eventId, row, displayOrder)` | `{ error?: string }` | Shape expected by `CsvImportModal.importRow` |
 | `addSpeakerFromAttendee(client, eventId, member)` | `{ created: boolean } \| { error }` | Existence check + claimed insert; the role update stays with the caller |
 | `listSpeakerSessions(client, eventId, speakerId)` | `{ data: SpeakerSession[], timeZone } \| { error }` | Union of the lead and linked sessions |
 | `validateSpeaker(input)` | `{ full_name?: string; email?: string }` | Today's exact messages |
-| `matchesSearch`, `applySpeakerFilters`, `compareSpeakers`, `speakerGroups` | pure | Unit tested |
+| `matchesSearch`, `applySpeakerFilters`, `speakerSortValue`, `speakerGroups`, `nextSpeakerDisplayOrder` | pure | Unit tested. `nextSpeakerDisplayOrder` = highest order + 1 (end of the list) |
 | `SPEAKER_CSV_COLUMNS`, `SPEAKER_CSV_SAMPLES`, `parseSpeakerCsvRow` | — | Moved verbatim from the page |
 
 ## Components
 
 | API | Guarantee |
 |---|---|
-| `<DataTable.Root data columns getRowId initialSort onOpenRow>` | Headless sort via TanStack Table; one tab stop per row; Enter/Space opens; `aria-sort` on sortable headers; list mode below 768 px |
+| `<DataTable.Root data columns getRowId onOpenRow selectedRowId label rowLabel renderListItem>` | Headless sort via TanStack Table (columns with `sortValue`; ascending → descending → off = the data's own order; empties last, ties in data order); `priority: 'secondary'` columns hide under ~800px; one tab stop per row; Enter/Space opens; `aria-sort` on sortable headers; list mode below 768 px |
 | `<DataTable.Toolbar>`, `.Search`, `.Filter` (`<select>`), `.Reset`, `.Body`, `.Empty`, `.Error`, `.Loading` | Composable; callers pass already-filtered data |
 | `<StatusBadge.Done>`, `.Neutral`, `.Warning`, `.Blocking`, `.Info` | Icon + text always; 029 status tokens |
 | `<DirtyGuardProvider>` + `useDirtyGuard(isDirty)` | While dirty: guards link clicks, Back, `beforeunload` and the shell's guarded actions |
