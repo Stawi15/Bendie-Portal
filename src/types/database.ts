@@ -160,6 +160,8 @@ export interface Database {
           portal_setup_modules: string[] | null;
           /** Feature 024: IANA time zone (e.g. `Africa/Nairobi`), checked by `events_timezone_valid`. NULL = no automatic engagement pushes in the attendee app. Granted to `authenticated` only (never `anon`). */
           timezone: string | null;
+          /** Events backend 2026-11-24: chat on/off for the event (default true). Off hides Chats and Message buttons in the app (3.2.6+) and the database refuses new chats/messages. */
+          chat_enabled: boolean;
         };
       };
       event_creation_requests: {
@@ -186,6 +188,8 @@ export interface Database {
           planner_sync_status: 'succeeded' | 'failed' | 'skipped' | null;
           planner_sync_error: string | null;
           planner_permissions_configured_at: string | null;
+          /** Events backend 2026-11-23: per-event player number for the photo games. Server-assigned, read-only, never reused. */
+          player_number: number;
         };
       };
       planner_permission_audit_log: {

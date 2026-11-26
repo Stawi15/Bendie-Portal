@@ -1,0 +1,152 @@
+[
+  {
+    "check": "tabs present",
+    "ok": true,
+    "detail": "['Quiz games', 'Human Bingo', 'Connects', 'Activity', 'Leaderboard']"
+  },
+  {
+    "check": "quiz tab shows the quiz games",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: using library banner",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: 15 library rows, board of 15",
+    "ok": true,
+    "detail": "(15, ['Has a pet', 'Has visited 3+ countries'])"
+  },
+  {
+    "check": "bingo: no edit buttons while on library",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: own content after copy",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: edit shows in list and board",
+    "ok": true,
+    "detail": "('Has a pet (edited)', 'Has a pet (edited)')"
+  },
+  {
+    "check": "bingo: empty text refused",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: move up reorders list and board",
+    "ok": true,
+    "detail": "['Has visited 3+ countries', 'Has a pet (edited)']"
+  },
+  {
+    "check": "bingo: off \u2192 warning, empty square",
+    "ok": true,
+    "detail": "Empty"
+  },
+  {
+    "check": "bingo: back on \u2192 full board",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: id suggested from text",
+    "ok": true,
+    "detail": "knows-a-magic-trick"
+  },
+  {
+    "check": "bingo: new prompt added as a spare",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "bingo: duplicate id refused",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "connects: 60 cards",
+    "ok": true,
+    "detail": "60"
+  },
+  {
+    "check": "connects: hold counts",
+    "ok": true,
+    "detail": "1\n\nWhat is one place in the world you'll never get tired of?\n\ncard-01 \u00b7 held by 2 players\n\narrow_upward\narrow_downward\nOn\nEdit\n2\n\nWhat do you find yourself spending most of your time on outside of wor"
+  },
+  {
+    "check": "connects: next id card-61",
+    "ok": true,
+    "detail": "card-61"
+  },
+  {
+    "check": "connects: card added",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "activity: 6 photos with names and numbers",
+    "ok": true,
+    "detail": "CONNECTS\n\nWhat is the strangest food you've ever tried?\n\nDaniel Mwangi (Test 3) (#2) with Esther Wanjiru (Test 4) (#31)\n\n39m ago\n\nCONNECTS\n\nWhat is the next tra"
+  },
+  {
+    "check": "activity: filter Connects = 3",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "leaderboard: 6 players, top has 10 points",
+    "ok": true,
+    "detail": "(6, ['1', 'Daniel Mwangi (Test 3)', '#2', '10'])"
+  },
+  {
+    "check": "basics: Chats item present, unticked (chat on)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "basics: Chats ticked survives reload (chat off)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "attendees: player numbers shown",
+    "ok": true,
+    "detail": "['#32', '#2', '#3', '#4', '#5']"
+  },
+  {
+    "check": "org admin: no page errors",
+    "ok": true,
+    "detail": "[]"
+  },
+  {
+    "check": "staff: read-only note, no edit controls",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "staff: hold counts route refuses (403)",
+    "ok": true,
+    "detail": "403"
+  },
+  {
+    "check": "library: 15 Bingo rows editable",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "check": "library: 60 Connects rows",
+    "ok": true,
+    "detail": "60"
+  },
+  {
+    "check": "library: edit saves (and was restored)",
+    "ok": true,
+    "detail": "What is one place in the world you'll never get tired of?"
+  }
+]
