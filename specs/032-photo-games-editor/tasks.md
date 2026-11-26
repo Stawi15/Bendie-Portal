@@ -21,6 +21,6 @@
 - [X] T010 Attendees: player-number column
 
 ## Phase 5: Verify and release
-- [ ] T011 tsc, lint, tests, build; walk-through (no change to existing pages)
+- [X] T011 tsc, lint, tests, build; walk-through (no change to existing pages)
 - [X] T012 Browser checks on test data (editor actions, preview, warnings, hold counts, activity, leaderboard, chat, numbers, permissions: org admin, event staff, Stawi admin); restore test data
-- [ ] T013 /review, converge; merge to `main` (developer confirms), then merge `main` into `redesign`
+- [X] T013 /review, converge; merge to `main` (developer confirms), then merge `main` into `redesign`

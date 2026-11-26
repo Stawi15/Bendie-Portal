@@ -23,3 +23,11 @@ Stawi admin: library 15 + 60 rows editable; one edit saved and restored.
 Script bugs fixed during the run: an "Edit" locator matching "(edited)", a list locator hitting the step navigator, and an ambiguous "Game" label. No app bugs found.
 
 Test data restored: Summit back on the library (77 own rows removed), `chat_enabled = true`, library unchanged (75 rows, no leftovers).
+
+## T011 Build and walk-through (2026-11-26)
+- `next build` (separate worktree, commit 40a67d1): passes.
+- Walk-through on port 3200 vs the same-day reference (`redesign@1426691` v1): 252/252 visits; access matches apart from the known Summit `planner-overview` redirect race (Feature 030 note).
+- Screenshots: 13 of 80 differ. Intended: Games tabs and Attendees player numbers. The rest is test data (activity log, home greeting and times) and the two known cases.
+
+## T013 Review and converge
+`/review`: 3 minor notes: the expected `TopHeader` merge conflict on redesign, `chat_enabled` column grants needed in any non-production environment, and no arrow-key navigation on the tabs. Converge: FR-001–FR-012 covered; nothing appended.
