@@ -35,6 +35,8 @@ type BasicsForm = {
   interests_enabled: boolean;
   in_house: boolean;
   disabled_menu_items: string[];
+  /** Feature 032: events.chat_enabled (shown as the "Chats" hide item: ticked = off). */
+  chat_enabled: boolean;
   /** Feature 024: IANA name, '' = not set. */
   timezone: string;
 };
@@ -43,7 +45,7 @@ const EMPTY: BasicsForm = {
   name: '', slug: '', description: '', location: '',
   status: 'draft', event_type: 'conference', starts_at: '', ends_at: '',
   attendee_limit: '', networking_mode: 'full',
-  interests_enabled: true, in_house: false, disabled_menu_items: [], timezone: '',
+  interests_enabled: true, in_house: false, disabled_menu_items: [], chat_enabled: true, timezone: '',
 };
 
 const MENU_ITEM_LABELS: Record<string, string> = {
@@ -112,6 +114,7 @@ export default function BasicsPage() {
           interests_enabled: data.interests_enabled ?? true,
           in_house: data.in_house ?? false,
           disabled_menu_items: data.disabled_menu_items ?? [],
+          chat_enabled: data.chat_enabled ?? true,
           timezone: data.timezone ?? '',
         });
       }
@@ -182,6 +185,7 @@ export default function BasicsPage() {
       interests_enabled: form.interests_enabled,
       in_house: form.in_house,
       disabled_menu_items: form.disabled_menu_items,
+      chat_enabled: form.chat_enabled,
       timezone: form.timezone || null,
     };
     const { error } = await supabase.from('events').update(payload).eq('id', eventId);
@@ -348,6 +352,17 @@ export default function BasicsPage() {
                 <span className="text-sm font-medium text-on-surface">{MENU_ITEM_LABELS[key]}</span>
               </label>
             ))}
+            {/* Feature 032: chat is its own field (events.chat_enabled), not a menu key. Off hides
+                Chats and every Message button in the app (3.2.6+) and the database refuses new chats. */}
+            <label className="flex items-center gap-2 cursor-pointer" title="Hides Chats and every Message button in the app, and blocks new chats and messages for this event">
+              <input
+                type="checkbox"
+                checked={!form.chat_enabled}
+                onChange={(e) => setForm(prev => ({ ...prev, chat_enabled: !e.target.checked }))}
+                className="w-4 h-4 accent-primary rounded"
+              />
+              <span className="text-sm font-medium text-on-surface">Chats</span>
+            </label>
           </div>
         </div>
 

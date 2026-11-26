@@ -42,6 +42,8 @@ type Member = {
   onboarding_status: string;
   onboarding_completed_at: string | null;
   created_at: string;
+  /** Feature 032: photo-games player number (server-assigned, read-only). */
+  player_number?: number | null;
   profiles: {
     full_name: string | null;
     email: string | null;
@@ -129,7 +131,7 @@ export default function MembersPage() {
     const [{ data, error }, contacts] = await Promise.all([
       supabase
         .from('event_members')
-        .select('event_id,user_id,role,onboarding_status,onboarding_completed_at,created_at,profiles!event_members_user_id_fkey(full_name,avatar_url,job_title,bio)')
+        .select('event_id,user_id,role,onboarding_status,onboarding_completed_at,created_at,player_number,profiles!event_members_user_id_fkey(full_name,avatar_url,job_title,bio)')
         .eq('event_id', eventId)
         .order('created_at', { ascending: false })
         .abortSignal(signal),
@@ -496,7 +498,12 @@ export default function MembersPage() {
                       <div className="flex items-center gap-3">
                         <Avatar name={p?.full_name} email={p?.email} avatarUrl={p?.avatar_url} size={32} />
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-on-surface">{p?.full_name ?? 'Unknown'}</p>
+                          <p className="font-medium text-on-surface">
+                            {p?.full_name ?? 'Unknown'}
+                            {m.player_number ? (
+                              <span className="ml-2 text-xs font-normal text-on-surface-variant" title="Player number for the Human Bingo and Connects games">#{m.player_number}</span>
+                            ) : null}
+                          </p>
                           <p className="text-xs text-on-surface-variant/70">{p?.email}</p>
                         </div>
                         <button

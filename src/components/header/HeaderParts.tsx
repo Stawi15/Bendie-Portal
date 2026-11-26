@@ -167,6 +167,16 @@ export function HeaderOrgSwitcher({ m }: { m: HeaderModel }) {
                   >
                     <span className="material-symbols-outlined text-base">flag</span> Moderation
                   </button>
+                  {/* Feature 032 — master Human Bingo prompts and Connects cards. */}
+                  <button
+                    onClick={() => {
+                      setOrgMenuOpen(false);
+                      router.push('/portal/admin/games');
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base">sports_esports</span> Games library
+                  </button>
                 </div>
               )}
             </div>
